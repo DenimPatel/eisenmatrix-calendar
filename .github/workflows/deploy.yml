@@ -10,7 +10,7 @@ permissions:
   pages: write
   id-token: write
 
-variables:
+env:
   # If you need to add your GEMINI_API_KEY, add it to GitHub Settings > Secrets > Actions
   # and then uncomment the line below and the build step's env section.
   # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
