@@ -10,10 +10,6 @@ permissions:
   pages: write
   id-token: write
 
-env:
-  # If you need to add your GEMINI_API_KEY, add it to GitHub Settings > Secrets > Actions
-  # and then uncomment the line below and the build step's env section.
-  # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
 jobs:
   build:
@@ -33,9 +29,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
