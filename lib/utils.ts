@@ -38,7 +38,7 @@ export const getStatusColor = (status: string) => {
 export function getPeriodKey(date: Date, frequency: Frequency): string {
   const d = new Date(date);
   const y = d.getFullYear();
-  
+
   switch (frequency) {
     case Frequency.DAILY:
       return formatDate(d);
@@ -59,7 +59,7 @@ export function getTaskStatus(task: Task, date: Date): TaskStatus {
   // we could technically return 'Done' or just whatever history says. 
   // However, isTaskActiveOnDate should prevent this from being rendered in most cases.
   // If it is rendered (e.g. in list view), we defer to standard logic.
-  
+
   if (!task.frequency || task.frequency === Frequency.NONE) {
     return task.status;
   }
@@ -72,10 +72,10 @@ export function isTaskActiveOnDate(task: Task, date: Date): boolean {
   if (task.recurrenceEndedAt) {
     const endDate = new Date(task.recurrenceEndedAt);
     endDate.setHours(0, 0, 0, 0);
-    
+
     const checkDate = new Date(date);
     checkDate.setHours(0, 0, 0, 0);
-    
+
     if (checkDate > endDate) {
       return false;
     }
@@ -101,8 +101,8 @@ export function isTaskActiveOnDate(task: Task, date: Date): boolean {
       // Simple check:
       return checkDate.getDate() === startDate.getDate();
     case Frequency.YEARLY:
-      return checkDate.getDate() === startDate.getDate() && 
-             checkDate.getMonth() === startDate.getMonth();
+      return checkDate.getDate() === startDate.getDate() &&
+        checkDate.getMonth() === startDate.getMonth();
     case Frequency.NONE:
     default:
       return checkDate.getTime() === startDate.getTime();
@@ -144,4 +144,68 @@ export function startOfYear(date: Date): Date {
   d.setMonth(0, 1);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+export function exportToCSV(tasks: Task[]): string {
+  const headers = ['id', 'title', 'description', 'urgency', 'importance', 'status', 'date', 'frequency', 'createdAt', 'updatedAt', 'completedAt', 'recurrenceEndedAt'];
+  const rows = tasks.map(task => {
+    return headers.map(header => {
+      const value = (task as any)[header];
+      if (value === undefined || value === null) return '';
+      const stringValue = String(value);
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    }).join(',');
+  });
+  return [headers.join(','), ...rows].join('\n');
+}
+
+export function parseCSV(csvText: string): Partial<Task>[] {
+  const lines = csvText.split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).filter(line => line.trim()).map(line => {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        values.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current);
+
+    const task: any = {
+      history: [],
+      completionHistory: {}
+    };
+
+    headers.forEach((header, index) => {
+      const val = values[index];
+      if (val === undefined) return;
+
+      if (['createdAt', 'updatedAt', 'completedAt', 'recurrenceEndedAt'].includes(header)) {
+        task[header] = val ? Number(val) : undefined;
+      } else {
+        task[header] = val;
+      }
+    });
+
+    return task as Partial<Task>;
+  });
 }

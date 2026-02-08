@@ -1,41 +1,42 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  DndContext, 
-  DragEndEvent, 
-  DragOverlay, 
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
   DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
   defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
-import { 
-  endOfDay, 
-  endOfWeek, 
-  endOfMonth, 
+import {
+  endOfDay,
+  endOfWeek,
+  endOfMonth,
   endOfYear,
   eachDayOfInterval,
   isSameDay
 } from 'date-fns';
-import { LayoutGrid, Calendar as CalendarIcon, ListTodo } from 'lucide-react';
-import { 
-  Task, 
-  ViewMode, 
-  Urgency, 
-  Importance, 
-  QUADRANTS, 
-  QuadrantId, 
+import { LayoutGrid, Calendar as CalendarIcon, ListTodo, Download, Upload, Trash2, FileSpreadsheet } from 'lucide-react';
+import {
+  Task,
+  ViewMode,
+  Urgency,
+  Importance,
+  QUADRANTS,
+  QuadrantId,
   HistoryEntry,
   Frequency,
   TaskStatus
 } from './types';
-import { generateId, formatDate, cn, isTaskActiveOnDate, getTaskStatus, startOfWeek, parseLocalTaskDate } from './lib/utils';
+import { generateId, formatDate, cn, isTaskActiveOnDate, getTaskStatus, startOfWeek, parseLocalTaskDate, exportToCSV, parseCSV } from './lib/utils';
 import { CalendarControl } from './components/CalendarControl';
 import { MatrixGrid } from './components/MatrixGrid';
 import { CalendarView } from './components/CalendarView';
 import { TaskListView } from './components/TaskListView';
 import { TaskModal } from './components/TaskModal';
 import { TaskCard } from './components/TaskCard';
+import { ImportResolutionModal } from './components/ImportResolutionModal';
 
 const STORAGE_KEY = 'eisenmatrix-tasks';
 
@@ -43,7 +44,27 @@ type Tab = 'matrix' | 'calendar' | 'list';
 
 export default function App() {
   // State
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Sanitize loaded data to ensure history and frequency exist
+          return parsed.map((t: any) => ({
+            ...t,
+            history: Array.isArray(t.history) ? t.history : [],
+            frequency: t.frequency || Frequency.NONE,
+            completionHistory: t.completionHistory || {}
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to parse tasks", e);
+      }
+    }
+    return [];
+  });
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.WEEK);
   const [activeTab, setActiveTab] = useState<Tab>('matrix');
@@ -51,28 +72,8 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeDragTask, setActiveDragTask] = useState<Task | null>(null);
   const [selectedContextDate, setSelectedContextDate] = useState<Date | null>(null);
-
-  // Initialize from storage
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          // Sanitize loaded data to ensure history and frequency exist
-          const sanitized = parsed.map((t: any) => ({
-            ...t,
-            history: Array.isArray(t.history) ? t.history : [],
-            frequency: t.frequency || Frequency.NONE,
-            completionHistory: t.completionHistory || {}
-          }));
-          setTasks(sanitized);
-        }
-      } catch (e) {
-        console.error("Failed to parse tasks", e);
-      }
-    }
-  }, []);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [parsedIncomingTasks, setParsedIncomingTasks] = useState<Partial<Task>[]>([]);
 
   // Save to storage on change
   useEffect(() => {
@@ -92,9 +93,9 @@ export default function App() {
         break;
       }
       case ViewMode.WEEK: {
-        interval = { 
-          start: startOfWeek(currentDate, { weekStartsOn: 1 }), 
-          end: endOfWeek(currentDate, { weekStartsOn: 1 }) 
+        interval = {
+          start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+          end: endOfWeek(currentDate, { weekStartsOn: 1 })
         };
         break;
       }
@@ -123,7 +124,7 @@ export default function App() {
       if (task.frequency === Frequency.DAILY && viewMode !== ViewMode.DAY) {
         return false;
       }
-      
+
       // Weekly tasks only show in Day and Week views
       if (task.frequency === Frequency.WEEKLY && (viewMode === ViewMode.MONTH || viewMode === ViewMode.YEAR)) {
         return false;
@@ -138,9 +139,9 @@ export default function App() {
       if (!task.frequency || task.frequency === Frequency.NONE) {
         // Use helper to parse date strictly as local YYYY-MM-DD
         const taskDate = parseLocalTaskDate(task.date);
-        
-        return taskDate >= interval.start && 
-               taskDate <= interval.end;
+
+        return taskDate >= interval.start &&
+          taskDate <= interval.end;
       }
 
       // Optimization for Year view (recurrence is very likely to fall in a year)
@@ -172,19 +173,19 @@ export default function App() {
   // CRUD Operations
   const handleSaveTask = (taskData: Partial<Task>) => {
     const timestamp = Date.now();
-    
+
     if (editingTask && editingTask.id) {
       // Update existing
       const updatedTasks = tasks.map(t => {
         if (t.id === editingTask.id) {
           const changes: HistoryEntry[] = [];
-          
+
           // Detect changes for history
           (Object.keys(taskData) as Array<keyof Task>).forEach(key => {
             if (key === 'history') return;
             const newValue = taskData[key];
             const oldValue = t[key];
-            
+
             // Special handling for objects like completionHistory - only compare if reference changed or deep compare (omitted for simplicity)
             // For simple fields:
             if (key !== 'completionHistory' && newValue !== undefined && newValue !== oldValue) {
@@ -266,7 +267,7 @@ export default function App() {
       frequency: Frequency.NONE,
       history: [],
       completionHistory: {}
-    } as Task); 
+    } as Task);
     setSelectedContextDate(currentDate);
     setIsModalOpen(true);
   };
@@ -282,6 +283,75 @@ export default function App() {
     } as Task);
     setSelectedContextDate(currentDate);
     setIsModalOpen(true);
+  };
+
+  const handleExportCSV = () => {
+    const csvContent = exportToCSV(tasks);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `eisenmatrix-tasks-${formatDate(new Date())}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result as string;
+          const parsed = parseCSV(text);
+          if (parsed.length > 0) {
+            setParsedIncomingTasks(parsed);
+            setIsImportModalOpen(true);
+          } else {
+            alert("No valid tasks found in the CSV file.");
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleMergeImport = (selectedTasks: Partial<Task>[]) => {
+    const tasksWithIds = selectedTasks.map(t => ({
+      ...t,
+      id: generateId(), // Ensure new IDs for merged tasks
+      createdAt: t.createdAt || Date.now(),
+      updatedAt: Date.now(),
+      history: t.history || [],
+      completionHistory: t.completionHistory || {}
+    } as Task));
+    setTasks([...tasks, ...tasksWithIds]);
+    setIsImportModalOpen(false);
+  };
+
+  const handleReplaceImport = (selectedTasks: Partial<Task>[]) => {
+    const tasksWithIds = selectedTasks.map(t => ({
+      ...t,
+      id: generateId(),
+      createdAt: t.createdAt || Date.now(),
+      updatedAt: Date.now(),
+      history: t.history || [],
+      completionHistory: t.completionHistory || {}
+    } as Task));
+    setTasks(tasksWithIds);
+    setIsImportModalOpen(false);
+  };
+
+  const handleReset = () => {
+    if (confirm("Are you sure you want to reset all calendar data? This action cannot be undone.")) {
+      setTasks([]);
+      localStorage.removeItem(STORAGE_KEY);
+    }
   };
 
   // Drag and Drop Logic
@@ -313,7 +383,7 @@ export default function App() {
             if (t.urgency === targetQuadrant.urgency && t.importance === targetQuadrant.importance) {
               return t;
             }
-            
+
             const historyEntry: HistoryEntry = {
               id: generateId(),
               timestamp: Date.now(),
@@ -350,10 +420,44 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        
-        <header className="mb-6">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">EisenMatrix Calendar</h1>
-          <p className="text-slate-500 mt-2">Prioritize your time by Urgency and Importance.</p>
+
+        <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-200">
+                <LayoutGrid size={28} />
+              </div>
+              EisenMatrix
+            </h1>
+            <p className="text-slate-500 mt-2 font-medium">Prioritize your time by Urgency and Importance.</p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              className="group flex items-center space-x-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+              title="Export to CSV"
+            >
+              <Download size={16} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              <span>Export</span>
+            </button>
+            <button
+              onClick={handleImportClick}
+              className="group flex items-center space-x-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
+              title="Import from CSV"
+            >
+              <Upload size={16} className="text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              <span>Import</span>
+            </button>
+            <button
+              onClick={handleReset}
+              className="group flex items-center space-x-2 px-4 py-2 bg-white text-rose-600 border border-rose-100 rounded-xl text-sm font-semibold hover:bg-rose-50 hover:border-rose-200 transition-all shadow-sm"
+              title="Reset Calendar"
+            >
+              <Trash2 size={16} className="text-rose-400 group-hover:text-rose-600 transition-colors" />
+              <span>Reset</span>
+            </button>
+          </div>
         </header>
 
         <div className="mb-6 flex space-x-1 bg-slate-200/50 p-1 rounded-xl w-fit">
@@ -361,8 +465,8 @@ export default function App() {
             onClick={() => setActiveTab('matrix')}
             className={cn(
               "flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
-              activeTab === 'matrix' 
-                ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200" 
+              activeTab === 'matrix'
+                ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
             )}
           >
@@ -373,8 +477,8 @@ export default function App() {
             onClick={() => setActiveTab('calendar')}
             className={cn(
               "flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
-              activeTab === 'calendar' 
-                ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200" 
+              activeTab === 'calendar'
+                ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
             )}
           >
@@ -385,8 +489,8 @@ export default function App() {
             onClick={() => setActiveTab('list')}
             className={cn(
               "flex items-center space-x-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
-              activeTab === 'list' 
-                ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200" 
+              activeTab === 'list'
+                ? "bg-white text-indigo-600 shadow-sm ring-1 ring-slate-200"
                 : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
             )}
           >
@@ -396,7 +500,7 @@ export default function App() {
         </div>
 
         {activeTab !== 'list' && (
-          <CalendarControl 
+          <CalendarControl
             currentDate={currentDate}
             onDateChange={setCurrentDate}
             viewMode={viewMode}
@@ -405,30 +509,30 @@ export default function App() {
         )}
 
         {activeTab === 'matrix' ? (
-          <DndContext 
-            sensors={sensors} 
-            onDragStart={handleDragStart} 
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <MatrixGrid 
-              tasks={filteredTasks} 
+            <MatrixGrid
+              tasks={filteredTasks}
               onTaskClick={handleOpenModal}
               onAddTask={handleAddTaskToQuadrant}
             />
-            
+
             <DragOverlay dropAnimation={dropAnimation}>
-              {activeDragTask ? <TaskCard task={activeDragTask} onClick={() => {}} /> : null}
+              {activeDragTask ? <TaskCard task={activeDragTask} onClick={() => { }} /> : null}
             </DragOverlay>
           </DndContext>
         ) : activeTab === 'calendar' ? (
-          <CalendarView 
+          <CalendarView
             tasks={filteredTasks} // These are pre-processed to have correct status for 'currentDate'
             currentDate={currentDate}
             viewMode={viewMode}
             onTaskClick={handleOpenModal}
           />
         ) : (
-          <TaskListView 
+          <TaskListView
             tasks={allTasksWithStatus} // Use all tasks for list view
             onTaskClick={handleOpenModal}
             onAddTask={handleAddTaskGeneric}
@@ -437,7 +541,7 @@ export default function App() {
 
       </div>
 
-      <TaskModal 
+      <TaskModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         task={editingTask}
@@ -445,6 +549,14 @@ export default function App() {
         onDelete={handleDeleteTask}
         defaultDate={formatDate(currentDate)}
         contextDate={selectedContextDate || currentDate}
+      />
+
+      <ImportResolutionModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        parsedTasks={parsedIncomingTasks}
+        onMerge={handleMergeImport}
+        onReplace={handleReplaceImport}
       />
     </div>
   );
