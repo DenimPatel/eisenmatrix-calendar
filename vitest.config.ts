@@ -1,0 +1,17 @@
+import path from 'path';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      'virtual:pwa-register': path.resolve(__dirname, 'src/test/pwaRegisterStub.ts'),
+    },
+  },
+  test: {
+    environment: 'node',
+    globals: true,
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    setupFiles: ['src/test/setup.ts'],
+  },
+});
