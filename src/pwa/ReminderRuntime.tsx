@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useItems, useSetting } from '@/hooks/useData';
 import { itemRepo, reminderLogRepo } from '@/db/repository';
+import { patchItem, toggleDone } from '@/domain/itemActions';
+import { newId } from '@/lib/id';
 import { upcomingReminders } from '@/domain/reminders';
 import { useUiStore } from '@/store/useUiStore';
 import { expandOccurrences } from '@/domain/recurrence';
@@ -14,31 +16,33 @@ const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 async function deliver(
   title: string,
   body: string,
-  key: string,
-  occKey: string,
+  itemId: string,
+  dedupeKey: string,
+  occurrenceKey: string,
   tone: 'info' | 'success' | 'error' = 'info',
 ) {
-  const alreadyFired = await reminderLogRepo.wasFired(key, occKey);
+  // Dedupe per reminder (not per occurrence) so an item with several reminders
+  // fires each of them, and snoozes can re-fire under a fresh key.
+  const alreadyFired = await reminderLogRepo.wasFired(itemId, dedupeKey);
   if (alreadyFired) return false;
 
   const shown = await showAppNotification(title, {
     body,
-    tag: key,
+    tag: `${itemId}:${dedupeKey}`,
     actions: [
       { action: 'done', title: 'Done' },
       { action: 'snooze-10', title: 'Snooze 10m' },
       { action: 'snooze-60', title: 'Snooze 1h' },
     ],
-    data: { itemId: key, occKey },
+    data: { itemId, occKey: occurrenceKey },
     requireInteraction: true,
   });
 
-  // Always surface an in-app toast as a fallback / secondary channel.
   if (!shown) {
     useUiStore.getState().pushToast({ message: `${title} — ${body}`, tone, duration: 8000 });
   }
 
-  await reminderLogRepo.record(key, occKey);
+  await reminderLogRepo.record(itemId, dedupeKey);
   return true;
 }
 
@@ -75,6 +79,7 @@ export function ReminderRuntime() {
           title,
           `${timeLabel} · ${scheduled.occKey}`,
           scheduled.item.id,
+          `${scheduled.occKey}::${scheduled.reminder.id}`,
           scheduled.occKey,
         );
       }
@@ -123,12 +128,33 @@ export function ReminderRuntime() {
     document.addEventListener('visibilitychange', onVisibility);
 
     const onWorkerMessage = (event: MessageEvent) => {
-      const data = event.data as { type?: string; itemId?: string } | undefined;
-      if (data?.type === 'OPEN_ITEM' && data.itemId) {
-        void itemRepo.get(data.itemId).then((item) => {
-          if (item) openEditor(item);
-        });
-      }
+      const data = event.data as
+        | { type?: string; itemId?: string; occKey?: string; action?: string }
+        | undefined;
+      if (data?.type !== 'OPEN_ITEM' || !data.itemId) return;
+      void itemRepo.get(data.itemId).then(async (item) => {
+        if (!item) return;
+        if (data.action === 'done' && data.occKey) {
+          await toggleDone(item, data.occKey);
+          return;
+        }
+        if (data.action?.startsWith('snooze-')) {
+          const minutes = Number(data.action.replace('snooze-', '')) || 10;
+          await patchItem(
+            item.id,
+            {
+              reminders: [
+                ...item.reminders,
+                { id: newId(), absolute: Date.now() + minutes * 60_000, label: `Snoozed ${minutes}m` },
+              ],
+            },
+            { silent: true, trackHistory: false },
+          );
+          pushToast({ message: `Snoozed for ${minutes} minutes`, tone: 'info' });
+          return;
+        }
+        openEditor(item, data.occKey ?? null);
+      });
     };
     navigator.serviceWorker?.addEventListener('message', onWorkerMessage);
 

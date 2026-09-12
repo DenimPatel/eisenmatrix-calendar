@@ -14,6 +14,17 @@ function toast(message: string, tone: 'info' | 'success' | 'error' = 'info') {
   useUiStore.getState().pushToast({ message, tone });
 }
 
+function toastWithUndo(message: string) {
+  useUiStore.getState().pushToast({
+    message,
+    tone: 'info',
+    actionLabel: 'Undo',
+    onAction: () => {
+      void useUiStore.getState().undo();
+    },
+  });
+}
+
 function buildHistory(existing: Item, patch: ItemPatch): HistoryEntry[] {
   const timestamp = Date.now();
   const entries: HistoryEntry[] = [];
@@ -97,7 +108,7 @@ export async function deleteItem(item: Item): Promise<void> {
   pushUndo(`Delete “${item.title}”`, async () => {
     await itemRepo.create(item);
   });
-  toast('Deleted', 'info');
+  toastWithUndo('Deleted');
 }
 
 export async function deleteItems(items: Item[]): Promise<void> {
@@ -105,7 +116,7 @@ export async function deleteItems(items: Item[]): Promise<void> {
   pushUndo(`Delete ${items.length} items`, async () => {
     await itemRepo.createMany(items);
   });
-  toast(`Deleted ${items.length} items`, 'info');
+  toastWithUndo(`Deleted ${items.length} items`);
 }
 
 export async function archiveItem(item: Item): Promise<void> {
