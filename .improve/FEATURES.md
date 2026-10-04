@@ -104,7 +104,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. ci.yml (pull_request + push main) runs npm ci -> typecheck -> lint -> test -> build on Node 20 w/ cache; deploy.yml uses npm ci and `deploy needs [build, gate]`. Verified PASS. Follow-up (needs repo settings, human): branch-protect main; gate currently also runs on push main (duplicate).
 
 ### IMP-006 — Add unit tests for `stats.ts` goal progress and completion
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** test coverage
 - **Type:** test
 - **Area / files:** new `src/domain/stats.test.ts`; target `src/domain/stats.ts`
@@ -118,7 +118,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 20
-- **Notes:** IMP-001 also adds cases to this file; keep the two sets non-overlapping.
+- **Notes:** DONE. Added 31 cases to src/domain/stats.test.ts (goalProgress metric types, completionStats rounding/zero-total, itemCompletionStats window, activeDayStreak, overallCompletion); non-overlapping with IMP-001; tests-only, no production change. 93 tests green; TZ-independent.
 
 ### IMP-049 — Make the calendar honor the `weekStartsOn` setting
 - **Status:** TODO

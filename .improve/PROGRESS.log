@@ -9,3 +9,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T02:29Z | IMP-002 | done | e75eb83 | transitive descendant delete, cycle-safe; +repository tests
 2026-10-04T02:36Z | IMP-003 | done | 96c5936 | undo restores deleted descendants; +itemActions.test.ts
 2026-10-04T02:44Z | IMP-004 | done | cf894fd | bulk delete cascades descendants; undo restores all
+2026-10-04T02:51Z | IMP-005 | done | bd39729 | CI quality gate + npm ci; deploy gated
