@@ -12,3 +12,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T02:51Z | IMP-005 | done | bd39729 | CI quality gate + npm ci; deploy gated
 2026-10-04T02:58Z | IMP-006 | done | 7865c75 | stats.ts goal/completion tests (+31 cases, 93 total)
 2026-10-04T03:07Z | IMP-049 | done | 6eeaab9 | calendar honors weekStartsOn; +weekdayLabels helper/tests
+2026-10-04T03:19Z | IMP-007 | done | 4ac86f9 | note quick-add no longer truncates; +splitNoteDraft tests

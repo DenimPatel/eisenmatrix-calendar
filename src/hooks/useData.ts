@@ -1,16 +1,21 @@
+import { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { itemRepo, listRepo, settingsRepo } from '@/db/repository';
 import type { Item, List } from '@/types';
 
+const EMPTY_ITEMS: Item[] = [];
+
 export function useItems(includeArchived = false): Item[] {
-  const items = useLiveQuery(() => itemRepo.all(), [], [] as Item[]);
-  const list = items ?? [];
-  return includeArchived ? list : list.filter((item) => !item.archivedAt);
+  const items = useLiveQuery(() => itemRepo.all(), [], EMPTY_ITEMS);
+  return useMemo(
+    () => (includeArchived ? items : items.filter((item) => !item.archivedAt)),
+    [items, includeArchived],
+  );
 }
 
 export function useArchivedItems(): Item[] {
-  const items = useLiveQuery(() => itemRepo.all(), [], [] as Item[]);
-  return (items ?? []).filter((item) => item.archivedAt);
+  const items = useLiveQuery(() => itemRepo.all(), [], EMPTY_ITEMS);
+  return useMemo(() => items.filter((item) => item.archivedAt), [items]);
 }
 
 export function useItem(id: string | null | undefined): Item | undefined {

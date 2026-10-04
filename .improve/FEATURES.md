@@ -154,7 +154,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added pure `splitNoteDraft`/`NOTE_TITLE_MAX` in src/domain/quickadd.ts; title caps at 80 chars and the overflow becomes the body (no character loss). 7 unit + 3 jsdom/Dexie tests; 110 tests green; fuzz/property suite clean; mutation-checked.
 
 ### IMP-008 — Memoize `useItems` to stop array-identity churn
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** performance
 - **Type:** improvement
 - **Area / files:** `src/hooks/useData.ts` (`useItems`, `:5-9`); consumers `src/hooks/useOccurrences.ts`, `src/pwa/ReminderRuntime.tsx` (`:167`)
@@ -167,7 +167,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Also reduces year-view recomputation in `CalendarView`.
+- **Notes:** DONE. useMemo'd both hooks with a shared EMPTY_ITEMS live-query default; filter predicates byte-identical. New useData.test.tsx (8 tests) asserts identity stability + new array on data/flag change. 118 tests green; mutation-checked (2 identity tests fail without memo). Also reduces year-view recomputation in CalendarView.
 
 ### IMP-009 — Focus the primary input in overlays, not the Close button
 - **Status:** TODO
