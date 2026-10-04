@@ -32,6 +32,11 @@ function periodStart(date: Date, per: 'day' | 'week' | 'month', weekStartsOn: 0 
   return startOfMonth(date);
 }
 
+function nextPeriod(date: Date, per: 'day' | 'week' | 'month', weekStartsOn: 0 | 1): Date {
+  const step = per === 'day' ? 1 : per === 'week' ? 7 : 0;
+  return periodStart(step ? addDays(date, step) : addMonths(date, 1), per, weekStartsOn);
+}
+
 export interface StreakResult {
   current: number;
   best: number;
@@ -78,16 +83,24 @@ export function habitStreak(item: Item, today = new Date()): StreakResult {
     cursor = prev;
   }
 
-  // Best streak: scan forward across all tracked periods.
+  // Best streak: scan every consecutive period between the earliest and latest
+  // tracked period, so fully-missed periods reset the run.
   const keys = [...doneByPeriod.keys()].sort();
   let best = 0;
   let run = 0;
-  for (const key of keys) {
-    if (complete(key)) {
-      run++;
-      best = Math.max(best, run);
-    } else {
-      run = 0;
+  if (keys.length > 0) {
+    const end = parseLocalDate(keys[keys.length - 1])!;
+    let cursor = parseLocalDate(keys[0])!;
+    for (let guard = 0; cursor.getTime() <= end.getTime() && guard < 40000; guard++) {
+      if (complete(formatISODate(cursor))) {
+        run++;
+        if (run > best) best = run;
+      } else {
+        run = 0;
+      }
+      const next = nextPeriod(cursor, target.per, weekStartsOn);
+      if (next.getTime() <= cursor.getTime()) break;
+      cursor = next;
     }
   }
   best = Math.max(best, current);
