@@ -1,0 +1,7 @@
+# Progress Log
+
+Format: timestamp | item ID | result | commit SHA | note
+
+2026-10-04T02:20Z | SETUP | done | - | branch improve/auto-20261003, pre-push guard, state dirs
+2026-10-04T02:20Z | RECON | done | - | 8 recon reports; baseline typecheck/lint/49 tests/build all pass
+2026-10-04T02:20Z | BACKLOG | done | - | 52 items (49 TODO, 3 NEEDS-HUMAN)
