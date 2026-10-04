@@ -76,6 +76,32 @@ describe('parseQuickAdd', () => {
     expect(result.recurrence?.byWeekday).toEqual([5]);
   });
 
+  it('schedules a bare "on the 5th" on the next 5th and keeps the text out of the title', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('party on the 5th', now);
+    expect(result.title).toBe('Party');
+    expect(result.start).toBe('2024-07-05');
+    expect(result.recurrence).toBeNull();
+
+    const fromMay = parseQuickAdd('party on the 31st', new Date('2024-04-20T12:00:00'));
+    expect(fromMay.start).toBe('2024-04-30');
+  });
+
+  it('applies "on the 5th" as byMonthDay for monthly rules', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('pay rent every month on the 5th', now);
+    expect(result.title).toBe('Pay rent');
+    expect(result.start).toBe('2024-06-10');
+    expect(result.recurrence?.freq).toBe('monthly');
+    expect(result.recurrence?.byMonthDay).toEqual([5]);
+  });
+
+  it('keeps "on the 5th" in the title when an explicit date wins', () => {
+    const result = parseQuickAdd('party on the 5th 2024-03-04', new Date('2024-06-10T12:00:00'));
+    expect(result.start).toBe('2024-03-04');
+    expect(result.title).toBe('Party on the 5th');
+  });
+
   it('keeps multiple weekdays as a weekly rule without a "next" residue', () => {
     const now = new Date('2024-06-10T12:00:00');
     const result = parseQuickAdd('standup tue and thu', now);

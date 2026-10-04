@@ -16,3 +16,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T03:27Z | IMP-008 | done | 695d756 | memoized useItems/useArchivedItems; +useData tests
 2026-10-04T03:59Z | IMP-009 | done | 8eff599 | overlays focus primary input; +focus trap tests
 2026-10-04T04:05Z | DISCOVERY | done | 015814a | absorbed 10 discovered files into 11 new items (IMP-057..067)
+2026-10-04T04:12Z | IMP-010 | done | 35d4352 | lone weekday parsed in quick add; +quickadd tests

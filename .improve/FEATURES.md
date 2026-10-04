@@ -216,7 +216,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:**
+- **Notes:** DONE. New `nextMonthDay` helper (month-end clamped via clampDayOfMonth); "on the <N>" consumed only when applied (monthly -> byMonthDay, else next matching day-of-month); retained when an explicit date/weekday wins. 134 tests green; 400-case A/B vs HEAD shows no change outside `on the <N>` inputs; mutation-checked. Advisories: month-day now outranks relative dates; `on the 32nd` accepted.
 
 ### IMP-012 — Show the occurrence time on item cards, not the series start
 - **Status:** TODO

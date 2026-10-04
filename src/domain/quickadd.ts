@@ -1,4 +1,11 @@
-import { addDays, addMonths, formatISODate, parseLocalDate, startOfDay } from '@/lib/date';
+import {
+  addDays,
+  addMonths,
+  clampDayOfMonth,
+  formatISODate,
+  parseLocalDate,
+  startOfDay,
+} from '@/lib/date';
 import { newId } from '@/lib/id';
 import { createItem } from './itemFactory';
 import type { Item, ItemKind, Priority, RecurrenceRule } from '@/types';
@@ -49,6 +56,18 @@ function nextWeekday(from: Date, weekday: number): Date {
   const d = startOfDay(from);
   const diff = (weekday - d.getDay() + 7) % 7 || 7;
   return addDays(d, diff);
+}
+
+function nextMonthDay(from: Date, day: number): Date {
+  const d = startOfDay(from);
+  const thisMonth = clampDayOfMonth(d.getFullYear(), d.getMonth(), day);
+  if (thisMonth > d.getDate()) return new Date(d.getFullYear(), d.getMonth(), thisMonth);
+  const next = addMonths(d, 1);
+  return new Date(
+    next.getFullYear(),
+    next.getMonth(),
+    clampDayOfMonth(next.getFullYear(), next.getMonth(), day),
+  );
 }
 
 function baseRule(freq: RecurrenceRule['freq'], interval = 1): RecurrenceRule {
@@ -212,12 +231,13 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
     recurrence.byWeekday = [...new Set(weekdays)].sort((a, b) => a - b);
   }
 
-  // Month day: "on the 5th"
+  // Month day: "on the 5th" — a byMonthDay rule when monthly, else the next such date
   const monthDayMatch = /\bon the (\d{1,2})(?:st|nd|rd|th)?\b/i.exec(working);
-  if (monthDayMatch) {
-    const day = Number(monthDayMatch[1]);
-    if (recurrence?.freq === 'monthly') recurrence.byMonthDay = [day];
-    working = working.replace(monthDayMatch[0], ' ');
+  const monthDay = monthDayMatch ? Number(monthDayMatch[1]) : null;
+  let monthDayApplied = false;
+  if (monthDay !== null && recurrence?.freq === 'monthly') {
+    recurrence.byMonthDay = [monthDay];
+    monthDayApplied = true;
   }
 
   // Time
@@ -285,6 +305,9 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
   if (!dateKey) {
     if (loneWeekday !== null) {
       dateKey = formatISODate(nextWeekday(now, loneWeekday));
+    } else if (!monthDayApplied && monthDay !== null && monthDay >= 1 && monthDay <= 31) {
+      dateKey = formatISODate(nextMonthDay(now, monthDay));
+      monthDayApplied = true;
     } else {
       let base = now;
       if (monthOffset) base = addMonths(base, monthOffset);
@@ -292,6 +315,8 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
       dateKey = formatISODate(base);
     }
   }
+
+  if (monthDayApplied && monthDayMatch) working = working.replace(monthDayMatch[0], ' ');
 
   // List alias: #groceries becomes a tag; derive a list name for shopping.
   if (tags.includes('groceries') || isBuy) listName = 'Groceries';
