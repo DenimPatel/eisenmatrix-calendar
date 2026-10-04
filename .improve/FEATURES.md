@@ -170,7 +170,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. useMemo'd both hooks with a shared EMPTY_ITEMS live-query default; filter predicates byte-identical. New useData.test.tsx (8 tests) asserts identity stability + new array on data/flag change. 118 tests green; mutation-checked (2 identity tests fail without memo). Also reduces year-view recomputation in CalendarView.
 
 ### IMP-009 — Focus the primary input in overlays, not the Close button
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/components/ui/Sheet.tsx`, `src/components/ui/Dialog.tsx`, `src/hooks/useFocusTrap.ts` (`:14-24`); overlays `src/features/quickadd/QuickAdd.tsx`, `src/features/command/CommandPalette.tsx`, `src/features/item/ItemEditorSheet.tsx`
@@ -184,7 +184,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Add an `initialFocusRef`/selector option to the trap rather than reordering DOM.
+- **Notes:** DONE. Added initialFocusRef option to useFocusTrap, threaded via Sheet/Dialog; QuickAdd/CommandPalette/ItemEditorSheet now focus their primary input (dropped autoFocus, fixes focus restore). 10 jsdom tests; 128 tests green; Playwright-verified activeElement at 1280/390, Escape restores focus, Tab wraps.
 
 ### IMP-010 — Parse a lone weekday in quick add ("gym fri")
 - **Status:** TODO

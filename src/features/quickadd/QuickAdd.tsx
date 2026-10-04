@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Dialog } from '@/components/ui/Dialog';
 import { Button } from '@/components/ui/Button';
@@ -30,6 +30,7 @@ export function QuickAdd() {
   const [kindOverride, setKindOverride] = useState<ItemKind | ''>('');
   const [dateOverride, setDateOverride] = useState('');
   const [timeOverride, setTimeOverride] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const parsed = useMemo(() => parseQuickAdd(input), [input]);
   const effectiveKind = (kindOverride || parsed.kind) as ItemKind;
@@ -90,6 +91,7 @@ export function QuickAdd() {
       title="Quick add"
       description="Type naturally. Chips show what will be created — edit before committing."
       size="lg"
+      initialFocusRef={inputRef}
       footer={
         <div className="flex items-center justify-between gap-2">
           <span className="hidden text-xs text-muted sm:block">
@@ -113,7 +115,7 @@ export function QuickAdd() {
       }
     >
       <input
-        autoFocus
+        ref={inputRef}
         className="input text-base"
         placeholder={EXAMPLES[0]}
         value={input}

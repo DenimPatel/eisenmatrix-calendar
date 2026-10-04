@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Trash2, X } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
@@ -39,6 +39,7 @@ export function ItemEditorSheet() {
   const [tagInput, setTagInput] = useState('');
   const [scope, setScope] = useState<'occurrence' | 'future' | 'all'>('all');
   const children = useChildren(draft?.id ?? null);
+  const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editor.open && editor.item) {
@@ -139,6 +140,7 @@ export function ItemEditorSheet() {
       open={editor.open}
       onClose={closeEditor}
       width="lg"
+      initialFocusRef={titleRef}
       title={draft.title || 'Untitled'}
       subtitle={
         <span className="flex items-center gap-2">
@@ -207,7 +209,7 @@ export function ItemEditorSheet() {
         <div className="space-y-4">
           <Field label="Title">
             <input
-              autoFocus
+              ref={titleRef}
               className="input"
               value={draft.title}
               onChange={(e) => update({ title: e.target.value })}

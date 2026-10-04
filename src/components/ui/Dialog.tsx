@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -13,6 +13,8 @@ export interface DialogProps {
   footer?: React.ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  /** Focused on open instead of the first focusable element (the Close button). */
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }
 
 const sizes = {
@@ -31,8 +33,9 @@ export function Dialog({
   footer,
   className,
   size = 'md',
+  initialFocusRef,
 }: DialogProps) {
-  const trapRef = useFocusTrap<HTMLDivElement>(open);
+  const trapRef = useFocusTrap<HTMLDivElement>(open, initialFocusRef);
 
   useEffect(() => {
     if (!open) return;

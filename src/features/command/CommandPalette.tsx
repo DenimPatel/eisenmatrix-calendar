@@ -28,6 +28,7 @@ export function CommandPalette() {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  const queryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -86,10 +87,11 @@ export function CommandPalette() {
       onClose={() => setOpen(false)}
       title="Command palette"
       size="lg"
+      initialFocusRef={queryRef}
       className="self-start sm:mt-[10vh]"
     >
       <input
-        autoFocus
+        ref={queryRef}
         className="input mb-3 text-base"
         placeholder="Search items, jump to a view, or run an action…"
         value={query}

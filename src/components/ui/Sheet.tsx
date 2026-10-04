@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -12,6 +12,8 @@ export interface SheetProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   width?: 'md' | 'lg';
+  /** Focused on open instead of the first focusable element (the Close button). */
+  initialFocusRef?: RefObject<HTMLElement | null>;
 }
 
 export function Sheet({
@@ -22,8 +24,9 @@ export function Sheet({
   children,
   footer,
   width = 'md',
+  initialFocusRef,
 }: SheetProps) {
-  const trapRef = useFocusTrap<HTMLDivElement>(open);
+  const trapRef = useFocusTrap<HTMLDivElement>(open, initialFocusRef);
 
   useEffect(() => {
     if (!open) return;
