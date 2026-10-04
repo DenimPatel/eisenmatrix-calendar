@@ -190,12 +190,18 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
   );
   const weekdayListMatch = weekdayListRe.exec(working);
   let weekdays: number[] = [];
+  let loneWeekday: number | null = null;
   if (weekdayListMatch) {
     const parts = weekdayListMatch[1].toLowerCase().split(/\s*(?:\/|,|and)\s*/);
     weekdays = parts
       .map((p) => WEEKDAYS[p.slice(0, 3)])
       .filter((d): d is number => d !== undefined);
+    const before = working.slice(0, weekdayListMatch.index);
     if (weekdays.length > 1 || /every/i.test(input)) {
+      working = working.replace(weekdayListMatch[0], ' ');
+    } else if (weekdays.length === 1 && !/\bnext\s*$/i.test(before)) {
+      loneWeekday = weekdays[0];
+      weekdays = [];
       working = working.replace(weekdayListMatch[0], ' ');
     } else {
       weekdays = [];
@@ -277,10 +283,14 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
   }
 
   if (!dateKey) {
-    let base = now;
-    if (monthOffset) base = addMonths(base, monthOffset);
-    if (dayOffset) base = addDays(base, dayOffset);
-    dateKey = formatISODate(base);
+    if (loneWeekday !== null) {
+      dateKey = formatISODate(nextWeekday(now, loneWeekday));
+    } else {
+      let base = now;
+      if (monthOffset) base = addMonths(base, monthOffset);
+      if (dayOffset) base = addDays(base, dayOffset);
+      dateKey = formatISODate(base);
+    }
   }
 
   // List alias: #groceries becomes a tag; derive a list name for shopping.

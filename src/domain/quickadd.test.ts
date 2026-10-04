@@ -53,6 +53,42 @@ describe('parseQuickAdd', () => {
     expect(result.start).toBe('2024-03-04T14:30');
     expect(result.allDay).toBe(false);
   });
+
+  it('schedules a lone weekday on the next occurrence of that weekday', () => {
+    const now = new Date('2024-06-10T12:00:00'); // Monday
+    const fri = parseQuickAdd('gym fri', now);
+    expect(fri.title).toBe('Gym');
+    expect(fri.start).toBe('2024-06-14');
+    expect(fri.recurrence).toBeNull();
+
+    const mon = parseQuickAdd('call mon', now);
+    expect(mon.title).toBe('Call');
+    expect(mon.start).toBe('2024-06-17');
+    expect(mon.recurrence).toBeNull();
+  });
+
+  it('keeps a lone weekday as a weekly rule when "every" is present', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('gym every week fri 7am', now);
+    expect(result.title).toBe('Gym');
+    expect(result.start).toBe('2024-06-10T07:00');
+    expect(result.recurrence?.freq).toBe('weekly');
+    expect(result.recurrence?.byWeekday).toEqual([5]);
+  });
+
+  it('keeps multiple weekdays as a weekly rule without a "next" residue', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('standup tue and thu', now);
+    expect(result.title).toBe('Standup');
+    expect(result.start).toBe('2024-06-10');
+    expect(result.recurrence?.freq).toBe('weekly');
+    expect(result.recurrence?.byWeekday).toEqual([2, 4]);
+
+    const explicit = parseQuickAdd('gym next fri', now);
+    expect(explicit.title).toBe('Gym');
+    expect(explicit.start).toBe('2024-06-14');
+    expect(explicit.recurrence).toBeNull();
+  });
 });
 
 describe('splitNoteDraft', () => {

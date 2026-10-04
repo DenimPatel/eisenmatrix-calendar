@@ -187,7 +187,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added initialFocusRef option to useFocusTrap, threaded via Sheet/Dialog; QuickAdd/CommandPalette/ItemEditorSheet now focus their primary input (dropped autoFocus, fixes focus restore). 10 jsdom tests; 128 tests green; Playwright-verified activeElement at 1280/390, Escape restores focus, Tab wraps.
 
 ### IMP-010 — Parse a lone weekday in quick add ("gym fri")
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/quickadd.ts` (`:191-207`)
@@ -200,7 +200,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Reuse `nextWeekday` used for "next <weekday>".
+- **Notes:** DONE. Lone weekday consumed and resolved via nextWeekday (today not counted); multi-weekday/next/every paths byte-identical. 131 tests green; mutation-checked. Caveat: bare `wed`/`sat`/`sun` used as ordinary words are now consumed (see discovered-IMP-010.md §3b); lone `fri` yields "Untitled".
 
 ### IMP-011 — Keep "on the 5th" when not monthly (or don't strip it)
 - **Status:** TODO
