@@ -121,7 +121,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added 31 cases to src/domain/stats.test.ts (goalProgress metric types, completionStats rounding/zero-total, itemCompletionStats window, activeDayStreak, overallCompletion); non-overlapping with IMP-001; tests-only, no production change. 93 tests green; TZ-independent.
 
 ### IMP-049 — Make the calendar honor the `weekStartsOn` setting
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / configuration
 - **Type:** bug-fix
 - **Area / files:** `src/features/calendar/CalendarView.tsx` (interval `:41-61`, weekday header `:161`)
@@ -135,7 +135,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 20
-- **Notes:** Prefer a pure `weekdayLabels(weekStartsOn)` helper that can be unit-tested without mounting.
+- **Notes:** DONE. Added pure `weekdayLabels(weekStartsOn)` in src/lib/labels.ts; CalendarView reads weekStartsOn for week/month bounds + header. Unit-tested + Playwright-verified Sun-first (2026-09-27) and Mon-first (2026-09-28); 100 tests green; default unchanged. Follow-ups logged: HabitsView.tsx:29 still hardcodes 1.
 
 ### IMP-007 — Stop note quick-add truncating long first lines
 - **Status:** TODO

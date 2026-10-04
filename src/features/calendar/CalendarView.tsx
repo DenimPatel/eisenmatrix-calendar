@@ -18,7 +18,7 @@ import {
   startOfYear,
   formatTime,
 } from '@/lib/date';
-import { useItems } from '@/hooks/useData';
+import { useItems, useSetting } from '@/hooks/useData';
 import { useOccurrences } from '@/hooks/useOccurrences';
 import { useUiStore } from '@/store/useUiStore';
 import { Droppable } from '@/features/shell/Droppable';
@@ -27,14 +27,18 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createItem } from '@/domain/itemFactory';
 import { cn } from '@/lib/cn';
+import { weekdayLabels } from '@/lib/labels';
 import { ChevronLeft, ChevronRight, CalendarDays, Plus } from 'lucide-react';
-import type { Occurrence } from '@/types';
+import { DEFAULT_SETTINGS } from '@/types/settings';
+import type { AppSettings, Occurrence } from '@/types';
 
 type CalendarMode = 'day' | 'week' | 'month' | 'year';
 
 export function CalendarView() {
   const items = useItems();
   const openEditor = useUiStore((s) => s.openEditor);
+  const settings = useSetting<AppSettings>('app', DEFAULT_SETTINGS);
+  const weekStartsOn = settings.weekStartsOn;
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mode, setMode] = useState<CalendarMode>('month');
 
@@ -44,21 +48,21 @@ export function CalendarView() {
         return { from: currentDate, to: currentDate };
       case 'week':
         return {
-          from: startOfWeek(currentDate, 1),
-          to: endOfWeek(currentDate, 1),
+          from: startOfWeek(currentDate, weekStartsOn),
+          to: endOfWeek(currentDate, weekStartsOn),
         };
       case 'month': {
         const monthStart = startOfMonth(currentDate);
         const monthEnd = endOfMonthDate(currentDate);
         return {
-          from: startOfWeek(monthStart, 1),
-          to: endOfWeek(monthEnd, 1),
+          from: startOfWeek(monthStart, weekStartsOn),
+          to: endOfWeek(monthEnd, weekStartsOn),
         };
       }
       default:
         return { from: startOfYear(currentDate), to: endOfYearDate(currentDate) };
     }
-  }, [mode, currentDate]);
+  }, [mode, currentDate, weekStartsOn]);
 
   const occurrences = useOccurrences(items, interval.from, interval.to);
 
@@ -158,7 +162,7 @@ export function CalendarView() {
       ) : (
         <div className="card overflow-hidden">
           <div className="grid grid-cols-7 border-b border-border">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+            {weekdayLabels(weekStartsOn).map((day) => (
               <div
                 key={day}
                 className="bg-elevated py-2 text-center text-xs font-semibold text-muted"

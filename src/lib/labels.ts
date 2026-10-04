@@ -55,6 +55,11 @@ export const LIST_KIND_LABELS: Record<ListKind, string> = {
 export const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 export const WEEKDAY_SHORT = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
 
+/** Weekday labels rotated to the configured week start (0 = Sunday, 1 = Monday). */
+export function weekdayLabels(weekStartsOn: 0 | 1): string[] {
+  return [...WEEKDAY_LABELS.slice(weekStartsOn), ...WEEKDAY_LABELS.slice(0, weekStartsOn)];
+}
+
 export function statusClasses(status: ItemStatus): string {
   switch (status) {
     case 'done':
