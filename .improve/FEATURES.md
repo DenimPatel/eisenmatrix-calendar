@@ -38,7 +38,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. best now iterates consecutive periods and resets on missed/below-count. Added src/domain/stats.test.ts. Verified PASS (typecheck/lint/54 tests). Commit 2c19bf8+. IMP-006 adds non-streak stats cases; keep cases non-overlapping.
 
 ### IMP-002 — Delete deep descendants, not just direct children
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/db/repository.ts` (`itemRepo.removeWithChildren`, `:58-64`)
@@ -52,7 +52,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 25
-- **Notes:** Shared helper reused by IMP-003 and IMP-004.
+- **Notes:** DONE (attempt 2). `collectDescendantIds` BFS with visited set; cycle/self-parent safe. Reused by IMP-003/IMP-004. Verified PASS (typecheck/lint/57 tests).
 
 ### IMP-003 — Undo of a deleted parent must restore its descendants
 - **Status:** TODO

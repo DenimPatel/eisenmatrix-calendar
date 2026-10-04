@@ -13,6 +13,25 @@ function mergeItem(existing: Item, patch: ItemPatch): Item {
   return next;
 }
 
+export async function collectDescendantIds(id: string): Promise<string[]> {
+  const db = getDb();
+  const ids: string[] = [];
+  const visited = new Set<string>([id]);
+  let frontier = [id];
+  while (frontier.length > 0) {
+    const children = await db.items.where('parentId').anyOf(frontier).toArray();
+    const next: string[] = [];
+    for (const child of children) {
+      if (visited.has(child.id)) continue;
+      visited.add(child.id);
+      ids.push(child.id);
+      next.push(child.id);
+    }
+    frontier = next;
+  }
+  return ids;
+}
+
 export const itemRepo = {
   async all(): Promise<Item[]> {
     return getDb().items.toArray();
@@ -58,8 +77,8 @@ export const itemRepo = {
   async removeWithChildren(id: string): Promise<void> {
     const db = getDb();
     await db.transaction('rw', db.items, async () => {
-      const descendants = await db.items.filter((i) => i.parentId === id).toArray();
-      await db.items.bulkDelete([id, ...descendants.map((d) => d.id)]);
+      const descendants = await collectDescendantIds(id);
+      await db.items.bulkDelete([id, ...descendants]);
     });
   },
 

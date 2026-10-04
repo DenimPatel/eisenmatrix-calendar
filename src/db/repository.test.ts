@@ -53,6 +53,38 @@ describe('itemRepo', () => {
     await itemRepo.removeWithChildren('p');
     expect(await itemRepo.all()).toHaveLength(0);
   });
+
+  it('removes deep descendants and leaves unrelated items', async () => {
+    await itemRepo.createMany([
+      task('p', 'Parent'),
+      task('c', 'Child', 'p'),
+      task('g', 'Grandchild', 'c'),
+      task('gg', 'Great-grandchild', 'g'),
+      task('other', 'Unrelated', 'unrelated-parent'),
+      task('other-child', 'Unrelated child', 'other'),
+    ]);
+    await itemRepo.removeWithChildren('p');
+    const remaining = (await itemRepo.all()).map((i) => i.id).sort();
+    expect(remaining).toEqual(['other', 'other-child']);
+  });
+
+  it('terminates on a self-parent item and does not treat it as its own descendant', async () => {
+    await itemRepo.createMany([task('s', 'Self', 's'), task('keep', 'Keep')]);
+    await itemRepo.removeWithChildren('s');
+    const remaining = (await itemRepo.all()).map((i) => i.id).sort();
+    expect(remaining).toEqual(['keep']);
+  });
+
+  it('terminates on a two-node parent cycle and removes both nodes', async () => {
+    await itemRepo.createMany([
+      task('a', 'A', 'b'),
+      task('b', 'B', 'a'),
+      task('keep', 'Keep'),
+    ]);
+    await itemRepo.removeWithChildren('a');
+    const remaining = (await itemRepo.all()).map((i) => i.id).sort();
+    expect(remaining).toEqual(['keep']);
+  });
 });
 
 describe('listRepo and settingsRepo', () => {
