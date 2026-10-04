@@ -7,3 +7,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T02:20Z | BACKLOG | done | - | 52 items (49 TODO, 3 NEEDS-HUMAN)
 2026-10-04T02:24Z | IMP-001 | done | a20b684 | habit best streak resets across missed periods; +stats.test.ts
 2026-10-04T02:29Z | IMP-002 | done | e75eb83 | transitive descendant delete, cycle-safe; +repository tests
+2026-10-04T02:36Z | IMP-003 | done | 96c5936 | undo restores deleted descendants; +itemActions.test.ts

@@ -3,7 +3,7 @@ import { db } from '@/db/schema';
 import { itemRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem, normalizeItem } from './itemFactory';
-import { deleteItem } from './itemActions';
+import { deleteItem, deleteItems } from './itemActions';
 import type { Item } from '@/types';
 
 function task(id: string, title: string, parentId: string | null = null): Item {
@@ -58,5 +58,56 @@ describe('deleteItem', () => {
 
     const ids = (await itemRepo.all()).map((i) => i.id).sort();
     expect(ids).toEqual(['c', 'other', 'p']);
+  });
+});
+
+describe('deleteItems', () => {
+  it('deletes the selection and every transitive descendant', async () => {
+    await itemRepo.createMany([
+      task('p', 'Parent'),
+      task('c', 'Child', 'p'),
+      task('g', 'Grandchild', 'c'),
+    ]);
+
+    await deleteItems([(await itemRepo.get('p'))!]);
+
+    expect(await itemRepo.all()).toHaveLength(0);
+  });
+
+  it('restores the selection and descendants on undo, leaving siblings untouched', async () => {
+    await itemRepo.createMany([
+      task('p', 'Parent'),
+      task('c', 'Child', 'p'),
+      task('g', 'Grandchild', 'c'),
+      task('other', 'Unrelated'),
+    ]);
+    const before = await itemRepo.all();
+
+    await deleteItems([(await itemRepo.get('p'))!]);
+    expect((await itemRepo.all()).map((i) => i.id).sort()).toEqual(['other']);
+
+    await useUiStore.getState().undo();
+
+    const after = await itemRepo.all();
+    expect(after).toHaveLength(before.length);
+    expect(relationships(after)).toEqual(relationships(before));
+  });
+
+  it('handles a selection containing both a parent and its child', async () => {
+    await itemRepo.createMany([
+      task('p', 'Parent'),
+      task('c', 'Child', 'p'),
+      task('g', 'Grandchild', 'c'),
+    ]);
+    const before = await itemRepo.all();
+
+    await deleteItems([(await itemRepo.get('p'))!, (await itemRepo.get('c'))!]);
+    expect(await itemRepo.all()).toHaveLength(0);
+
+    await useUiStore.getState().undo();
+
+    const after = await itemRepo.all();
+    expect(after).toHaveLength(before.length);
+    expect(relationships(after)).toEqual(relationships(before));
   });
 });

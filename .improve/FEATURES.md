@@ -71,7 +71,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Captures descendant items pre-delete and restores parent+descendants via createMany. Added itemActions.test.ts. Verified PASS (typecheck/lint/59 tests).
 
 ### IMP-004 — Cascade delete in bulk `deleteItems`
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`deleteItems`, `:114-120`); `src/db/repository.ts` (`removeMany`, `:54-56`); `src/features/list/ListView.tsx`
@@ -84,7 +84,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-002
 - **Priority score:** 20
-- **Notes:** Reuse the descendant-aware repository method.
+- **Notes:** DONE. `deleteItems` collects descendants per selected item via `itemRepo.collectDescendants`, dedupes against the selection, deletes the union with one `removeMany`; undo restores selection + descendants. Verified PASS (typecheck/lint/build/62 tests).
 
 ### IMP-005 — Add a CI quality gate (typecheck + lint + test) and enforce `npm ci`
 - **Status:** TODO

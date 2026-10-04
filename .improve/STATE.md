@@ -3,9 +3,9 @@
 - **Phase:** 4 — Improvement loop
 - **Work branch:** improve/auto-20261003
 - **Start SHA:** b9d23246b948187c0239e8c95373e3e1f27cc43f
-- **Last commit:** IMP-003 (see PROGRESS.log for SHA)
+- **Last commit:** IMP-004 (see PROGRESS.log for SHA)
 - **Current item:** (none)
-- **Counters:** commits=4 | done=3 | blocked=0 | needs-human=0 | attempts_current=0
+- **Counters:** commits=5 | done=4 | blocked=0 | needs-human=0 | attempts_current=0
 - **Playwright MCP:** available
 - **Regression cadence:** every 10 commits (next at commit 10 after backlog)
 - **Stop file:** .improve/STOP (absent)

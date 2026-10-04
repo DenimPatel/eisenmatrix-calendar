@@ -113,9 +113,18 @@ export async function deleteItem(item: Item): Promise<void> {
 }
 
 export async function deleteItems(items: Item[]): Promise<void> {
-  await itemRepo.removeMany(items.map((i) => i.id));
+  const deleted = [...items];
+  const ids = new Set(items.map((i) => i.id));
+  for (const item of items) {
+    for (const descendant of await itemRepo.collectDescendants(item.id)) {
+      if (ids.has(descendant.id)) continue;
+      ids.add(descendant.id);
+      deleted.push(descendant);
+    }
+  }
+  await itemRepo.removeMany([...ids]);
   pushUndo(`Delete ${items.length} items`, async () => {
-    await itemRepo.createMany(items);
+    await itemRepo.createMany(deleted);
   });
   toastWithUndo(`Deleted ${items.length} items`);
 }
