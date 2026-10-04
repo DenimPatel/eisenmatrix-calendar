@@ -55,7 +55,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 2). `collectDescendantIds` BFS with visited set; cycle/self-parent safe. Reused by IMP-003/IMP-004. Verified PASS (typecheck/lint/57 tests).
 
 ### IMP-003 — Undo of a deleted parent must restore its descendants
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`deleteItem`, `:106-112`); `src/db/repository.ts`
@@ -68,7 +68,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-002
 - **Priority score:** 20
-- **Notes:** Requires capturing descendant items (not just ids) for the undo closure.
+- **Notes:** DONE. Captures descendant items pre-delete and restores parent+descendants via createMany. Added itemActions.test.ts. Verified PASS (typecheck/lint/59 tests).
 
 ### IMP-004 — Cascade delete in bulk `deleteItems`
 - **Status:** TODO

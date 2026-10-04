@@ -104,9 +104,10 @@ export async function patchItem(
 }
 
 export async function deleteItem(item: Item): Promise<void> {
+  const descendants = await itemRepo.collectDescendants(item.id);
   await itemRepo.removeWithChildren(item.id);
   pushUndo(`Delete “${item.title}”`, async () => {
-    await itemRepo.create(item);
+    await itemRepo.createMany([item, ...descendants]);
   });
   toastWithUndo('Deleted');
 }

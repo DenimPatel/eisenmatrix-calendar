@@ -74,6 +74,12 @@ export const itemRepo = {
     await getDb().items.bulkDelete(ids);
   },
 
+  async collectDescendants(id: string): Promise<Item[]> {
+    const ids = await collectDescendantIds(id);
+    const descendants = await getDb().items.bulkGet(ids);
+    return descendants.filter((item): item is Item => Boolean(item));
+  },
+
   async removeWithChildren(id: string): Promise<void> {
     const db = getDb();
     await db.transaction('rw', db.items, async () => {
