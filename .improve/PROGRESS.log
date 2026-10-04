@@ -19,3 +19,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T04:12Z | IMP-010 | done | 35d4352 | lone weekday parsed in quick add; +quickadd tests
 2026-10-04T04:23Z | IMP-011 | done | 9ccb94f | on-the-N applied or kept; +nextMonthDay
 2026-10-04T04:39Z | IMP-012 | done | 4f4b361 | item cards show occurrence time; +resolveCardTime
+2026-10-04T05:00Z | IMP-013 | done | 905aa6a | shortcuts suppressed behind overlays; +16 tests

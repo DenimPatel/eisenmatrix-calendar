@@ -31,7 +31,8 @@ function dateOnly(date: Date): string {
   return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
 }
 
-export function recurrenceToRRule(rule: RecurrenceRule): string {
+/** `dateOnlyStart` must mirror the emitted DTSTART: DATE value types need a bare `UNTIL`. */
+export function recurrenceToRRule(rule: RecurrenceRule, dateOnlyStart = false): string {
   const parts = [`FREQ=${rule.freq.toUpperCase()}`, `INTERVAL=${Math.max(1, rule.interval)}`];
   if (rule.byWeekday?.length)
     parts.push(`BYDAY=${rule.byWeekday.map((d) => DAY_CODES[d]).join(',')}`);
@@ -44,7 +45,7 @@ export function recurrenceToRRule(rule: RecurrenceRule): string {
   if (rule.count) parts.push(`COUNT=${rule.count}`);
   if (rule.until) {
     const until = parseLocalDate(rule.until);
-    if (until) parts.push(`UNTIL=${dateOnly(until)}T235959Z`);
+    if (until) parts.push(`UNTIL=${dateOnly(until)}${dateOnlyStart ? '' : 'T235959Z'}`);
   }
   return parts.join(';');
 }
@@ -106,7 +107,7 @@ export function itemsToICS(items: Item[]): string {
     } else {
       lines.push(`DTSTART;VALUE=DATE:${dateOnly(start)}`);
     }
-    if (item.recurrence) lines.push(`RRULE:${recurrenceToRRule(item.recurrence)}`);
+    if (item.recurrence) lines.push(`RRULE:${recurrenceToRRule(item.recurrence, !timed)}`);
     for (const reminder of item.reminders) {
       lines.push(...reminderToAlarm(reminder, item.title));
     }

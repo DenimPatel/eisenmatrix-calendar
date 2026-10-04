@@ -251,7 +251,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added pure `isOverlayOpen(state)` selector to useUiStore and a single guard in useKeyboardShortcuts placed after the ⌘K/⌘Z branches; ? / / / c / n / 1-9 no longer fire behind an overlay while undo still does. 16 new tests; 156 tests green; mutation-checked; Playwright-verified 13 keys inert + ⌘Z undo + ? sheet reopen.
 
 ### IMP-014 — Emit RFC-5545-valid `UNTIL` for all-day (DATE) recurrence
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / interoperability
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts` (`recurrenceToRRule`, `:44-48`)
@@ -264,7 +264,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** May require passing the `DTSTART` value type into `recurrenceToRRule`.
+- **Notes:** DONE. recurrenceToRRule takes `dateOnlyStart` and emits bare UNTIL=YYYYMMDD when DTSTART is VALUE=DATE; itemsToICS passes the same `!timed` boolean that chose DTSTART so they cannot disagree. Timed output byte-identical; local dates only (no UTC shift); TZ -11..+14 verified. 160 tests green; mutation-checked. Footgun logged: default `false` arg.
 
 ### IMP-015 — Handle CSV import errors and surface feedback
 - **Status:** TODO
