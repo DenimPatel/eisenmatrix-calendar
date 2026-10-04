@@ -6,8 +6,8 @@ Generated: 2026-10-04 · Reviewed 2026-10-04 (backlog critic) against the recon 
 This backlog is ordered by **priority score descending** (ties broken by impact, then lower effort).
 Every item is independently verifiable and cites real files. `Depends on` is respected: an item's
 dependencies appear earlier in the file. Items needing human judgment/design/legal input are marked
-**Status: NEEDS-HUMAN** and placed at their score position. There are **3 NEEDS-HUMAN items**
-(IMP-034, IMP-047, IMP-048); no other item depends on them.
+**Status: NEEDS-HUMAN** and placed at their score position. There are **4 NEEDS-HUMAN items**
+(IMP-034, IMP-047, IMP-048, IMP-067); no other item depends on them.
 
 ## Legend
 
@@ -314,6 +314,40 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 15
 - **Notes:** Only `parentId` cross-references ids today; checklist/history ids are self-contained.
 
+### IMP-057 — Give the remaining overlays an initial focus target
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/shell/ShortcutSheet.tsx` (`:19`); `src/components/ui/Dialog.tsx` (`ConfirmDialog` `:101-121`); `src/features/settings/SettingsView.tsx` (`:292`, `:307`); trap fallback `src/hooks/useFocusTrap.ts` (`:17-23`)
+- **Intent:** IMP-009 gave QuickAdd, CommandPalette and ItemEditorSheet an `initialFocusRef`, but `ShortcutSheet`, `ConfirmDialog` and both SettingsView dialogs pass none, so `useFocusTrap` falls back to the first focusable node — the "Close dialog" X button rendered at `Dialog.tsx:79`, which precedes the body and footer in DOM order. A keyboard user opening the shortcut sheet or a destructive confirm starts on Close and must Tab forward past the header every time.
+- **Acceptance criteria:**
+  1. `ShortcutSheet` opens with focus on a stable in-dialog target (its heading with `tabIndex={-1}`, or the dialog container), not the Close button.
+  2. `ConfirmDialog` focuses the **Cancel** button (safe default) rather than Close, so Enter cannot trigger a destructive confirm by accident.
+  3. Both SettingsView dialogs (`:292`, `:307`) focus a meaningful target: the first field for the import dialog, Cancel for the confirm.
+  4. Focus still returns to the opener on close; Escape handling and the Tab loop are unchanged.
+  5. No visual change.
+- **Verification method:** Playwright at preview: press `?` and assert `document.activeElement` is not the Close button; open Settings → reset/import confirm and assert `activeElement` is Cancel. Add jsdom assertions in a new `src/components/ui/Dialog.test.tsx` or extend `src/hooks/useFocusTrap.test.tsx`. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-009
+- **Priority score:** 15
+- **Notes:** Source: `discovered-IMP-009.md` D2. Cancel-first for `ConfirmDialog` is a deliberate safety choice, not the closest-node default. No other item covers the remaining overlays (IMP-009's ACs named only the three primary-input sheets).
+
+### IMP-058 — Make the Habits view honor the `weekStartsOn` setting
+- **Status:** TODO
+- **Category:** correctness / configuration
+- **Type:** bug-fix
+- **Area / files:** `src/features/habits/HabitsView.tsx` (`:29`); shared helper `weekdayLabels` in `src/lib/labels.ts` (added by IMP-049)
+- **Intent:** IMP-049 made `CalendarView` honor `weekStartsOn`, but `HabitsView` still hardcodes `startOfWeek(addDays(new Date(), -(DAYS - 1)), 1)`, so the habit grid is always Monday-first. A Sunday-start user sees two different week layouts in one app. The gap was logged in IMP-049's notes and re-confirmed during IMP-007; it is still open.
+- **Acceptance criteria:**
+  1. `HabitsView` reads `weekStartsOn` from `useSetting<AppSettings>('app', DEFAULT_SETTINGS)` and uses it for `windowStart` (`:29`).
+  2. The grid's weekday header/column order is derived from `weekStartsOn` (0 → Sun…Sat, 1 → Mon…Sun) via the shared `weekdayLabels` helper — no second local copy of the label order.
+  3. The window still spans the same number of days (`DAYS`) and the default (Monday) rendering is unchanged.
+- **Verification method:** Playwright at preview: set Settings → "Week starts on" = Sunday, open Habits, assert the first header cell is "Sun" and the first grid date is a Sunday; repeat with Monday. Add a unit test if the ordering is extracted. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-049
+- **Priority score:** 15
+- **Notes:** Source: `discovered-IMP-007.md` §3 and IMP-049's notes. CalendarView's own test polls for the setting-driven render because `useSetting` resolves one frame late; do the same here.
+
 ### IMP-016 — Fix "This occurrence" edits leaking to the whole series
 - **Status:** TODO
 - **Category:** correctness / bug-fix
@@ -525,6 +559,22 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 12
 - **Notes:** Run the prune alongside the existing `reminderLogRepo.pruneBefore` boot effect in `ReminderRuntime`.
 
+### IMP-059 — Focus overlays in the mount commit, not 20 ms later
+- **Status:** TODO
+- **Category:** accessibility / robustness
+- **Type:** improvement
+- **Area / files:** `src/hooks/useFocusTrap.ts` (`:17-24` `focusInitial`, `:24` `window.setTimeout(focusInitial, 20)`, `:45` cleanup)
+- **Intent:** Initial focus is deferred behind a 20 ms timer, so for the first frames after an overlay mounts `document.activeElement` is still `<body>`. A fast typist's first keystrokes can land outside the dialog, and any check that asserts focus in the same tick as the open reports a false failure. IMP-009 made the window user-visible by removing the overlays' `autoFocus` fallback.
+- **Acceptance criteria:**
+  1. Initial focus is applied in the same commit that mounts the overlay (`useLayoutEffect`, or a frame callback that cannot lose a keystroke) — `document.activeElement` is the target immediately after mount, with no timer.
+  2. No timer survives unmount: the `clearTimeout` cleanup (`:45`) is removed or adapted so a late callback cannot steal focus after close.
+  3. Focus restore on close and the Tab loop are unchanged; existing `useFocusTrap` tests pass (advance a frame if a case needs one).
+- **Verification method:** Add a test in `src/hooks/useFocusTrap.test.tsx` asserting the initial target is focused with no timer advance or `vi.advanceTimersByTime`. Playwright at preview: open QuickAdd with `c`, assert `document.activeElement` is the textbox immediately and that the first typed character appears in it. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** IMP-009
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-009.md` D3. Risk is med only because existing tests assert the 20 ms timing; confidence 4 because the right primitive (layout effect vs. `requestAnimationFrame`) is a small design choice.
+
 ### IMP-024 — Make all mobile bottom-nav destinations reachable at 390px
 - **Status:** TODO
 - **Category:** responsiveness / UX
@@ -671,6 +721,123 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Depends on:** none
 - **Priority score:** 10
 - **Notes:** NEEDS-HUMAN: legal identity of the copyright holder.
+
+### IMP-061 — `deleteItems([])` must be a no-op
+- **Status:** TODO
+- **Category:** correctness / undo integrity
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts` (`deleteItems`, `:115-130`; `pushUndo` `:126`, toast `:129`); caller `src/features/shopping/ShoppingView.tsx` (`clearPurchased` `:87-92`)
+- **Intent:** With an empty selection the function still runs a write transaction, pushes a `"Delete 0 items"` undo entry, and fires a `"Deleted 0 items"` toast. That clobbers the user's one level of undo safety for an unrelated prior action and reports a deletion that never happened. `clearPurchased` is the natural caller with a possibly-empty array.
+- **Acceptance criteria:**
+  1. `deleteItems` returns early (`if (!items.length) return;`) before any repository call, undo push, or toast.
+  2. With `[]`, `useUiStore`'s undo stack is unchanged (previous undo entry still on top) and no toast is pushed.
+  3. Non-empty behavior — descendant cascade, undo restore of selection + descendants, toast count — is unchanged.
+- **Verification method:** Add a test in `src/domain/itemActions.test.ts`: push a real undo entry, call `deleteItems([])`, assert the top undo label is still the previous one and the toast list did not grow. Run `npm run test`, then the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-004
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-004.md` §1. Honest scope: both current call sites already guard it — `ShoppingView`'s button is `disabled={!purchasedCount}` (`:138`) and `ListView` only renders the bulk bar when `selection.size > 0` (`:236`) — so this is a latent API hazard, hence the modest score. The "Delete N items" copy counting only selected rows (not cascaded descendants) stays out of scope as cosmetic.
+
+### IMP-062 — Normalize CRLF in quick-add line splitting
+- **Status:** TODO
+- **Category:** correctness / data hygiene
+- **Type:** bug-fix
+- **Area / files:** `src/domain/quickadd.ts` (`splitNoteDraft`, `:352-357`; line split at `:353`)
+- **Intent:** `text.split('\n')` leaves a trailing `\r` on every line for CRLF input (text pasted on Windows/Outlook), so a note's stored `title` and each `notes` line end with `\r`. It is invisible in the app but breaks exact string comparison, search, and CSV round-trips. IMP-007 added this helper and left the CRLF case alone.
+- **Acceptance criteria:**
+  1. Line splitting normalizes `\r\n` and a lone trailing `\r` to `\n` before the first line is taken, so no stored `title` or `notes` value contains `\r`.
+  2. A two-line CRLF note yields exactly the same `{ title, notes }` as its LF equivalent.
+  3. The 80-char `NOTE_TITLE_MAX` split (IMP-007) still loses no characters.
+- **Verification method:** Extend `src/domain/quickadd.test.ts` with `"Buy milk\r\nCall mum\r\n"` asserting `title === 'Buy milk'`, no `\r` in `notes`, and equality with the LF input's result. Run `npm run test`.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-007
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-007.md` §4. Normalize inside `splitNoteDraft` only; the other kind parsers' behavior is pinned by existing tests and must not change.
+
+### IMP-063 — Add CI concurrency groups and stop running the gate twice on `main`
+- **Status:** TODO
+- **Category:** CI / automation
+- **Type:** tooling
+- **Area / files:** `.github/workflows/ci.yml` (triggers `:3-8`); `.github/workflows/deploy.yml` (`gate` job `:14-15`)
+- **Intent:** (a) Neither workflow declares a `concurrency` group, so every push to a PR re-runs the full gate with no cancellation and superseded runs are never dropped. (b) `ci.yml` triggers on `push: [main]` **and** `deploy.yml` calls it via `uses: ./.github/workflows/ci.yml`, so one push to `main` runs typecheck + lint + the full test suite + build twice.
+- **Acceptance criteria:**
+  1. Both workflows declare a `concurrency` group keyed per ref (e.g. `group: ${{ github.workflow }}-${{ github.ref }}`) with `cancel-in-progress: true`.
+  2. Exactly one gate run happens per push to `main`: either the `push: [main]` trigger is removed from `ci.yml` (the `workflow_call` gate in `deploy.yml` still covers `main`), or the `gate` job in `deploy.yml` is removed and `ci.yml` keeps the push trigger — with the chosen option recorded in the commit message.
+  3. `deploy.yml` still cannot deploy when the gate fails (`deploy needs: [build, gate]`), and `pull_request` gating is unchanged.
+- **Verification method:** `npx prettier --check .github/workflows/ci.yml .github/workflows/deploy.yml`; grep both files for `concurrency:` and count the gate invocations; run `actionlint .github/workflows/*.yml` if available. No source change.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-005
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-005.md` §1–2. IMP-005's AC1 asked for both triggers, so option (b) may be rejected on that basis — (a) alone still fixes the wasted runs. Actions stay on major tags; SHA pinning belongs to IMP-022/IMP-048.
+
+### IMP-064 — Enforce Prettier in CI and format the drifted source files
+- **Status:** TODO
+- **Category:** tooling / consistency
+- **Type:** tooling
+- **Area / files:** `package.json` (`scripts`, `format` `:14`); `.github/workflows/ci.yml`; drifted tracked files `src/pwa/ReminderRuntime.tsx`, `src/db/repository.test.ts`, `src/domain/itemActions.test.ts`; `.prettierignore`
+- **Intent:** `npm run format` exists but nothing checks it: `npx prettier --check .` fails at HEAD on 33 files, three of which are tracked source/test files, and `ci.yml` runs only typecheck/lint/test/build, so drift accumulates silently. A blind `npm run format` is also unsafe — it would rewrite generated content (`.kilo/worktrees/…`, `.kilo/kilo.jsonc`, `.improve/reports/*`).
+- **Acceptance criteria:**
+  1. `package.json` gains a `format:check` script running `prettier --check .`.
+  2. The three drifted tracked source files are formatted with no behavioral change — the four gates stay green and the test count is unchanged.
+  3. `.prettierignore` excludes the non-source trees so the check is meaningful: `.kilo/worktrees` at minimum, plus `.improve/reports` if generated reports are not meant to be enforced.
+  4. `ci.yml` runs `npm run format:check` as a required step next to the existing ones.
+  5. `npx prettier --check .` exits 0 when the change is complete.
+- **Verification method:** `npx prettier --check .` and `npm run format:check` both exit 0; `npm run typecheck && npm run lint && npm run test && npm run build` all pass; `git diff --stat` shows formatting-only changes to the three files.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-004.md` §4, confirmed by a fresh `npx prettier --check .` run (33 files, incl. `.improve/FEATURES.md`). `eslint-config-prettier` is already installed, so no lint conflict is expected. Do not reformat `.improve/` reports by hand.
+
+### IMP-065 — Document the preview-build service-worker reset for Playwright verification
+- **Status:** TODO
+- **Category:** docs / verification process
+- **Type:** docs
+- **Area / files:** `AGENTS.md` (verification section); `.improve/REPO_PROFILE.md` (§4 "How to verify a change"); `src/pwa/register.ts`; `src/pwa/sw.ts`
+- **Intent:** Two independent implementation runs hit the same false regression against `npm run preview`: after a rebuild the page keeps executing the previously precached bundle (workbox `workbox-precache-v2-http://localhost:4173/eisenmatrix-calendar/`) and shows vite-plugin-pwa's "A new version is available" prompt, and a `page.goto` to the same `#/…` URL does not reload, so the stale bundle survives. A second harness trap: a synthetic `keydown` dispatched on `document` never propagates down to the focus-trap container, so Tab-wrap checks must dispatch on `document.activeElement`. None of this is written down.
+- **Acceptance criteria:**
+  1. The verification docs contain a copy-pasteable reset snippet (unregister all service workers, delete all Cache Storage keys) plus a "navigate to `about:blank` and back" step, stated as a prerequisite for any Playwright check against a `preview` build.
+  2. The docs note that vite-plugin-pwa's `devOptions` shortcut applies only to `npm run dev`, not `preview`.
+  3. The docs record that a `keydown` must be dispatched on `document.activeElement` (not `document`) to reach a focus-trap container.
+  4. No duplication of the existing "how to verify" sections; docs only, no source change.
+- **Verification method:** Follow the documented steps verbatim in a fresh session against `npm run preview` and confirm a rebuilt change is visible on the first load; `npx prettier --check` on the edited markdown.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-007.md` §1 and `discovered-IMP-009.md` D1 (the same trap, twice). This is a process note, not a product defect — the PWA caching is correct and must not be "fixed". IMP-046 may rename `agents.md` to `AGENTS.md`; keep the section findable by heading.
+
+### IMP-066 — Cover the remaining `useData` hooks and drop the unreachable guards
+- **Status:** TODO
+- **Category:** test coverage / cleanup
+- **Type:** test
+- **Area / files:** `src/hooks/useData.ts` (`useLists` `:25-28`, `useChildren` `:30-37`, `useSetting` `:39-46`, `EMPTY_ITEMS` `:6`); `src/hooks/useData.test.tsx`
+- **Intent:** IMP-008's new test file covers only `useItems`/`useArchivedItems`, and its `useLiveQuery` mock ignores the dependency argument entirely — so `useItem` re-reading on `id` change, `useSetting` re-reading on `key` change, and the `JSON.stringify(fallback)` dep (a deep serialize of the whole `DEFAULT_SETTINGS` object on every render of all `useSetting('app', …)` call sites) are unverified. The same file still carries three unreachable nullish guards and an unjustifiable `as T` cast.
+- **Acceptance criteria:**
+  1. The test harness's `useLiveQuery` mock captures `(querier, deps)` so dep-driven re-reads are assertable.
+  2. Tests cover `useItem` (re-reads when `id` changes; `undefined` for a nullish id), `useLists`, `useChildren` (re-reads on `parentId` change), and `useSetting` (re-reads on `key` change; returns the stored value, else the fallback).
+  3. `useSetting`'s per-render `JSON.stringify(fallback)` dep is replaced with a stable, non-re-serializing dep (module-level `WeakMap` cache or `useMemo`) without changing which values trigger a re-read.
+  4. The unreachable `?? []` / `?? fallback` guards and the `as T` cast are removed, and `npm run typecheck` passes without a new cast.
+  5. All four gates green.
+- **Verification method:** `npm run test` reports the new cases in `src/hooks/useData.test.tsx`; then `npm run typecheck && npm run lint && npm run build`. Mutation-check the dep test: it must fail if the dep array is emptied.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-008
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-008.md` §1, §2, §5. `EMPTY_ITEMS` (`:6`) is one array shared by every caller on an empty DB — nothing mutates it today, so it is a latent aliasing hazard only; if this work touches it, prefer a getter over a module constant. IMP-043 (`no-explicit-any`) will reject a reintroduced cast.
+
+### IMP-067 — Make the CI gate a required status check on `main` (NEEDS-HUMAN)
+- **Status:** NEEDS-HUMAN
+- **Category:** CI / process
+- **Type:** tooling
+- **Area / files:** repository settings (branch protection / ruleset for `main`); check names from `.github/workflows/ci.yml` (`gate` → "Typecheck, lint, test, build")
+- **Intent:** `deploy.yml` blocks deploying from a failed gate (`deploy needs: [build, gate]`), but nothing makes the gate **required to merge** — that lives in branch-protection rules, which are not versioned. A red PR can be merged and the failure surfaces only on the next `main` push, after the branch has landed.
+- **Acceptance criteria:**
+  1. `main` has a branch-protection/ruleset rule requiring the `CI / gate` check (and the Pages build check, if desired) before merge.
+  2. Direct pushes to `main` are disallowed except through the protected path, or the rule documents the intended exception.
+  3. The requirement is recorded in `README.md`/`AGENTS.md` so it survives repo re-creation.
+- **Verification method:** Not verifiable in-repo — requires a human to configure the rule. Sanity check locally: no merge commit on `main` whose PR had a red gate after the rule is in place.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-005
+- **Priority score:** 10
+- **Notes:** NEEDS-HUMAN: branch-protection rules are not versioned — only the repo administrator can apply them, and the acceptance criteria cannot be checked in-repo. Scored 10 rather than higher precisely because it is unverifiable here. Already flagged as a follow-up in IMP-005's notes.
 
 ### IMP-035 — Fix settings read-modify-write races between theme and Settings
 - **Status:** TODO
@@ -819,6 +986,23 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 8
 - **Notes:**
 
+### IMP-060 — Share one items live query instead of one per component
+- **Status:** TODO
+- **Category:** performance / data flow
+- **Type:** improvement
+- **Area / files:** `src/hooks/useData.ts` (`useItems` `:8-14`, `useArchivedItems` `:16-19`); 12 call sites under `src/features/{bills,calendar,command,goals,habits,list,matrix,notes,settings,shopping,today}/` and `src/pwa/ReminderRuntime.tsx`
+- **Intent:** Each of the 12 `useItems()` call sites builds its own `Dexie.liveQuery` observable over `itemRepo.all()`, so one write to `items` re-runs `toArray()` 12 times and re-renders 12 components — including views the write cannot affect (adding a shopping item re-renders `CalendarView`, `MatrixView`, `GoalsView`, `ReminderRuntime`, …). IMP-008 made each of those renders cheap but did not remove the fan-out.
+- **Acceptance criteria:**
+  1. A single shared items subscription (module-scope `Dexie.liveQuery` exposed through a subscription-counted store or a small `useSyncExternalStore` cache) backs both `useItems` and `useArchivedItems`.
+  2. One write to the `items` table results in exactly **one** `itemRepo.all()` execution, and all call sites receive the same array instance for the same data.
+  3. `useItems(includeArchived)` keeps its current filter semantics and its referential stability guarantee (IMP-008) when data and the flag are unchanged.
+  4. No consumer call site needs to change; the shared empty array stays safe (never hand a shared array to a mutating consumer — see IMP-066's note on `EMPTY_ITEMS`).
+- **Verification method:** Add a jsdom test in `src/hooks/useData.test.tsx` mounting two probe components over the mocked live query and asserting a single query execution plus identical array identity for both. Run the four gates; Playwright at preview: create one item and confirm every route still renders with no console errors.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-008
+- **Priority score:** 7.5
+- **Notes:** Source: `discovered-IMP-008.md` §4 — explicitly out of scope for IMP-008 because it restructures data flow across 12 files. 12 production call sites counted (not the 13 reported, which included the hook and its test). `useItems` is deliberately the only hook refactored; `useItem`/`useChildren` keep their per-site queries.
+
 ### IMP-046 — Rename the agent guide to `AGENTS.md` and fix the README link
 - **Status:** TODO
 - **Category:** documentation / interop
@@ -869,6 +1053,8 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 
 ---
 
-_End of backlog (52 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are ICS all-day `DTEND`, command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (63 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are ICS all-day `DTEND`, command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+
+_Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (rides with IMP-022/IMP-048), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 
 _Rejected during critic review (not checkable / premise false / not a defect): the former history-blob item (`buildHistory` already skips `occurrences` at `itemActions.ts:32`), the former hardcoded-color item (badge classes in `labels.ts` already carry `dark:` variants; `bg-white` is a cosmetic knob only), and the former "reset all data" item (the confirm copy already enumerates exactly the tables it clears). The former standalone `npm ci` item was merged into IMP-005._

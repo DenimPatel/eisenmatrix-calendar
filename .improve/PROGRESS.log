@@ -14,3 +14,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T03:07Z | IMP-049 | done | 6eeaab9 | calendar honors weekStartsOn; +weekdayLabels helper/tests
 2026-10-04T03:19Z | IMP-007 | done | 4ac86f9 | note quick-add no longer truncates; +splitNoteDraft tests
 2026-10-04T03:27Z | IMP-008 | done | 695d756 | memoized useItems/useArchivedItems; +useData tests
+2026-10-04T03:59Z | IMP-009 | done | 8eff599 | overlays focus primary input; +focus trap tests
