@@ -219,7 +219,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. New `nextMonthDay` helper (month-end clamped via clampDayOfMonth); "on the <N>" consumed only when applied (monthly -> byMonthDay, else next matching day-of-month); retained when an explicit date/weekday wins. 134 tests green; 400-case A/B vs HEAD shows no change outside `on the <N>` inputs; mutation-checked. Advisories: month-day now outranks relative dates; `on the 32nd` accepted.
 
 ### IMP-012 — Show the occurrence time on item cards, not the series start
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemCard.tsx` (`:48`); callers `src/features/today/TodayView.tsx`, `src/features/calendar/CalendarView.tsx`
@@ -232,7 +232,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Prefer a `start?: string` prop over prop-drilling the whole occurrence.
+- **Notes:** DONE. Added pure `resolveCardTime` in src/features/item/cardTime.ts; ItemCard takes an optional `start?: string`; Today + Calendar AgendaList pass occ.start, Matrix falls back. 140 tests green; Playwright-verified 16:30 override on Today/Calendar vs 09:00 Matrix, 1280/390, zero console errors. Follow-up: caller wiring itself is not unit-covered.
 
 ### IMP-013 — Suppress global shortcuts while overlays are open
 - **Status:** TODO

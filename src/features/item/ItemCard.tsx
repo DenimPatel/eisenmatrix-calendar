@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/Badge';
 import { KIND_META } from './kindMeta';
 import { ITEM_STATUS_LABELS } from '@/lib/labels';
 import { describeRecurrence } from '@/domain/quickadd';
-import { formatTime } from '@/lib/date';
+import { resolveCardTime } from './cardTime';
 import { toggleDone } from '@/domain/itemActions';
 
 export interface ItemCardProps {
   item: Item;
   occurrenceKey?: string | null;
+  /** Resolved occurrence start; overrides `item.start` for the time label. */
+  start?: string | null;
   status?: ItemStatus;
   compact?: boolean;
   showKind?: boolean;
@@ -26,6 +28,7 @@ export interface ItemCardProps {
 export function ItemCard({
   item,
   occurrenceKey = null,
+  start,
   status,
   compact,
   showKind = false,
@@ -45,7 +48,7 @@ export function ItemCard({
     status ?? (occurrenceKey ? (item.occurrences[occurrenceKey]?.status ?? 'todo') : item.status);
   const done = effectiveStatus === 'done';
   const kind = KIND_META[item.kind];
-  const time = formatTime(item.start);
+  const time = resolveCardTime(start, item.start);
   const recurrenceLabel = describeRecurrence(item.recurrence);
 
   const style = transform

@@ -164,6 +164,7 @@ export function TodayView() {
                   key={`${occ.item.id}-${occ.occKey}`}
                   item={occ.item}
                   occurrenceKey={occ.occKey}
+                  start={occ.start}
                   status={occ.status}
                   showKind
                   onEdit={openEditor}
