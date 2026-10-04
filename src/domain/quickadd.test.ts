@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseQuickAdd } from './quickadd';
+import { parseQuickAdd, splitNoteDraft, NOTE_TITLE_MAX } from './quickadd';
 
 describe('parseQuickAdd', () => {
   it('parses a recurring bill with amount, day and urgency', () => {
@@ -52,5 +52,49 @@ describe('parseQuickAdd', () => {
     const result = parseQuickAdd('meeting 2024-03-04 2:30pm');
     expect(result.start).toBe('2024-03-04T14:30');
     expect(result.allDay).toBe(false);
+  });
+});
+
+describe('splitNoteDraft', () => {
+  it('never drops characters from a long single line', () => {
+    const text = 'x'.repeat(200);
+    const { title, notes } = splitNoteDraft(text);
+    expect(title).toHaveLength(NOTE_TITLE_MAX);
+    expect(notes).toHaveLength(200 - NOTE_TITLE_MAX);
+    expect(title + notes).toBe(text);
+  });
+
+  it('keeps a short single line entirely in the title', () => {
+    expect(splitNoteDraft('buy milk')).toEqual({ title: 'buy milk', notes: '' });
+  });
+
+  it('does not truncate a line sitting exactly on the cap', () => {
+    const text = 'y'.repeat(NOTE_TITLE_MAX);
+    const { title, notes } = splitNoteDraft(text);
+    expect(title).toBe(text);
+    expect(notes).toBe('');
+  });
+
+  it('maps the first line to the title and the rest to the body', () => {
+    expect(splitNoteDraft('Shopping\nmilk\neggs')).toEqual({
+      title: 'Shopping',
+      notes: 'milk\neggs',
+    });
+  });
+
+  it('preserves every character when the first line overflows the cap', () => {
+    const head = 'z'.repeat(120);
+    const draft = splitNoteDraft(`${head}\ntail`);
+    expect(draft.title).toBe(head.slice(0, NOTE_TITLE_MAX));
+    expect(draft.notes).toBe(`${head.slice(NOTE_TITLE_MAX)}\ntail`);
+    expect(`${head}\ntail`.slice(draft.title.length)).toBe(draft.notes);
+  });
+
+  it('keeps blank lines inside the body', () => {
+    expect(splitNoteDraft('a\n\nb')).toEqual({ title: 'a', notes: '\nb' });
+  });
+
+  it('handles empty input', () => {
+    expect(splitNoteDraft('')).toEqual({ title: '', notes: '' });
   });
 });

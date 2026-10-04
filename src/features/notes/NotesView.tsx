@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { createItem } from '@/domain/itemFactory';
 import { createItemPersisted, patchItem } from '@/domain/itemActions';
+import { splitNoteDraft } from '@/domain/quickadd';
 import { cn } from '@/lib/cn';
 import type { Item } from '@/types';
 
@@ -27,10 +28,7 @@ export function NotesView() {
   const addNote = async () => {
     const text = draft.trim();
     if (!text) return;
-    const [firstLine, ...restLines] = text.split('\n');
-    await createItemPersisted(
-      createItem({ kind: 'note', title: firstLine.slice(0, 80), notes: restLines.join('\n') }),
-    );
+    await createItemPersisted(createItem({ kind: 'note', ...splitNoteDraft(text) }));
     setDraft('');
   };
 

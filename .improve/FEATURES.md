@@ -138,7 +138,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added pure `weekdayLabels(weekStartsOn)` in src/lib/labels.ts; CalendarView reads weekStartsOn for week/month bounds + header. Unit-tested + Playwright-verified Sun-first (2026-09-27) and Mon-first (2026-09-28); 100 tests green; default unchanged. Follow-ups logged: HabitsView.tsx:29 still hardcodes 1.
 
 ### IMP-007 — Stop note quick-add truncating long first lines
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/features/notes/NotesView.tsx` (`addNote`, `:27-35`)
@@ -151,7 +151,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:**
+- **Notes:** DONE. Added pure `splitNoteDraft`/`NOTE_TITLE_MAX` in src/domain/quickadd.ts; title caps at 80 chars and the overflow becomes the body (no character loss). 7 unit + 3 jsdom/Dexie tests; 110 tests green; fuzz/property suite clean; mutation-checked.
 
 ### IMP-008 — Memoize `useItems` to stop array-identity churn
 - **Status:** TODO

@@ -341,6 +341,21 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
   };
 }
 
+export const NOTE_TITLE_MAX = 80;
+
+export interface NoteDraft {
+  title: string;
+  notes: string;
+}
+
+/** Split a quick-captured note into title/body; text past the title cap becomes body. */
+export function splitNoteDraft(text: string): NoteDraft {
+  const [firstLine = '', ...restLines] = text.split('\n');
+  const title = firstLine.slice(0, NOTE_TITLE_MAX);
+  const overflow = firstLine.slice(NOTE_TITLE_MAX);
+  return { title, notes: overflow ? [overflow, ...restLines].join('\n') : restLines.join('\n') };
+}
+
 /** Convert a parsed quick-add into a fully-formed Item. */
 export function quickAddToItem(parsed: QuickAddResult): Item {
   const data: Record<string, unknown> = {};
