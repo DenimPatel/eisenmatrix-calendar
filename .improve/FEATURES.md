@@ -87,7 +87,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. `deleteItems` collects descendants per selected item via `itemRepo.collectDescendants`, dedupes against the selection, deletes the union with one `removeMany`; undo restores selection + descendants. Verified PASS (typecheck/lint/build/62 tests).
 
 ### IMP-005 — Add a CI quality gate (typecheck + lint + test) and enforce `npm ci`
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** CI / automation
 - **Type:** tooling
 - **Area / files:** `.github/workflows/deploy.yml` (`:3-6,26-30`); new `.github/workflows/ci.yml`
@@ -101,7 +101,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 20
-- **Notes:** Push is disabled in this run; land the workflow without pushing. This item subsumes the former standalone `npm ci` item. Node pin aligns with IMP-029 (IMP-029 appears later; no dependency needed).
+- **Notes:** DONE. ci.yml (pull_request + push main) runs npm ci -> typecheck -> lint -> test -> build on Node 20 w/ cache; deploy.yml uses npm ci and `deploy needs [build, gate]`. Verified PASS. Follow-up (needs repo settings, human): branch-protect main; gate currently also runs on push main (duplicate).
 
 ### IMP-006 — Add unit tests for `stats.ts` goal progress and completion
 - **Status:** TODO

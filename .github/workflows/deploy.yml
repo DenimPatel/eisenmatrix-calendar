@@ -11,6 +11,9 @@ permissions:
   id-token: write
 
 jobs:
+  gate:
+    uses: ./.github/workflows/ci.yml
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -24,7 +27,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build
         run: npm run build
@@ -35,7 +38,7 @@ jobs:
           path: './dist'
 
   deploy:
-    needs: build
+    needs: [build, gate]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
