@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NAV_ITEMS } from '@/features/shell/nav';
-import { useUiStore } from '@/store/useUiStore';
+import { useUiStore, isOverlayOpen } from '@/store/useUiStore';
 import { createItem } from '@/domain/itemFactory';
 import { formatISODate } from '@/lib/date';
 
@@ -13,6 +13,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export function useKeyboardShortcuts() {
   const navigate = useNavigate();
+  const overlayOpen = useUiStore(isOverlayOpen);
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
   const setQuickAddOpen = useUiStore((s) => s.setQuickAddOpen);
   const setShortcutsOpen = useUiStore((s) => s.setShortcutsOpen);
@@ -38,6 +39,7 @@ export function useKeyboardShortcuts() {
         return;
       }
       if (isTypingTarget(event.target)) return;
+      if (overlayOpen) return;
 
       if (event.key === '?') {
         event.preventDefault();
@@ -68,5 +70,14 @@ export function useKeyboardShortcuts() {
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [navigate, setCommandOpen, setQuickAddOpen, setShortcutsOpen, openEditor, undo, pushToast]);
+  }, [
+    navigate,
+    overlayOpen,
+    setCommandOpen,
+    setQuickAddOpen,
+    setShortcutsOpen,
+    openEditor,
+    undo,
+    pushToast,
+  ]);
 }

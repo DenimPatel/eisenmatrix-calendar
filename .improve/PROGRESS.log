@@ -18,3 +18,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T04:05Z | DISCOVERY | done | 015814a | absorbed 10 discovered files into 11 new items (IMP-057..067)
 2026-10-04T04:12Z | IMP-010 | done | 35d4352 | lone weekday parsed in quick add; +quickadd tests
 2026-10-04T04:23Z | IMP-011 | done | 9ccb94f | on-the-N applied or kept; +nextMonthDay
+2026-10-04T04:39Z | IMP-012 | done | 4f4b361 | item cards show occurrence time; +resolveCardTime

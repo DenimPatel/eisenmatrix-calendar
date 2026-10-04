@@ -235,7 +235,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added pure `resolveCardTime` in src/features/item/cardTime.ts; ItemCard takes an optional `start?: string`; Today + Calendar AgendaList pass occ.start, Matrix falls back. 140 tests green; Playwright-verified 16:30 override on Today/Calendar vs 09:00 Matrix, 1280/390, zero console errors. Follow-up: caller wiring itself is not unit-covered.
 
 ### IMP-013 — Suppress global shortcuts while overlays are open
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/hooks/useKeyboardShortcuts.ts` (`:23-70`); `src/store/useUiStore.ts`
@@ -248,7 +248,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Expose an `isOverlayOpen` selector from the UI store.
+- **Notes:** DONE. Added pure `isOverlayOpen(state)` selector to useUiStore and a single guard in useKeyboardShortcuts placed after the ⌘K/⌘Z branches; ? / / / c / n / 1-9 no longer fire behind an overlay while undo still does. 16 new tests; 156 tests green; mutation-checked; Playwright-verified 13 keys inert + ⌘Z undo + ? sheet reopen.
 
 ### IMP-014 — Emit RFC-5545-valid `UNTIL` for all-day (DATE) recurrence
 - **Status:** TODO

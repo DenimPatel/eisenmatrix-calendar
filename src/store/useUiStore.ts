@@ -32,6 +32,13 @@ export interface Filters {
   tags: string[];
 }
 
+export interface OverlayState {
+  commandOpen: boolean;
+  quickAddOpen: boolean;
+  shortcutsOpen: boolean;
+  editor: EditorState;
+}
+
 interface UiState {
   theme: ThemePreference;
   sidebarCollapsed: boolean;
@@ -73,6 +80,11 @@ export const DEFAULT_FILTERS: Filters = {
   listId: null,
   tags: [],
 };
+
+/** Any modal layer that owns the screen; global shortcuts must stand down while one is up. */
+export function isOverlayOpen(state: OverlayState): boolean {
+  return state.commandOpen || state.quickAddOpen || state.shortcutsOpen || state.editor.open;
+}
 
 export const useUiStore = create<UiState>((set, get) => ({
   theme: 'system',
