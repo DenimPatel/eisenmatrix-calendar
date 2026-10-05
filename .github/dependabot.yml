@@ -1,0 +1,16 @@
+# Finds known-vulnerable versions of npm dependencies and reports them.
+version: 2
+updates:
+  # Keeps the dev/build toolchain (vite, rollup, tailwind -> chokidar/fast-glob/picomatch)
+  # current. No auto-merge: bumps are reviewed, and the tailwind fix is a major bump.
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+
+  # Keeps actions/checkout, actions/setup-node, upload-pages-artifact and
+  # actions/deploy-pages current; they are pinned to moving major tags.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'

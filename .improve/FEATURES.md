@@ -446,7 +446,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Chosen behavior is gating (keep the toggle); document it in the copy. `deliver()` gains a fail-closed `notifyEnabled` option so only the device-notification arm is gated (in-app toasts and the digest fallback are untouched), and `ReminderRuntime` reads the setting through the live query with it in the effect deps so a flip applies without a reload. Back-compat: `src/db/migrations/notificationGate.ts` seeds `notificationsEnabled` to true exactly once for installations that already held browser permission, so no existing user silently loses device notifications; it never overrides an explicit stored value and leaves a permission-less install unmarked. Settings exposes a single switch (the duplicate Enable button was removed) and the copy no longer claims in-app banners "always" appear. 258 tests green; all gate mutations caught.
 
 ### IMP-022 — Add Dependabot and an `npm audit` CI step
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** security / CI automation
 - **Type:** tooling
 - **Area / files:** new `.github/dependabot.yml`; `.github/workflows/ci.yml` (from IMP-005)
@@ -459,7 +459,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-005
 - **Priority score:** 12
-- **Notes:** Do not auto-merge major bumps (see IMP-048, tailwind).
+- **Notes:** DONE. Added .github/dependabot.yml (weekly `npm` at `/` and `github-actions`) and a `npm audit --audit-level=critical` step in ci.yml ordered after `npm ci`; no continue-on-error, no auto-merge, no dependency or lockfile changes. Verified: current 12 advisories (9 high, 0 critical) exit 0 at critical and exit 1 at high, matching the intended policy; both YAMLs parse and pass prettier; 258 tests green. Staging must stay explicit (never `git add -A` — it would sweep `.kilo/`).
 
 ### IMP-023 — Correct `count` when splitting a recurring series
 - **Status:** TODO
