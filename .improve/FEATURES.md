@@ -283,7 +283,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 2). importCSV wraps parse/pick/persist in try/catch and pushes the same `Import failed:` toast as importJSON via a `describeError(unknown)` helper that tolerates non-Error rejections; success toast/report unchanged. New SettingsView.test.tsx (deterministic: IS_REACT_ACT_ENVIRONMENT, drain() in afterEach before restoreAllMocks, vi.waitFor). 170 tests green over 9 full-suite runs incl. 3 shuffled seeds; 3 mutations caught. NOTE: the spec's verification recipe (malformed .csv) is unreachable because csvToItems never throws.
 
 ### IMP-050 — Habit completion must record undo/history and use fresh state
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`toggleDone`, `:161-181`)
@@ -296,7 +296,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Keep the write silent (no duplicate toast).
+- **Notes:** DONE. toggleDone re-reads the row via itemRepo.get after setStatus, computes habitStreak from persisted state, and persists via patchItem (history recorded) with a new `trackUndo` option so the derived streak write shares the occurrence write's single undo entry; write stays silent (no toast). 173 tests green; 3 mutations (re-read/patchItem/trackUndo) each caught; Playwright-verified toggle -> 1 day streak -> Cmd+Z -> 0 with history restored, zero console errors.
 
 ### IMP-051 — Remap `parentId` when duplicating imported items
 - **Status:** TODO
@@ -1053,7 +1053,26 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 
 ---
 
-_End of backlog (63 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are ICS all-day `DTEND`, command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+### IMP-068 — Eliminate the intermittent unhandled rejection in the boot smoke test
+- **Status:** TODO
+- **Category:** test reliability / error handling
+- **Type:** bug-fix
+- **Area / files:** `src/test/app.smoke.test.tsx`; `src/db/migrations/legacyTasks.ts` (`runLegacyMigration`, `:219`); boot path in `src/App.tsx`
+- **Intent:** `runLegacyMigration` reads `localStorage` from a fire-and-forget promise chain started during boot. In some runs the read happens after the test environment tears down, producing an unhandled `storage.getItem` rejection. Vitest reports it as an error and it can intermittently fail the new CI gate (`npm run test` in `.github/workflows/ci.yml`), i.e. a flaky build caused by real boot code, not the test.
+- **Acceptance criteria:**
+  1. `npm run test` produces zero unhandled errors across at least 10 consecutive full-suite runs.
+  2. The boot-time migration promise is either awaited/caught at the call site or otherwise cannot reject after the environment is gone.
+  3. Migration still runs exactly once and its result is still observable (existing migration tests stay green).
+  4. No behavior change for users: the migration still executes on boot and still records its settings flag.
+- **Verification method:** Run `npm run test` 10+ times in a row and grep the output for "Unhandled"; all runs must exit 0 with no unhandled error. Also run with `--sequence.shuffle` a few times. Confirm `npm run typecheck && npm run lint` clean.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 12
+- **Notes:** Pre-existing (file untouched since `ce2fecf`), observed during the commit-10 regression sweep and again on 2026-10-04. Now a CI-flake risk because IMP-005 made `npm run test` a required check. Discovered during IMP-015 verification.
+
+---
+
+_End of backlog (64 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are ICS all-day `DTEND`, command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (rides with IMP-022/IMP-048), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

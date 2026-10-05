@@ -87,7 +87,7 @@ export async function saveItem(item: Item, options?: { silent?: boolean }): Prom
 export async function patchItem(
   id: string,
   patch: ItemPatch,
-  options?: { silent?: boolean; undoLabel?: string; trackHistory?: boolean },
+  options?: { silent?: boolean; undoLabel?: string; trackHistory?: boolean; trackUndo?: boolean },
 ): Promise<Item | undefined> {
   const existing = await itemRepo.get(id);
   if (!existing) return undefined;
@@ -96,9 +96,11 @@ export async function patchItem(
     next.history = [...existing.history, ...buildHistory(existing, patch)];
   }
   const updated = await itemRepo.update(id, next);
-  pushUndo(options?.undoLabel ?? `Change “${existing.title}”`, async () => {
-    await itemRepo.create(existing);
-  });
+  if (options?.trackUndo !== false) {
+    pushUndo(options?.undoLabel ?? `Change “${existing.title}”`, async () => {
+      await itemRepo.create(existing);
+    });
+  }
   if (!options?.silent) toast('Updated', 'success');
   return updated;
 }
@@ -173,22 +175,21 @@ export async function toggleDone(item: Item, occKey?: string | null): Promise<vo
   const nextStatus: ItemStatus = isDone ? 'todo' : 'done';
   await setStatus(item, nextStatus, occKey);
 
-  if (item.kind === 'habit') {
-    const updated: Item = {
-      ...item,
-      occurrences: occKey
-        ? {
-            ...item.occurrences,
-            [occKey]: {
-              status: nextStatus as OccurrenceStatus,
-              completedAt: nextStatus === 'done' ? Date.now() : null,
-            },
-          }
-        : item.occurrences,
-    };
-    const streak = habitStreak(updated);
-    await itemRepo.update(item.id, { data: { ...item.data, streak } });
-  }
+  if (item.kind !== 'habit') return;
+
+  // Re-read: the caller's prop can be stale, and the streak is derived from the
+  // occurrence state that `setStatus` just persisted.
+  const persisted = await itemRepo.get(item.id);
+  if (persisted?.kind !== 'habit') return;
+  const streak = habitStreak(persisted);
+  // Derived state only: the occurrence write already pushed the undo entry, whose
+  // snapshot carries the pre-toggle streak, so a second entry would leave the first
+  // undo restoring a stale streak.
+  await patchItem(
+    item.id,
+    { data: { ...persisted.data, streak } },
+    { silent: true, trackUndo: false },
+  );
 }
 
 export async function setPriority(
