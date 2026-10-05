@@ -98,6 +98,21 @@ function makeStorage(initial: Record<string, string> = {}) {
   };
 }
 
+async function withAmbientLocalStorage<T>(value: unknown, run: () => Promise<T>): Promise<T> {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    value,
+    configurable: true,
+    writable: true,
+  });
+  try {
+    return await run();
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original);
+    else Reflect.deleteProperty(globalThis, 'localStorage');
+  }
+}
+
 let dbName = 0;
 function freshDb() {
   dbName += 1;
@@ -186,5 +201,29 @@ describe('legacy migration', () => {
     const result = await runLegacyMigration({ db, storage });
     expect(result.migrated).toBe(false);
     expect(await db.items.count()).toBe(0);
+  });
+
+  it('falls back to the ambient localStorage and still records the marker', async () => {
+    const db = freshDb();
+    dbs.push(db);
+    const storage = makeStorage({ [LEGACY_STORAGE_KEY]: JSON.stringify(FIXTURE) });
+
+    const result = await withAmbientLocalStorage(storage, () => runLegacyMigration({ db }));
+
+    expect(result.migrated).toBe(true);
+    expect(await db.items.count()).toBe(FIXTURE.length);
+    const marker = await db.settings.get(LEGACY_MIGRATION_KEY);
+    expect((marker?.value as { version: number }).version).toBe(1);
+  });
+
+  it('ignores a localStorage global that lacks the Storage API instead of throwing', async () => {
+    const db = freshDb();
+    dbs.push(db);
+
+    const result = await withAmbientLocalStorage({}, () => runLegacyMigration({ db }));
+
+    expect(result).toEqual({ migrated: false, count: 0, backupCreated: false });
+    expect(await db.items.count()).toBe(0);
+    expect(await db.settings.get(LEGACY_MIGRATION_KEY)).toBeUndefined();
   });
 });

@@ -26,7 +26,9 @@ export default function App() {
 
   useEffect(() => {
     // Import any v1 localStorage data (with a safety backup) on first boot.
-    void runLegacyMigration();
+    void runLegacyMigration().catch((error: unknown) => {
+      console.warn('Legacy v1 migration failed', error);
+    });
     setupPWA();
   }, []);
 

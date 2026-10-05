@@ -202,11 +202,24 @@ export function parseLegacyTasks(raw: string): LegacyTask[] {
 }
 
 /**
+ * Resolve the ambient `localStorage`. Some non-browser hosts expose a `localStorage`
+ * object without the `Storage` API (Node's bare webstorage stub), so require the
+ * methods this migration uses instead of trusting `typeof localStorage`.
+ */
+function ambientLegacyStorage(): MigrationDeps['storage'] | undefined {
+  if (typeof localStorage === 'undefined') return undefined;
+  if (typeof localStorage.getItem !== 'function' || typeof localStorage.setItem !== 'function') {
+    return undefined;
+  }
+  return localStorage;
+}
+
+/**
  * Import v1 `localStorage` data into IndexedDB. Idempotent and safe to re-run:
  * the raw payload is always backed up before any change.
  */
 export async function runLegacyMigration(deps?: Partial<MigrationDeps>): Promise<MigrationResult> {
-  const storage = deps?.storage ?? (typeof localStorage !== 'undefined' ? localStorage : undefined);
+  const storage = deps?.storage ?? ambientLegacyStorage();
   const db = deps?.db ?? getDb();
 
   if (!storage) return { migrated: false, count: 0, backupCreated: false };

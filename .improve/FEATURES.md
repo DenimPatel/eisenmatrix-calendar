@@ -1054,7 +1054,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 ---
 
 ### IMP-068 — Eliminate the intermittent unhandled rejection in the boot smoke test
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** test reliability / error handling
 - **Type:** bug-fix
 - **Area / files:** `src/test/app.smoke.test.tsx`; `src/db/migrations/legacyTasks.ts` (`runLegacyMigration`, `:219`); boot path in `src/App.tsx`
@@ -1068,7 +1068,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Pre-existing (file untouched since `ce2fecf`), observed during the commit-10 regression sweep and again on 2026-10-04. Now a CI-flake risk because IMP-005 made `npm run test` a required check. Discovered during IMP-015 verification.
+- **Notes:** DONE. PREMISE CORRECTED: this was NOT a teardown race — Node 25 exposes `globalThis.localStorage` as a plain-object webstorage stub whose `getItem`/`setItem` are undefined, so the `typeof localStorage !== 'undefined'` guard passed and `storage.getItem` threw a TypeError into a void-ed boot promise on every mount; only Vitest's *reporting* was intermittent. Fixed at the source with an `ambientLegacyStorage()` capability probe (degrades to the existing "nothing to migrate" return) plus a catch+warn at the boot call site. No suppression, no console filtering, migration logic untouched. 175 tests green over 10 consecutive runs + 4 shuffled; browser path verified to still migrate (2 items, backups + flag written). Follow-up of the same class: `SettingsView.rerunMigration` remains unhardened (CI runs Node 20 and never hits this).
 
 ---
 

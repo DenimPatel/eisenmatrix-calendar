@@ -22,3 +22,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T05:00Z | IMP-013 | done | 905aa6a | shortcuts suppressed behind overlays; +16 tests
 2026-10-04T05:07Z | IMP-014 | done | 8da083f | RFC-5545 UNTIL for all-day events
 2026-10-05T01:08Z | IMP-015 | done (attempt 2) | e6d2dc4 | CSV import error handling + deterministic tests
+2026-10-05T01:26Z | IMP-050 | done | 75778cc | habit streak via patchItem w/ shared undo; +IMP-068 backlog item
