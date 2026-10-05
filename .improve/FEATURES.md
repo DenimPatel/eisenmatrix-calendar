@@ -333,7 +333,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Reused IMP-009's initialFocusRef: Dialog gained `titleRef` (heading tabIndex=-1), ShortcutSheet focuses its heading, ConfirmDialog focuses Cancel (safe default; destructive action is last in DOM), SettingsView import dialog focuses Done. 188 tests green (8 new, 7/8 mutation-caught); Playwright-verified focus targets, opener restore, Tab loop intact, layout pixel-identical at 1280/390. Note: the global :focus-visible ring still paints on the focused heading (index.css:64) — outline-none does not suppress it; cosmetic only.
 
 ### IMP-058 — Make the Habits view honor the `weekStartsOn` setting
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / configuration
 - **Type:** bug-fix
 - **Area / files:** `src/features/habits/HabitsView.tsx` (`:29`); shared helper `weekdayLabels` in `src/lib/labels.ts` (added by IMP-049)
@@ -346,7 +346,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-049
 - **Priority score:** 15
-- **Notes:** Source: `discovered-IMP-007.md` §3 and IMP-049's notes. CalendarView's own test polls for the setting-driven render because `useSetting` resolves one frame late; do the same here.
+- **Notes:** DONE. HabitsView reads weekStartsOn via useSetting for windowStart and renders the legend from the shared weekdayLabels helper (no second label-order copy; exactly one startOfWeek definition). 192 tests green; Playwright-verified Sun-first 2026-07-12 vs Mon-first 2026-07-13 at 1280/390, zero console errors. Follow-ups logged: legend is aria-hidden so weekday order is never announced; pre-existing `--elevated:255 255 255` makes empty heatmap cells white-on-white in light theme.
 
 ### IMP-016 — Fix "This occurrence" edits leaking to the whole series
 - **Status:** TODO

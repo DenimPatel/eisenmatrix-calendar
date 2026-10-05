@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Flame, Plus } from 'lucide-react';
-import { useItems } from '@/hooks/useData';
+import { useItems, useSetting } from '@/hooks/useData';
 import { useUiStore } from '@/store/useUiStore';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -11,7 +11,9 @@ import { habitStreak } from '@/domain/stats';
 import { toggleDone } from '@/domain/itemActions';
 import { addDays, endOfDay, formatISODate, startOfDay, startOfWeek, todayKey } from '@/lib/date';
 import { cn } from '@/lib/cn';
-import type { HabitItem, Item } from '@/types';
+import { weekdayLabels } from '@/lib/labels';
+import { DEFAULT_SETTINGS } from '@/types/settings';
+import type { AppSettings, HabitItem, Item } from '@/types';
 
 const WEEKS = 12;
 const DAYS = WEEKS * 7;
@@ -19,6 +21,8 @@ const DAYS = WEEKS * 7;
 export function HabitsView() {
   const items = useItems();
   const openEditor = useUiStore((s) => s.openEditor);
+  const settings = useSetting<AppSettings>('app', DEFAULT_SETTINGS);
+  const weekStartsOn = settings.weekStartsOn;
 
   const habits = useMemo(
     () => items.filter((i): i is HabitItem => i.kind === 'habit' && !i.archivedAt),
@@ -26,7 +30,10 @@ export function HabitsView() {
   );
   const today = todayKey();
 
-  const windowStart = useMemo(() => startOfWeek(addDays(new Date(), -(DAYS - 1)), 1), []);
+  const windowStart = useMemo(
+    () => startOfWeek(addDays(new Date(), -(DAYS - 1)), weekStartsOn),
+    [weekStartsOn],
+  );
   const windowEnd = useMemo(() => endOfDay(new Date()), []);
 
   const days = useMemo(() => {
@@ -129,7 +136,17 @@ export function HabitsView() {
                   </div>
                 </div>
 
-                <div className="mt-4 overflow-x-auto">
+                <div className="mt-4 flex items-start gap-2 overflow-x-auto">
+                  <div className="grid shrink-0 grid-rows-7 gap-1" aria-hidden="true">
+                    {weekdayLabels(weekStartsOn).map((label) => (
+                      <div
+                        key={label}
+                        className="flex h-3.5 w-5 items-center text-[10px] leading-none text-muted"
+                      >
+                        {label}
+                      </div>
+                    ))}
+                  </div>
                   <div
                     className="grid w-max grid-flow-col grid-rows-7 gap-1"
                     role="img"
