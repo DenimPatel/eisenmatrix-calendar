@@ -1,5 +1,11 @@
-import { addDays, addMonths } from 'date-fns';
-import type { Item, Occurrence, OccurrenceOverride, OccurrenceStatus, RecurrenceRule } from '@/types';
+import { addDays, addMonths, differenceInCalendarDays } from 'date-fns';
+import type {
+  Item,
+  Occurrence,
+  OccurrenceOverride,
+  OccurrenceStatus,
+  RecurrenceRule,
+} from '@/types';
 import {
   clampDayOfMonth,
   dateKeyOf,
@@ -245,7 +251,9 @@ export function expandOccurrences(item: Item, from: Date, to: Date): Occurrence[
   for (const candidate of candidateDates(rule, seriesStart)) {
     const day = startOfDay(candidate);
     if (untilDay && day > untilDay) break;
-    if (rule.count && generated >= rule.count) break;
+    // `!== undefined`, not truthy: `count: 0` means "no occurrences", and a truthy test
+    // would read it as unbounded and expand it forever.
+    if (rule.count !== undefined && generated >= rule.count) break;
     generated++;
     if (day > toDay) break;
     if (day < fromDay) continue;
@@ -301,7 +309,67 @@ export function withOccurrenceState(
   };
 }
 
-/** Split a series: stop the current item before `fromKey` and return a new tail item. */
+/**
+ * Occurrences the head consumes when it stops before `fromKey`, counted exactly as
+ * `expandOccurrences` does: candidate days, so a skipped day still uses one of `count`,
+ * and both `count` and `until` cap the tally. The split may land between two occurrences,
+ * so only days strictly before `fromKey` are counted.
+ */
+function occurrencesBeforeKey(item: Item, rule: RecurrenceRule, fromKey: string): number {
+  const seriesStart = seriesStartOf(item);
+  const boundary = parseLocalDate(fromKey);
+  if (!seriesStart || !boundary) return 0;
+  const boundaryDay = startOfDay(boundary);
+  const untilBound = rule.until ? parseLocalDate(rule.until) : null;
+  const untilDay = untilBound ? endOfDay(untilBound) : null;
+  let generated = 0;
+  for (const candidate of candidateDates(rule, seriesStart)) {
+    const day = startOfDay(candidate);
+    if (untilDay && day > untilDay) break;
+    if (rule.count !== undefined && generated >= rule.count) break;
+    if (day >= boundaryDay) break;
+    generated++;
+  }
+  return generated;
+}
+
+/**
+ * The grid fields `candidateDates` infers from the series start when they are absent —
+ * `byWeekday` for weekly, `byMonthDay` for monthly, `byMonth`/`byMonthDay` for yearly.
+ * `RecurrenceEditor.baseRule()` leaves them unset, so this is the shape the editor stores.
+ */
+function impliedAnchorFields(
+  rule: RecurrenceRule,
+  anchor: Date,
+): Partial<Pick<RecurrenceRule, 'byWeekday' | 'byMonth' | 'byMonthDay'>> {
+  const implied: Partial<Pick<RecurrenceRule, 'byWeekday' | 'byMonth' | 'byMonthDay'>> = {};
+  if (rule.freq === 'weekly' && !rule.byWeekday?.length) implied.byWeekday = [anchor.getDay()];
+  if ((rule.freq === 'monthly' || rule.freq === 'yearly') && !rule.byMonthDay?.length) {
+    implied.byMonthDay = [anchor.getDate()];
+  }
+  if (rule.freq === 'yearly' && !rule.byMonth?.length) implied.byMonth = [anchor.getMonth() + 1];
+  return implied;
+}
+
+/** Move a local `YYYY-MM-DD[THH:mm]` string by whole days, keeping its time-of-day. */
+function shiftLocalDate(value: string, days: number): string {
+  const parsed = parseLocalDate(value);
+  if (!parsed) return value;
+  const moved = formatISODate(addDays(parsed, days));
+  return hasTimeComponent(value) ? `${moved}${value.slice(10)}` : moved;
+}
+
+/**
+ * Split a series: stop the current item before `fromKey` and return a new tail item.
+ * The tail carries on from `fromKey` — a count-limited series hands it only what the head
+ * did not take, so the two halves still cover the original occurrences exactly once.
+ *
+ * Moving the tail's start onto the split day must not move any occurrence *date*: the split
+ * day is often a clamped one (Aug 31 → Sep 30), and a rule that infers its grid from the
+ * series start would have the tail re-derive day 30 instead of 31, shifting every later
+ * occurrence a day earlier. The tail therefore carries the implied grid of the pre-split
+ * anchor, and a count the head fully consumed stays `0` — an empty tail, never unbounded.
+ */
 export function splitSeries(
   item: Item,
   fromKey: string,
@@ -309,16 +377,36 @@ export function splitSeries(
 ): { head: Item; tail: Item } {
   const rule = item.recurrence;
   if (!rule) return { head: item, tail: item };
-  const previous = addDays(parseLocalDate(fromKey)!, -1);
+  const from = parseLocalDate(fromKey);
+  if (!from) return { head: item, tail: item };
+  const previous = addDays(from, -1);
+  const anchor = seriesStartOf(item);
+  const shift = anchor ? differenceInCalendarDays(from, anchor) : 0;
+  const consumed = occurrencesBeforeKey(item, rule, fromKey);
+  const tailCount = rule.count === undefined ? {} : { count: Math.max(0, rule.count - consumed) };
+  const untilBound = rule.until ? parseLocalDate(rule.until) : null;
+  // A series that already ended stays ended: the head may not run past its own `until`.
+  const headUntil =
+    untilBound && untilBound.getTime() < previous.getTime()
+      ? formatISODate(untilBound)
+      : formatISODate(previous);
   const head: Item = {
     ...item,
-    recurrence: { ...rule, until: formatISODate(previous) },
+    recurrence: { ...rule, until: headUntil },
     updatedAt: Date.now(),
   };
   const tail: Item = {
     ...item,
     id: tailId,
-    recurrence: { ...rule, until: rule.until ?? null },
+    start: item.start ? shiftLocalDate(item.start, shift) : item.start,
+    end: item.end ? shiftLocalDate(item.end, shift) : item.end,
+    dueAt: item.dueAt ? shiftLocalDate(item.dueAt, shift) : item.dueAt,
+    recurrence: {
+      ...rule,
+      ...(anchor ? impliedAnchorFields(rule, anchor) : {}),
+      until: rule.until ?? null,
+      ...tailCount,
+    },
     occurrences: {},
     history: [],
     createdAt: Date.now(),

@@ -462,7 +462,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added .github/dependabot.yml (weekly `npm` at `/` and `github-actions`) and a `npm audit --audit-level=critical` step in ci.yml ordered after `npm ci`; no continue-on-error, no auto-merge, no dependency or lockfile changes. Verified: current 12 advisories (9 high, 0 critical) exit 0 at critical and exit 1 at high, matching the intended policy; both YAMLs parse and pass prettier; 258 tests green. Staging must stay explicit (never `git add -A` — it would sweep `.kilo/`).
 
 ### IMP-023 — Correct `count` when splitting a recurring series
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/recurrence.ts` (`splitSeries`, `:286-308`)
@@ -475,7 +475,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Also null-guard `parseLocalDate(fromKey)!` (see IMP-041).
+- **Notes:** DONE (attempt 2). splitSeries now materialises the implied byWeekday/byMonthDay/byMonth from the PRE-split anchor so no later occurrence drifts, gives the tail `count - consumed`, clamps the head's until, and both expansion loops cap on `count !== undefined` so a fully consumed series yields an empty tail. Also null-guards `parseLocalDate(fromKey)` and stops updateRecurring's future branch overwriting the tail anchor. Attempt 1 was rejected for date drift on implicit monthly (Oct 31 -> Oct 30) and a `count:0` tail exploding to 27,757 occurrences; both fixed. 279 tests green; property sweep of 113,100 splits over 20,244 series shows head∪tail == unsplit keys with 0 defects; 4 mutations caught. Disclosed: the tail now persists the implied rule fields (correct); head exception copying (D4) still open.
 
 ### IMP-052 — Fold long ICS lines per RFC 5545
 - **Status:** TODO

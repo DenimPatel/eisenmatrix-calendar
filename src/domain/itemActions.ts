@@ -317,11 +317,19 @@ export async function updateRecurring(
 
   // future: split the series at occKey and apply the patch to the new tail
   const { head, tail } = splitSeries(item, occKey, newId());
+  // `splitSeries` anchors the tail on the split day and hands it only the count the head
+  // did not use, so a start/end/dueAt the editor left untouched must not drag the tail back
+  // onto the range the head already covers.
+  const stored = (await itemRepo.get(item.id)) ?? item;
+  const tailPatch: ItemPatch = { ...patch };
+  for (const field of ['start', 'end', 'dueAt'] as const) {
+    if (tailPatch[field] === stored[field]) delete tailPatch[field];
+  }
   const tailPatched: Item = {
     ...tail,
-    ...patch,
+    ...tailPatch,
     id: tail.id,
-    recurrence: (patch.recurrence as Item['recurrence']) ?? tail.recurrence,
+    recurrence: (tailPatch.recurrence as Item['recurrence']) ?? tail.recurrence,
     updatedAt: Date.now(),
   } as Item;
   await itemRepo.create(head);

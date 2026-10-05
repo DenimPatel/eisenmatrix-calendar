@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '@/db/schema';
-import { itemRepo } from '@/db/repository';
+import { itemRepo, type ItemPatch } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem, normalizeItem } from './itemFactory';
 import { deleteItem, deleteItems, todayOccKey, toggleDone, updateRecurring } from './itemActions';
@@ -37,9 +37,9 @@ async function storedHabit(id: string): Promise<HabitItem> {
 }
 
 function relationships(items: Item[]): Array<[string, string | null]> {
-  return items.map((i) => [i.id, i.parentId] as [string, string | null]).sort((a, b) =>
-    a[0].localeCompare(b[0]),
-  );
+  return items
+    .map((i) => [i.id, i.parentId] as [string, string | null])
+    .sort((a, b) => a[0].localeCompare(b[0]));
 }
 
 function weeklyTask(id: string): TaskItem {
@@ -380,7 +380,10 @@ describe('updateRecurring (scope: occurrence)', () => {
     expect(after.tags).toEqual(['work']);
     expect(after.reminders).toEqual([{ id: 'r1', offsetMinutes: -10 }]);
     expect(after.data).toEqual(before.data);
-    expect(after.recurrence).toEqual({ ...before.recurrence, overrides: after.recurrence?.overrides });
+    expect(after.recurrence).toEqual({
+      ...before.recurrence,
+      overrides: after.recurrence?.overrides,
+    });
   });
 
   it('leaves every other occurrence of the series displaying the same values', async () => {
@@ -445,6 +448,99 @@ describe('updateRecurring (scope: occurrence)', () => {
     expect(after.start).toBe('2026-07-20T11:00');
     expect(after.urgency).toBe('high');
     expect(after.recurrence?.overrides).toEqual({});
+  });
+});
+
+describe('updateRecurring (scope: future)', () => {
+  const OCC = '2026-07-20';
+  const WIDE = { from: new Date('2020-01-01T00:00:00'), to: new Date('2030-01-01T00:00:00') };
+
+  function countedWeeklyTask(id: string): TaskItem {
+    const item = weeklyTask(id);
+    item.recurrence = { ...item.recurrence!, count: 10 };
+    return item;
+  }
+
+  function occurrences(item: Item): string[] {
+    return expandOccurrences(item, WIDE.from, WIDE.to).map((o) => o.occKey);
+  }
+
+  async function tailOf(): Promise<Item> {
+    const items = await db.items.toArray();
+    expect(items).toHaveLength(2);
+    return items[0].id === 's' ? items[1] : items[0];
+  }
+
+  it('anchors the tail on the split day and keeps the series total', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+
+    await updateRecurring(before, 'future', OCC, { title: 'Standup (retro)' });
+
+    const tail = await tailOf();
+    expect(tail.title).toBe('Standup (retro)');
+    expect(tail.start).toBe('2026-07-20T09:00');
+    expect(tail.recurrence?.count).toBe(9);
+    const head = (await itemRepo.get('s'))!;
+    expect(head.recurrence?.until).toBe('2026-07-19');
+    const union = [...new Set([...occurrences(head), ...occurrences(tail)])];
+    expect(union).toEqual(occurrences(before));
+    expect(union).toHaveLength(10);
+  });
+
+  it('applies a start the editor actually changed', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+
+    await updateRecurring(before, 'future', OCC, {
+      title: 'Standup (retro)',
+      start: '2026-07-21T11:00',
+    });
+
+    expect((await tailOf()).start).toBe('2026-07-21T11:00');
+  });
+
+  /**
+   * The editor's `seriesPatch` always sends `start`/`end`/`dueAt`, so a save with no date
+   * edit hands the branch the stored dates back. Unless they are recognised as untouched,
+   * they overwrite the tail's new anchor and the whole count fix silently loses occurrences.
+   */
+  it('keeps the tail on the split day when the patch repeats the stored dates', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const stored = (await itemRepo.get('s'))!;
+    const seriesPatchOf = (draft: Item): ItemPatch => ({
+      title: draft.title,
+      notes: draft.notes,
+      status: draft.status,
+      urgency: draft.urgency,
+      importance: draft.importance,
+      tags: draft.tags,
+      listId: draft.listId,
+      checklist: draft.checklist,
+      allDay: draft.allDay,
+      start: draft.start,
+      end: draft.end,
+      dueAt: draft.dueAt,
+      reminders: draft.reminders,
+      data: draft.data,
+    });
+
+    await updateRecurring(stored, 'future', OCC, {
+      ...seriesPatchOf(stored),
+      title: 'Standup (retro)',
+    });
+
+    const tail = await tailOf();
+    expect(tail.start).toBe('2026-07-20T09:00');
+    expect(tail.end).toBe('2026-07-20T10:00');
+    expect(tail.dueAt).toBe('2026-07-20T09:00');
+    const head = (await itemRepo.get('s'))!;
+    expect(head.start).toBe('2026-07-13T09:00');
+    expect(head.end).toBe('2026-07-13T10:00');
+    expect(head.dueAt).toBe('2026-07-13T09:00');
+    const union = [...occurrences(head), ...occurrences(tail)].sort();
+    expect(union).toEqual(occurrences(stored));
+    expect(union).toHaveLength(10);
   });
 });
 

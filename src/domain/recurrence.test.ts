@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { expandOccurrences, resolveOccurrenceStatus } from './recurrence';
+import {
+  expandOccurrences,
+  nextOccurrence,
+  resolveOccurrenceStatus,
+  splitSeries,
+} from './recurrence';
 import { createItem } from './itemFactory';
 import { parseLocalDate } from '@/lib/date';
 import type { Item, RecurrenceRule } from '@/types';
@@ -298,5 +303,346 @@ describe('occurrence ranges', () => {
         parseLocalDate(occ.start)!.getTime(),
       );
     }
+  });
+});
+
+describe('splitSeries', () => {
+  const WIDE = { from: '2000-01-01', to: '2100-01-01' } as const;
+
+  function split(item: Item, fromKey: string) {
+    const { head, tail } = splitSeries(item, fromKey, 'tail');
+    const headKeys = keys(head, WIDE.from, WIDE.to);
+    const tailKeys = keys(tail, WIDE.from, WIDE.to);
+    return { head, tail, headKeys, tailKeys, union: [...new Set([...headKeys, ...tailKeys])] };
+  }
+
+  it('keeps a count-limited series at its original total', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 10 });
+    const { head, tail, headKeys, tailKeys, union } = split(item, '2024-01-04');
+
+    expect(head.recurrence!.until).toBe('2024-01-03');
+    expect(headKeys).toEqual(['2024-01-01', '2024-01-02', '2024-01-03']);
+    expect(tail.recurrence!.count).toBe(7);
+    expect(tailKeys).toHaveLength(7);
+    expect(headKeys.length + tailKeys.length).toBe(item.recurrence!.count);
+    expect(union).toEqual(keys(item, WIDE.from, WIDE.to));
+  });
+
+  it('counts only the occurrences a mid-period split actually consumes', () => {
+    const item = makeItem('2024-01-01', { freq: 'weekly', byWeekday: [1, 3, 5], count: 10 });
+    // 2024-01-04 is a Thursday: between the Wednesday and Friday occurrences.
+    const { headKeys, tailKeys, tail, union } = split(item, '2024-01-04');
+
+    expect(headKeys).toEqual(['2024-01-01', '2024-01-03']);
+    expect(tail.recurrence!.count).toBe(8);
+    expect(tailKeys[0]).toBe('2024-01-05');
+    expect(headKeys.length + tailKeys.length).toBe(10);
+    expect(union).toEqual(keys(item, WIDE.from, WIDE.to));
+  });
+
+  it('splits on a later occurrence of a multi-day monthly rule without over-counting', () => {
+    const item = makeItem('2024-01-05', { freq: 'monthly', byMonthDay: [5, 20], count: 6 });
+    const { headKeys, tailKeys, tail, union } = split(item, '2024-02-20');
+
+    expect(headKeys).toEqual(['2024-01-05', '2024-01-20', '2024-02-05']);
+    expect(tail.recurrence!.count).toBe(3);
+    expect(tailKeys).toEqual(['2024-02-20', '2024-03-05', '2024-03-20']);
+    expect(union).toEqual(keys(item, WIDE.from, WIDE.to));
+  });
+
+  it('leaves an uncounted series uncounted', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily' });
+    const { head, tail, headKeys } = split(item, '2024-01-04');
+
+    expect(head.recurrence!.until).toBe('2024-01-03');
+    expect(tail.recurrence!.until).toBeNull();
+    expect(tail.recurrence!.count).toBeUndefined();
+    expect(headKeys).toEqual(['2024-01-01', '2024-01-02', '2024-01-03']);
+    // Unbounded on both sides: the tail simply carries on from the split day.
+    expect(keys(tail, '2024-01-01', '2024-01-06')).toEqual([
+      '2024-01-04',
+      '2024-01-05',
+      '2024-01-06',
+    ]);
+    expect(keys(tail, '2024-01-01', '2024-01-06').concat(headKeys).sort()).toEqual([
+      '2024-01-01',
+      '2024-01-02',
+      '2024-01-03',
+      '2024-01-04',
+      '2024-01-05',
+      '2024-01-06',
+    ]);
+  });
+
+  it('does not change what an until-bounded series generates', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 10, until: '2024-01-05' });
+    const expected = keys(item, WIDE.from, WIDE.to);
+    const { tail, headKeys, tailKeys, union } = split(item, '2024-01-04');
+
+    expect(tail.recurrence!.until).toBe('2024-01-05');
+    expect(headKeys).toEqual(['2024-01-01', '2024-01-02', '2024-01-03']);
+    expect(tailKeys).toEqual(['2024-01-04', '2024-01-05']);
+    expect(union).toEqual(expected);
+  });
+
+  it('leaves a count harmless when the original until ends before the split', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 10, until: '2024-01-03' });
+    const expected = keys(item, WIDE.from, WIDE.to);
+    const { head, tail, headKeys, tailKeys, union } = split(item, '2024-01-10');
+
+    expect(head.recurrence!.until).toBe('2024-01-03');
+    expect(tail.recurrence!.until).toBe('2024-01-03');
+    expect(headKeys).toEqual(expected);
+    expect(tailKeys).toEqual([]);
+    expect(tail.recurrence!.count).toBeGreaterThanOrEqual(expected.length);
+    expect(union).toEqual(expected);
+  });
+
+  it('moves the tail dates onto the split day, keeping the range and time-of-day', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Sync',
+      start: '2024-01-01T09:00',
+      end: '2024-01-01T10:30',
+      allDay: false,
+    });
+    item.recurrence = {
+      freq: 'weekly',
+      interval: 1,
+      byWeekday: [1],
+      weekStartsOn: 1,
+      count: 5,
+      exceptions: [],
+      overrides: {},
+    };
+    const { head, tail, union } = split(item, '2024-01-22');
+
+    expect(tail.start).toBe('2024-01-22T09:00');
+    expect(tail.end).toBe('2024-01-22T10:30');
+    expect(head.start).toBe('2024-01-01T09:00');
+    expect(head.end).toBe('2024-01-01T10:30');
+    const occ = only(tail, '2024-01-22');
+    expect(occ.start).toBe('2024-01-22T09:00');
+    expect(occ.end).toBe('2024-01-22T10:30');
+    expect(union).toEqual(keys(item, WIDE.from, WIDE.to));
+  });
+
+  it('keeps a skipped day consuming count, exactly as unsplit expansion does', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 4, exceptions: ['2024-01-02'] });
+    item.occurrences = { '2024-01-01': { status: 'done', completedAt: 1 } };
+    const { head, tail, headKeys, tailKeys, union } = split(item, '2024-01-04');
+
+    expect(head.recurrence!.count).toBe(4);
+    expect(head.recurrence!.exceptions).toEqual(['2024-01-02']);
+    expect(head.occurrences['2024-01-01']).toEqual({ status: 'done', completedAt: 1 });
+    expect(tail.id).toBe('tail');
+    expect(tail.occurrences).toEqual({});
+    expect(tail.history).toEqual([]);
+    expect(headKeys).toEqual(['2024-01-01', '2024-01-03']);
+    expect(tail.recurrence!.count).toBe(1);
+    expect(tailKeys).toEqual(['2024-01-04']);
+    expect(union).toEqual(keys(item, WIDE.from, WIDE.to));
+  });
+
+  it('returns the item unsplit for a missing or unparseable split key', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 10 });
+    for (const bad of ['', 'not-a-date']) {
+      expect(splitSeries(item, bad, 'tail')).toEqual({ head: item, tail: item });
+    }
+    const single = makeItem('2024-01-01');
+    expect(splitSeries(single, '2024-01-04', 'tail')).toEqual({ head: single, tail: single });
+  });
+
+  it('reads a count of zero as an empty series, not an unbounded one', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 0 });
+    expect(keys(item, '2024-01-01', '2124-01-01')).toEqual([]);
+    expect(expandOccurrences(item, new Date('2024-01-01'), new Date('2024-02-01'))).toEqual([]);
+    expect(nextOccurrence(item, new Date('2024-01-01'), 365)).toBeNull();
+  });
+
+  it('produces no tail occurrences once the head has consumed the whole count', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 3 });
+    const { head, tail, tailKeys } = split(item, '2024-01-04');
+
+    expect(tail.recurrence!.count).toBe(0);
+    expect(tailKeys).toEqual([]);
+    expect(keys(tail, '2024-01-01', '2124-01-01')).toEqual([]);
+    expect(keys(head, WIDE.from, WIDE.to)).toEqual(['2024-01-01', '2024-01-02', '2024-01-03']);
+  });
+});
+
+describe('splitSeries keeps every occurrence on its original date', () => {
+  const WIDE = { from: '2000-01-01', to: '2100-01-01' } as const;
+
+  function seriesKeys(item: Item): string[] {
+    return expandOccurrences(
+      item,
+      new Date(`${WIDE.from}T00:00:00`),
+      new Date(`${WIDE.to}T23:59:59`),
+    ).map((o) => o.occKey);
+  }
+
+  function makeItem(start: string, rule?: Partial<RecurrenceRule> | null): Item {
+    const item = createItem({ kind: 'task', title: 'Test', start, allDay: true });
+    item.recurrence = rule
+      ? { freq: 'daily', interval: 1, weekStartsOn: 1, exceptions: [], overrides: {}, ...rule }
+      : null;
+    return item;
+  }
+
+  /** head ∪ tail, with a duplicate check: the two halves must never overlap. */
+  function halves(item: Item, fromKey: string) {
+    const { head, tail } = splitSeries(item, fromKey, 'tail');
+    const headKeys = seriesKeys(head);
+    const tailKeys = seriesKeys(tail);
+    return { head, tail, headKeys, tailKeys, union: [...headKeys, ...tailKeys].sort() };
+  }
+
+  it('keeps a 31st-of-the-month series on the 31st when the split day is clamped', () => {
+    const item = makeItem('2026-08-31', { freq: 'monthly', count: 10 });
+    const { headKeys, tailKeys, tail, union } = halves(item, '2026-09-30');
+
+    // The rule stores no `byMonthDay`, exactly as `RecurrenceEditor.baseRule()` produces.
+    expect(item.recurrence!.byMonthDay).toBeUndefined();
+    expect(tail.start).toBe('2026-09-30');
+    expect(tailKeys).toEqual([
+      '2026-09-30',
+      '2026-10-31',
+      '2026-11-30',
+      '2026-12-31',
+      '2027-01-31',
+      '2027-02-28',
+      '2027-03-31',
+      '2027-04-30',
+      '2027-05-31',
+    ]);
+    expect(headKeys).toEqual(['2026-08-31']);
+    expect(union).toEqual(seriesKeys(item));
+  });
+
+  it('keeps a month-end series on the 31st when split mid-series on a clamped day', () => {
+    const item = makeItem('2024-01-31', { freq: 'monthly', count: 10 });
+    const { headKeys, tailKeys, union } = halves(item, '2024-02-29');
+
+    expect(headKeys).toEqual(['2024-01-31']);
+    expect(tailKeys).toEqual([
+      '2024-02-29',
+      '2024-03-31',
+      '2024-04-30',
+      '2024-05-31',
+      '2024-06-30',
+      '2024-07-31',
+      '2024-08-31',
+      '2024-09-30',
+      '2024-10-31',
+    ]);
+    expect(union).toEqual(seriesKeys(item));
+  });
+
+  it('keeps a 29th/30th anchored monthly series on its own day', () => {
+    for (const [start, day30Split] of [
+      ['2023-01-30', '2023-02-28'],
+      ['2024-01-30', '2024-02-29'],
+      ['2023-01-29', '2023-02-28'],
+    ] as const) {
+      const item = makeItem(start, { freq: 'monthly', count: 6 });
+      const { tailKeys, union } = halves(item, day30Split);
+      expect(tailKeys[0]).toBe(day30Split);
+      expect(union).toEqual(seriesKeys(item));
+    }
+  });
+
+  it('keeps the leap day on a yearly series split at a non-leap occurrence', () => {
+    const item = makeItem('2024-02-29', { freq: 'yearly', count: 6 });
+    const { headKeys, tailKeys, union } = halves(item, '2025-02-28');
+
+    expect(headKeys).toEqual(['2024-02-29']);
+    expect(tailKeys).toEqual([
+      '2025-02-28',
+      '2026-02-28',
+      '2027-02-28',
+      '2028-02-29',
+      '2029-02-28',
+    ]);
+    expect(union).toEqual(seriesKeys(item));
+  });
+
+  it('leaves an explicit month-end rule alone', () => {
+    const item = makeItem('2024-01-31', { freq: 'monthly', byMonthDay: [-1], count: 8 });
+    const { tailKeys, union } = halves(item, '2024-04-30');
+    expect(tailKeys[0]).toBe('2024-04-30');
+    expect(union).toEqual(seriesKeys(item));
+  });
+
+  /**
+   * head ∪ tail must reproduce the unsplit key set exactly — no gaps, no duplicates and no
+   * date drift — at every occurrence key the editor can offer as a split point.
+   */
+  it('reproduces the unsplit occurrence set exactly across the whole rule space', () => {
+    const STARTS = ['2023-12-31', '2024-01-15', '2024-01-30', '2024-01-31', '2024-02-29'];
+    const RULES: Array<Partial<RecurrenceRule>> = [
+      { freq: 'daily' },
+      { freq: 'weekly' },
+      { freq: 'weekly', byWeekday: [1, 3, 5] },
+      { freq: 'monthly' },
+      { freq: 'monthly', byMonthDay: [5, 20] },
+      { freq: 'monthly', byMonthDay: [-1] },
+      { freq: 'yearly' },
+      { freq: 'yearly', byMonth: [1, 7] },
+      { freq: 'yearly', byMonth: [2], byMonthDay: [29] },
+    ];
+    const INTERVALS = [1, 2, 3];
+    const COUNTS = [1, 2, 3, 5, 8, 12];
+    let checked = 0;
+
+    for (const start of STARTS) {
+      for (const rule of RULES) {
+        for (const interval of INTERVALS) {
+          for (const count of COUNTS) {
+            const item = makeItem(start, { ...rule, interval, count });
+            const original = seriesKeys(item);
+            for (const splitKey of original) {
+              const { headKeys, tailKeys, union } = halves(item, splitKey);
+              const where = `${start} ${rule.freq} i${interval} n${count} @${splitKey}`;
+              expect(new Set([...headKeys, ...tailKeys]).size, where).toBe(
+                headKeys.length + tailKeys.length,
+              );
+              expect(union, where).toEqual(original);
+              expect(headKeys.length + tailKeys.length, where).toBe(count);
+              checked++;
+            }
+          }
+        }
+      }
+    }
+
+    expect(checked).toBeGreaterThan(2000);
+  });
+
+  it('reproduces the unsplit occurrence set for timed series and skipped days', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Sync',
+      start: '2024-01-31T09:00',
+      end: '2024-01-31T10:30',
+      allDay: false,
+    });
+    item.recurrence = {
+      freq: 'monthly',
+      interval: 1,
+      weekStartsOn: 1,
+      count: 8,
+      exceptions: ['2024-04-30'],
+      overrides: {},
+    };
+    const original = seriesKeys(item);
+
+    for (const splitKey of original) {
+      const { tail, union } = halves(item, splitKey);
+      expect(tail.start, splitKey).toMatch(/T09:00$/);
+      expect(tail.end, splitKey).toMatch(/T10:30$/);
+      expect(union, splitKey).toEqual(original);
+    }
+    expect(original).not.toContain('2024-04-30');
   });
 });
