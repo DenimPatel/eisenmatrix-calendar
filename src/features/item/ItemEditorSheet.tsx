@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Trash2, X } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,14 @@ import { useUiStore } from '@/store/useUiStore';
 import { useChildren, useLists, useSetting } from '@/hooks/useData';
 import { cn } from '@/lib/cn';
 import { newId } from '@/lib/id';
-import { formatISODate, formatTime, hasTimeComponent, parseLocalDate } from '@/lib/date';
+import type { ItemPatch } from '@/db/repository';
+import {
+  dateKeyOf,
+  formatISODate,
+  formatTime,
+  hasTimeComponent,
+  parseLocalDate,
+} from '@/lib/date';
 import { ITEM_KIND_LABELS, ITEM_STATUS_LABELS, PRIORITY_LABELS } from '@/lib/labels';
 import { createItem } from '@/domain/itemFactory';
 import {
@@ -27,6 +34,75 @@ import { RecurrenceEditor } from './RecurrenceEditor';
 import { ReminderEditor } from './ReminderEditor';
 
 type Tab = 'details' | 'schedule' | 'analytics' | 'history';
+
+/** Fields a single occurrence cannot own; a scope of `occurrence` leaves them untouched. */
+const SERIES_ONLY_FIELDS = new Set([
+  'urgency',
+  'importance',
+  'tags',
+  'reminders',
+  'listId',
+  'checklist',
+  'data',
+  'dueAt',
+  'recurrence',
+]);
+
+const SERIES_ONLY_HINT = 'Applies to the whole series';
+
+/** Every field an edit re-applies to the whole series. */
+function seriesPatch(draft: Item): ItemPatch {
+  return {
+    title: draft.title,
+    notes: draft.notes,
+    status: draft.status,
+    urgency: draft.urgency,
+    importance: draft.importance,
+    tags: draft.tags,
+    listId: draft.listId,
+    checklist: draft.checklist,
+    allDay: draft.allDay,
+    start: draft.start,
+    end: draft.end,
+    dueAt: draft.dueAt,
+    reminders: draft.reminders,
+    data: draft.data,
+  };
+}
+
+/**
+ * Only per-occurrence fields, and only when the user actually changed them, so that
+ * saving one occurrence cannot rewrite the series. Status is included: it is stored per
+ * occurrence in `item.occurrences`, not on the series.
+ */
+function occurrencePatch(draft: Item, base: Item): ItemPatch {
+  const patch: ItemPatch = {};
+  if (draft.title !== base.title) patch.title = draft.title;
+  if (draft.notes !== base.notes) patch.notes = draft.notes;
+  if (draft.status !== base.status) patch.status = draft.status;
+  if (draft.allDay !== base.allDay) patch.allDay = draft.allDay;
+  if (draft.start !== base.start) patch.start = draft.start;
+  if (draft.end !== base.end) patch.end = draft.end;
+  return patch;
+}
+
+function SeriesOnlyGroup({
+  locked,
+  label,
+  children,
+}: {
+  locked: boolean;
+  label?: string;
+  children: ReactNode;
+}) {
+  if (!locked) return <>{children}</>;
+  return (
+    <fieldset disabled className="min-w-0 space-y-4 opacity-60">
+      {label && <legend className="text-xs font-medium text-muted">{label}</legend>}
+      {children}
+    </fieldset>
+  );
+}
 
 export function ItemEditorSheet() {
   const editor = useUiStore((s) => s.editor);
@@ -65,10 +141,25 @@ export function ItemEditorSheet() {
 
   if (!editor.open || !draft) return null;
 
+  // A single occurrence owns title, notes, status, start and end only. Everything else is
+  // shown read-only rather than quietly dropped on save.
+  const occurrenceScoped = !!draft.recurrence && !!editor.occurrenceKey && scope === 'occurrence';
+
   const update = (patch: Partial<Item>) =>
-    setDraft((prev) => (prev ? ({ ...prev, ...patch } as Item) : prev));
+    setDraft((prev) => {
+      if (!prev) return prev;
+      if (!occurrenceScoped) return { ...prev, ...patch } as Item;
+      const next = { ...patch } as Record<string, unknown>;
+      for (const key of Object.keys(next)) {
+        if (SERIES_ONLY_FIELDS.has(key)) delete next[key];
+      }
+      return Object.keys(next).length ? ({ ...prev, ...next } as Item) : prev;
+    });
   const updateData = (patch: Record<string, unknown>) =>
-    setDraft((prev) => (prev ? ({ ...prev, data: { ...prev.data, ...patch } } as Item) : prev));
+    setDraft((prev) => {
+      if (!prev || occurrenceScoped) return prev;
+      return { ...prev, data: { ...prev.data, ...patch } } as Item;
+    });
 
   const addTag = () => {
     const tag = tagInput.trim().replace(/^#/, '').toLowerCase();
@@ -81,24 +172,22 @@ export function ItemEditorSheet() {
   };
 
   const handleSave = async () => {
-    if (draft.recurrence && editor.occurrenceKey && scope !== 'all') {
-      await updateRecurring(draft, scope, editor.occurrenceKey, {
-        title: draft.title,
-        notes: draft.notes,
-        status: draft.status,
-        urgency: draft.urgency,
-        importance: draft.importance,
-        tags: draft.tags,
-        allDay: draft.allDay,
-        start: draft.start,
-        end: draft.end,
-        reminders: draft.reminders,
-        data: draft.data,
-      });
-      pushToast({
-        message: scope === 'occurrence' ? 'Occurrence updated' : 'Series split',
-        tone: 'success',
-      });
+    const occKey = editor.occurrenceKey;
+    if (draft.recurrence && occKey && scope !== 'all') {
+      const written = await updateRecurring(
+        draft,
+        scope,
+        occKey,
+        scope === 'occurrence' ? occurrencePatch(draft, editor.item ?? draft) : seriesPatch(draft),
+      );
+      if (scope === 'future') {
+        pushToast({ message: 'Series split', tone: 'success' });
+      } else {
+        pushToast({
+          message: written ? 'Occurrence updated' : 'Nothing to update for this occurrence',
+          tone: 'success',
+        });
+      }
     } else {
       await saveItem(draft);
     }
@@ -190,6 +279,12 @@ export function ItemEditorSheet() {
               </button>
             ))}
           </div>
+          {occurrenceScoped && (
+            <p className="mt-2">
+              One occurrence can only change its title, notes, status, start, end and all-day
+              setting. Fields marked “{SERIES_ONLY_HINT}” are disabled for this scope.
+            </p>
+          )}
         </div>
       )}
 
@@ -237,27 +332,32 @@ export function ItemEditorSheet() {
                 }))}
               />
             </Field>
-            <Field label="Urgency">
+            <Field label="Urgency" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
               <Select
                 value={draft.urgency}
+                disabled={occurrenceScoped}
                 onChange={(e) => update({ urgency: e.target.value as Item['urgency'] })}
                 options={Object.entries(PRIORITY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
               />
             </Field>
-            <Field label="Importance">
+            <Field label="Importance" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
               <Select
                 value={draft.importance}
+                disabled={occurrenceScoped}
                 onChange={(e) => update({ importance: e.target.value as Item['importance'] })}
                 options={Object.entries(PRIORITY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
               />
             </Field>
           </div>
 
-          <KindFields item={draft} onData={updateData} />
+          <SeriesOnlyGroup locked={occurrenceScoped}>
+            <KindFields item={draft} onData={updateData} />
+          </SeriesOnlyGroup>
 
-          <Field label="List">
+          <Field label="List" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
             <Select
               value={draft.listId ?? ''}
+              disabled={occurrenceScoped}
               onChange={(e) => update({ listId: e.target.value || null })}
               options={[
                 { value: '', label: 'No list' },
@@ -266,36 +366,38 @@ export function ItemEditorSheet() {
             />
           </Field>
 
-          <Field label="Tags">
-            <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface p-2">
-              {draft.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-xs text-muted"
-                >
-                  #{tag}
-                  <button
-                    type="button"
-                    onClick={() => update({ tags: draft.tags.filter((t) => t !== tag) })}
-                    aria-label={`Remove ${tag}`}
+          <Field label="Tags" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+            <fieldset disabled={occurrenceScoped} className="min-w-0 opacity-60">
+              <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface p-2">
+                {draft.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-xs text-muted"
                   >
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-              <input
-                className="min-w-[6rem] flex-1 bg-transparent text-sm outline-none"
-                value={tagInput}
-                placeholder="Add tag…"
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-              />
-            </div>
+                    #{tag}
+                    <button
+                      type="button"
+                      onClick={() => update({ tags: draft.tags.filter((t) => t !== tag) })}
+                      aria-label={`Remove ${tag}`}
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  className="min-w-[6rem] flex-1 bg-transparent text-sm outline-none"
+                  value={tagInput}
+                  placeholder="Add tag…"
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      addTag();
+                    }
+                  }}
+                />
+              </div>
+            </fieldset>
           </Field>
 
           {(draft.kind === 'task' || draft.kind === 'goal' || draft.kind === 'event') && (
@@ -342,39 +444,43 @@ export function ItemEditorSheet() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted">Checklist</span>
-            {draft.checklist.map((entry) => (
-              <div key={entry.id} className="flex items-center gap-2">
-                <Checkbox checked={entry.done} onChange={() => toggleChecklist(entry.id)} />
-                <span className={cn('flex-1 text-sm', entry.done && 'text-muted line-through')}>
-                  {entry.text}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() =>
-                    update({ checklist: draft.checklist.filter((c) => c.id !== entry.id) })
+          <SeriesOnlyGroup locked={occurrenceScoped}>
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-muted">
+                Checklist {occurrenceScoped ? `· ${SERIES_ONLY_HINT}` : ''}
+              </span>
+              {draft.checklist.map((entry) => (
+                <div key={entry.id} className="flex items-center gap-2">
+                  <Checkbox checked={entry.done} onChange={() => toggleChecklist(entry.id)} />
+                  <span className={cn('flex-1 text-sm', entry.done && 'text-muted line-through')}>
+                    {entry.text}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() =>
+                      update({ checklist: draft.checklist.filter((c) => c.id !== entry.id) })
+                    }
+                    aria-label="Remove checklist item"
+                  >
+                    <X size={14} />
+                  </Button>
+                </div>
+              ))}
+              <input
+                className="input"
+                placeholder="Add checklist item and press Enter"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const value = e.currentTarget.value;
+                    e.currentTarget.value = '';
+                    addChecklistEntry(value);
                   }
-                  aria-label="Remove checklist item"
-                >
-                  <X size={14} />
-                </Button>
-              </div>
-            ))}
-            <input
-              className="input"
-              placeholder="Add checklist item and press Enter"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const value = e.currentTarget.value;
-                  e.currentTarget.value = '';
-                  addChecklistEntry(value);
-                }
-              }}
-            />
-          </div>
+                }}
+              />
+            </div>
+          </SeriesOnlyGroup>
         </div>
       )}
 
@@ -389,7 +495,16 @@ export function ItemEditorSheet() {
                 const time =
                   draft.start && hasTimeComponent(draft.start) ? formatTime(draft.start) : '09:00';
                 const next = allDay ? formatISODate(base) : `${formatISODate(base)}T${time}`;
-                update({ allDay, start: next, dueAt: next });
+                // Keep `end` in the same shape as `start`, otherwise flipping the flag leaves
+                // a bare date ending a timed occurrence (or an instant ending an all-day one).
+                const end = draft.end
+                  ? allDay
+                    ? formatISODate(parseLocalDate(draft.end)!)
+                    : hasTimeComponent(draft.end)
+                      ? draft.end
+                      : `${formatISODate(parseLocalDate(draft.end)!)}T${time}`
+                  : null;
+                update({ allDay, start: next, dueAt: next, end });
               }}
             />
             All day
@@ -426,11 +541,20 @@ export function ItemEditorSheet() {
               </div>
             </Field>
 
-            <Field label="Due">
+            <Field label="Due" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
               <input
                 type="datetime-local"
                 className="input"
-                value={draft.dueAt ? (draft.allDay ? `${draft.dueAt}T00:00` : draft.dueAt) : ''}
+                disabled={occurrenceScoped}
+                // A date-only value needs a time to satisfy the input, even when the item is
+                // timed and the due date is left at the series value.
+                value={
+                  draft.dueAt
+                    ? hasTimeComponent(draft.dueAt) && !draft.allDay
+                      ? draft.dueAt
+                      : `${dateKeyOf(draft.dueAt)}T00:00`
+                    : ''
+                }
                 onChange={(e) => update({ dueAt: e.target.value || null })}
               />
             </Field>
@@ -451,18 +575,20 @@ export function ItemEditorSheet() {
             />
           </Field>
 
-          <RecurrenceEditor
-            value={draft.recurrence}
-            start={draft.start}
-            weekStartsOn={settings.weekStartsOn}
-            onChange={(rule) => update({ recurrence: rule })}
-          />
+          <SeriesOnlyGroup locked={occurrenceScoped} label={`Series · ${SERIES_ONLY_HINT}`}>
+            <RecurrenceEditor
+              value={draft.recurrence}
+              start={draft.start}
+              weekStartsOn={settings.weekStartsOn}
+              onChange={(rule) => update({ recurrence: rule })}
+            />
 
-          <ReminderEditor
-            value={draft.reminders}
-            allDay={draft.allDay}
-            onChange={(reminders) => update({ reminders })}
-          />
+            <ReminderEditor
+              value={draft.reminders}
+              allDay={draft.allDay}
+              onChange={(reminders) => update({ reminders })}
+            />
+          </SeriesOnlyGroup>
         </div>
       )}
 

@@ -349,7 +349,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. HabitsView reads weekStartsOn via useSetting for windowStart and renders the legend from the shared weekdayLabels helper (no second label-order copy; exactly one startOfWeek definition). 192 tests green; Playwright-verified Sun-first 2026-07-12 vs Mon-first 2026-07-13 at 1280/390, zero console errors. Follow-ups logged: legend is aria-hidden so weekday order is never announced; pre-existing `--elevated:255 255 255` makes empty heatmap cells white-on-white in light theme.
 
 ### IMP-016 — Fix "This occurrence" edits leaking to the whole series
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`updateRecurring` occurrence branch, `:231-245`); `src/features/item/ItemEditorSheet.tsx` (`handleSave`, `:82-105`)
@@ -362,7 +362,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 12.5
-- **Notes:** Mirror the recon-recommended explicit base patch `{ recurrence }`.
+- **Notes:** DONE (attempt 2). Scope `occurrence` now writes only `recurrence.overrides` — the base series no longer re-anchors. Attempt 1 failed verification and its 3 issues were fixed: (1) occurrence status now lives solely in `item.occurrences` (one resolver shared by toggleDone/ItemCard; legacy `overrides[key].status` still honored) so the card checkbox is no longer dead; (2) `occurrenceEnd` derives from the resolved start/allDay and can no longer produce an inverted range; (3) series-only fields (urgency/importance/tags/reminders) are disabled and labelled "Applies to the whole series" under this scope, with an honest "Nothing to update" toast. 218 tests green; 23 mutations caught; Playwright-verified with 0 console errors. Minor known gaps: editor draft is the series row (an occurrence's own start/allDay overrides are not shown), the `future`-scope unit test was dropped, and `title`/`notes` overrides are still unrendered.
 
 ### IMP-017 — Strip trailing prepositions from parsed quick-add titles
 - **Status:** TODO

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { KIND_META } from './kindMeta';
 import { ITEM_STATUS_LABELS } from '@/lib/labels';
 import { describeRecurrence } from '@/domain/quickadd';
+import { resolveOccurrenceStatus } from '@/domain/recurrence';
 import { resolveCardTime } from './cardTime';
 import { toggleDone } from '@/domain/itemActions';
 
@@ -44,8 +45,10 @@ export function ItemCard({
     disabled: dragDisabled,
   });
 
+  // Resolve the occurrence the same way the calendar and stats do, so the checkbox cannot
+  // disagree with the status shown next to it.
   const effectiveStatus =
-    status ?? (occurrenceKey ? (item.occurrences[occurrenceKey]?.status ?? 'todo') : item.status);
+    status ?? (occurrenceKey ? resolveOccurrenceStatus(item, occurrenceKey).status : item.status);
   const done = effectiveStatus === 'done';
   const kind = KIND_META[item.kind];
   const time = resolveCardTime(start, item.start);

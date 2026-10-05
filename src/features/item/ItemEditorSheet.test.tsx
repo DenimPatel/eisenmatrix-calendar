@@ -4,8 +4,12 @@ import { createRoot } from 'react-dom/client';
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ItemEditorSheet } from './ItemEditorSheet';
 import { db } from '@/db/schema';
+import { itemRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem } from '@/domain/itemFactory';
+import { expandOccurrences, resolveOccurrenceStatus } from '@/domain/recurrence';
+import { hasTimeComponent, parseLocalDate } from '@/lib/date';
+import type { Item } from '@/types';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -34,10 +38,76 @@ async function mountEditor() {
   };
 }
 
+function recurringItem(): Item {
+  const item = createItem({
+    kind: 'task',
+    title: 'Standup',
+    start: '2026-07-13T09:00',
+    allDay: false,
+  });
+  item.recurrence = {
+    freq: 'weekly',
+    interval: 1,
+    weekStartsOn: 1,
+    exceptions: [],
+    overrides: {},
+  };
+  return item;
+}
+
+function allDaySeries(): Item {
+  const item = createItem({
+    kind: 'event',
+    title: 'Conference',
+    start: '2026-07-13',
+    end: '2026-07-13',
+    allDay: true,
+  });
+  item.recurrence = {
+    freq: 'daily',
+    interval: 1,
+    weekStartsOn: 1,
+    exceptions: [],
+    overrides: {},
+  };
+  return item;
+}
+
+async function editInput(el: Element, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+  await act(async () => {
+    setter.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+
+async function editSelect(el: Element, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!;
+  await act(async () => {
+    setter.call(el, value);
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+}
+
+async function clickButton(host: HTMLElement, label: string) {
+  const button = [...host.querySelectorAll('button')].find((b) => b.textContent === label);
+  expect(button, `button "${label}"`).toBeDefined();
+  await act(async () => {
+    button!.click();
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  });
+}
+
+/** Whether a control is inert because it sits in a disabled `fieldset`. */
+function isFieldDisabled(el: Element): boolean {
+  return (el as HTMLInputElement).disabled || !!el.closest('fieldset[disabled]');
+}
+
 beforeEach(async () => {
   await db.items.clear();
   useUiStore.setState({
     editor: { open: false, item: null, occurrenceKey: null, splitMode: 'all' },
+    toasts: [],
   });
 });
 
@@ -86,5 +156,135 @@ describe('ItemEditorSheet', () => {
 
     await mounted.unmount();
     opener.remove();
+  });
+
+  it('scopes a "this occurrence" save to the override, leaving the series intact', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    await editInput(mounted.host.querySelector('input.input')!, 'Standup (retro)');
+    // Urgency is a series-only field: the second select in the details tab.
+    await editSelect(mounted.host.querySelectorAll('select')[1], 'high');
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.title).toBe('Standup');
+    expect(saved.urgency).toBe('low');
+    expect(saved.start).toBe('2026-07-13T09:00');
+    expect(saved.recurrence?.overrides).toEqual({
+      '2026-07-20': { title: 'Standup (retro)' },
+    });
+
+    await mounted.unmount();
+  });
+
+  it('still writes the series when the save is scoped to all occurrences', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'All occurrences');
+    await editInput(mounted.host.querySelector('input.input')!, 'Standup (retro)');
+    await editSelect(mounted.host.querySelectorAll('select')[1], 'high');
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.title).toBe('Standup (retro)');
+    expect(saved.urgency).toBe('high');
+    expect(saved.recurrence?.overrides).toEqual({});
+
+    await mounted.unmount();
+  });
+
+  it('disables the series-only fields for a single occurrence instead of dropping them', async () => {
+    const item = recurringItem();
+    item.tags = ['work'];
+    item.reminders = [{ id: 'r1', offsetMinutes: -10 }];
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    const urgency = mounted.host.querySelectorAll('select')[1] as HTMLSelectElement;
+    const tagInput = mounted.host.querySelector('input[placeholder="Add tag…"]')!;
+    expect(urgency.disabled).toBe(true);
+    expect(isFieldDisabled(tagInput)).toBe(true);
+    expect(mounted.host.textContent).toContain('Applies to the whole series');
+
+    await clickButton(mounted.host, 'Schedule');
+    expect(
+      isFieldDisabled(mounted.host.querySelector('input[type="datetime-local"]')!),
+    ).toBe(true);
+
+    // Even a forced change cannot reach the series while this scope is selected.
+    await editSelect(urgency, 'high');
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.urgency).toBe('low');
+    expect(saved.tags).toEqual(['work']);
+    expect(saved.reminders).toEqual([{ id: 'r1', offsetMinutes: -10 }]);
+    expect(saved.recurrence?.overrides).toEqual({});
+    expect(useUiStore.getState().toasts.map((t) => t.message)).toEqual([
+      'Nothing to update for this occurrence',
+    ]);
+
+    await mounted.unmount();
+  });
+
+  it('stores an occurrence-scoped status where the card checkbox reads it', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    // Status select is per-occurrence and stays editable.
+    await editSelect(mounted.host.querySelectorAll('select')[0], 'done');
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.status).toBe('todo');
+    expect(saved.occurrences['2026-07-20']).toMatchObject({ status: 'done' });
+    expect(saved.recurrence?.overrides).toEqual({});
+    expect(resolveOccurrenceStatus(saved, '2026-07-20').status).toBe('done');
+    expect(useUiStore.getState().toasts.map((t) => t.message)).toEqual(['Occurrence updated']);
+
+    await mounted.unmount();
+  });
+
+  it('keeps the range ordered when All day is switched off for one occurrence', async () => {
+    const item = allDaySeries();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    const allDay = mounted.host.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(allDay.checked).toBe(true);
+    await act(async () => {
+      allDay.click();
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    const day = new Date('2026-07-20T00:00:00');
+    const [occ] = expandOccurrences(saved, day, day);
+    expect(occ.allDay).toBe(false);
+    expect(hasTimeComponent(occ.end)).toBe(true);
+    expect(parseLocalDate(occ.end!)!.getTime()).toBeGreaterThanOrEqual(
+      parseLocalDate(occ.start)!.getTime(),
+    );
+    // The rest of the series keeps its all-day range.
+    const sibling = new Date('2026-07-21T00:00:00');
+    expect(expandOccurrences(saved, sibling, sibling)[0]).toMatchObject({
+      start: '2026-07-21',
+      end: '2026-07-21',
+      allDay: true,
+    });
+
+    await mounted.unmount();
   });
 });

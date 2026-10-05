@@ -1,5 +1,5 @@
 import { addDays, addMonths } from 'date-fns';
-import type { Item, Occurrence, OccurrenceStatus, RecurrenceRule } from '@/types';
+import type { Item, Occurrence, OccurrenceOverride, OccurrenceStatus, RecurrenceRule } from '@/types';
 import {
   clampDayOfMonth,
   dateKeyOf,
@@ -135,56 +135,75 @@ function timeToParts(time: string): [number, number] {
   return [h || 0, m || 0];
 }
 
-function occurrenceEnd(
-  item: Item,
-  date: Date,
-  startStr: string,
-  overrideEnd?: string | null,
-): string | null {
-  if (overrideEnd !== undefined) return overrideEnd;
+/** Whether an override end can stand as the end of an occurrence that starts at `startStr`. */
+function endFollowsStart(endStr: string, startStr: string, allDay: boolean): boolean {
+  const end = parseLocalDate(endStr);
+  const start = parseLocalDate(startStr);
+  if (!end || !start) return false;
+  if (allDay || !hasTimeComponent(startStr)) return end.getTime() >= start.getTime();
+  if (!hasTimeComponent(endStr)) return false;
+  return end.getTime() >= start.getTime();
+}
+
+/**
+ * End derived from the *resolved* start, never from the canonical series day: an occurrence
+ * moved to another day, or switched between all-day and timed, would otherwise inherit the
+ * series' own end and end up before its own start.
+ */
+function deriveOccurrenceEnd(item: Item, startStr: string, allDay: boolean): string | null {
   if (!item.end) return null;
-  if (item.allDay || !hasTimeComponent(startStr)) return formatISODate(date);
-  const dur = durationMs(item);
-  if (!dur) return formatISODate(date);
   const start = parseLocalDate(startStr);
   if (!start) return null;
+  if (allDay || !hasTimeComponent(startStr)) return formatISODate(start);
+  const dur = durationMs(item);
+  if (!dur) return startStr;
   return formatISODateTime(new Date(start.getTime() + dur));
 }
 
-function resolveStatus(
+function occurrenceEnd(
   item: Item,
-  occKey: string,
-  rule: RecurrenceRule | null,
-): {
+  startStr: string,
+  allDay: boolean,
+  overrideEnd?: string | null,
+): string | null {
+  if (overrideEnd === undefined) return deriveOccurrenceEnd(item, startStr, allDay);
+  if (overrideEnd === null) return null;
+  return endFollowsStart(overrideEnd, startStr, allDay)
+    ? overrideEnd
+    : deriveOccurrenceEnd(item, startStr, allDay);
+}
+
+export interface ResolvedOccurrenceStatus {
   status: OccurrenceStatus;
   completedAt: number | null;
   isOverride: boolean;
-} {
-  const override = rule?.overrides[occKey];
+}
+
+/**
+ * `item.occurrences` is the single store for an occurrence's status, so the card checkbox
+ * (`toggleDone`), the resolved status and the persisted state cannot disagree. Builds before
+ * this rule kept a `status` on the override; that value is honoured only while the occurrence
+ * has no state of its own, and every status write erases it (`setStatus`).
+ */
+export function resolveOccurrenceStatus(item: Item, occKey: string): ResolvedOccurrenceStatus {
+  const override = item.recurrence?.overrides[occKey];
+  const isOverride = override !== undefined;
   const state = item.occurrences[occKey];
-  if (override?.status) {
-    return { status: override.status, completedAt: state?.completedAt ?? null, isOverride: true };
-  }
-  if (state) {
-    return { status: state.status, completedAt: state.completedAt, isOverride: false };
-  }
-  if (!rule) {
-    return { status: item.status, completedAt: item.completedAt, isOverride: false };
-  }
-  if (item.status === 'cancelled') {
-    return { status: 'cancelled', completedAt: null, isOverride: false };
-  }
-  return { status: 'todo', completedAt: null, isOverride: false };
+  if (state) return { status: state.status, completedAt: state.completedAt, isOverride };
+  if (!item.recurrence) return { status: item.status, completedAt: item.completedAt, isOverride };
+  if (override?.status) return { status: override.status, completedAt: null, isOverride };
+  if (item.status === 'cancelled') return { status: 'cancelled', completedAt: null, isOverride };
+  return { status: 'todo', completedAt: null, isOverride };
 }
 
 function buildOccurrence(item: Item, date: Date): Occurrence {
   const rule = item.recurrence;
   const occKey = toOccKey(date);
-  const override = rule?.overrides[occKey];
+  const override: OccurrenceOverride | undefined = rule?.overrides[occKey];
   const start = occurrenceStart(item, date, override?.start);
-  const end = occurrenceEnd(item, date, start, override?.end);
   const allDay = override?.allDay ?? (item.allDay || !hasTimeComponent(start));
-  const { status, completedAt, isOverride } = resolveStatus(item, occKey, rule);
+  const end = occurrenceEnd(item, start, allDay, override?.end);
+  const { status, completedAt, isOverride } = resolveOccurrenceStatus(item, occKey);
   return {
     item,
     occKey,

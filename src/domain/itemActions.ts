@@ -2,9 +2,16 @@ import { itemRepo, type ItemPatch } from '@/db/repository';
 import { newId } from '@/lib/id';
 import { formatISODate } from '@/lib/date';
 import { useUiStore } from '@/store/useUiStore';
-import { splitSeries } from './recurrence';
+import { resolveOccurrenceStatus, splitSeries } from './recurrence';
 import { habitStreak } from './stats';
-import type { HistoryEntry, Item, ItemStatus, OccurrenceStatus, Priority } from '@/types';
+import type {
+  HistoryEntry,
+  Item,
+  ItemStatus,
+  OccurrenceState,
+  Priority,
+  RecurrenceRule,
+} from '@/types';
 
 function pushUndo(label: string, run: () => Promise<void> | void) {
   useUiStore.getState().pushUndo({ label, run });
@@ -141,6 +148,38 @@ export async function restoreItem(item: Item): Promise<void> {
   toast('Restored', 'success');
 }
 
+/** The occurrence state a status write produces, or `null` when nothing changes. */
+function occurrenceStateFor(
+  item: Item,
+  occKey: string,
+  status: ItemStatus,
+  timestamp: number,
+): Record<string, OccurrenceState> | null {
+  const existing = item.occurrences[occKey];
+  // A legacy override status is the only thing that can make a status write a no-op while the
+  // occurrence still has no state, so compare against the resolved status, not the stored one.
+  const resolved = resolveOccurrenceStatus(item, occKey).status;
+  const completedAt = status === 'done' ? (existing?.completedAt ?? timestamp) : null;
+  if (resolved === status && existing && existing.completedAt === completedAt) return null;
+  return {
+    ...item.occurrences,
+    [occKey]: { ...existing, status, completedAt } as OccurrenceState,
+  };
+}
+
+/** Rule with a legacy override status erased, so `item.occurrences` stays authoritative. */
+function withoutOverrideStatus(item: Item, occKey: string): RecurrenceRule | null {
+  const rule = item.recurrence;
+  const override = rule?.overrides[occKey];
+  if (!rule || !override?.status) return rule;
+  const rest = { ...override };
+  delete rest.status;
+  const overrides = { ...rule.overrides };
+  if (Object.keys(rest).length === 0) delete overrides[occKey];
+  else overrides[occKey] = rest;
+  return { ...rule, overrides };
+}
+
 export async function setStatus(
   item: Item,
   status: ItemStatus,
@@ -148,19 +187,14 @@ export async function setStatus(
 ): Promise<void> {
   const timestamp = Date.now();
   if (occKey) {
-    const existing = item.occurrences[occKey] ?? {
-      status: 'todo' as OccurrenceStatus,
-      completedAt: null,
-    };
-    const occurrences = {
-      ...item.occurrences,
-      [occKey]: {
-        ...existing,
-        status,
-        completedAt: status === 'done' ? timestamp : null,
-      },
-    };
-    await patchItem(item.id, { occurrences }, { silent: true });
+    // One occurrence's status lives in `item.occurrences` — the map `toggleDone` writes — so
+    // the card checkbox, `resolveOccurrenceStatus` and the stored state always agree.
+    const occurrences = occurrenceStateFor(item, occKey, status, timestamp);
+    const rule = withoutOverrideStatus(item, occKey);
+    if (!occurrences && rule === item.recurrence) return;
+    const patch: ItemPatch = { occurrences: occurrences ?? item.occurrences };
+    if (rule !== item.recurrence) patch.recurrence = rule;
+    await patchItem(item.id, patch, { silent: true });
     return;
   }
   const patch: ItemPatch = {
@@ -171,7 +205,9 @@ export async function setStatus(
 }
 
 export async function toggleDone(item: Item, occKey?: string | null): Promise<void> {
-  const isDone = occKey ? item.occurrences[occKey]?.status === 'done' : item.status === 'done';
+  const isDone = occKey
+    ? resolveOccurrenceStatus(item, occKey).status === 'done'
+    : item.status === 'done';
   const nextStatus: ItemStatus = isDone ? 'todo' : 'done';
   await setStatus(item, nextStatus, occKey);
 
@@ -203,7 +239,7 @@ export async function setPriority(
 export async function updateOccurrence(
   item: Item,
   occKey: string,
-  patch: { start?: string; end?: string | null; status?: OccurrenceStatus; notes?: string },
+  patch: { start?: string; end?: string | null; notes?: string },
 ): Promise<void> {
   const rule = item.recurrence;
   if (!rule) {
@@ -231,33 +267,52 @@ export async function skipOccurrence(item: Item, occKey: string): Promise<void> 
 /**
  * Apply an edit to a recurring series.
  * `occurrence` edits just one occurrence, `future` splits the series,
- * `all` edits the whole series.
+ * `all` edits the whole series. Resolves to whether a row was written.
  */
 export async function updateRecurring(
   item: Item,
   scope: 'occurrence' | 'future' | 'all',
   occKey: string,
   patch: ItemPatch,
-): Promise<void> {
+): Promise<boolean> {
   if (scope === 'occurrence') {
-    const rule = item.recurrence;
-    if (!rule) return;
-    const overrides = {
-      ...rule.overrides,
-      [occKey]: {
-        ...(rule.overrides[occKey] ?? {}),
-        ...(patch.start ? { start: patch.start } : {}),
-        ...(patch.title !== undefined ? { title: patch.title } : {}),
-        ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
-      },
+    // The persisted row is the base: a draft can carry a stale rule or a series-wide edit
+    // (e.g. the recurrence editor) that must not reach storage for a single occurrence.
+    const stored = (await itemRepo.get(item.id)) ?? item;
+    const rule = stored.recurrence;
+    if (!rule) return false;
+    // One occurrence owns only these fields; every other field belongs to the series,
+    // so applying the whole patch here would re-anchor every occurrence. `status` is
+    // deliberately absent: it is per-occurrence state, not an override.
+    const current = rule.overrides[occKey];
+    const override = {
+      ...current,
+      ...(patch.start ? { start: patch.start } : {}),
+      ...(patch.end !== undefined ? { end: patch.end } : {}),
+      ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
+      ...(patch.title !== undefined ? { title: patch.title } : {}),
+      ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
     };
-    await patchItem(item.id, { ...patch, recurrence: { ...rule, overrides } }, { silent: true });
-    return;
+    const occurrences =
+      patch.status !== undefined
+        ? occurrenceStateFor(stored, occKey, patch.status, Date.now())
+        : null;
+    // An override with nothing left in it (status now lives in `occurrences`) is not stored.
+    const overrides = { ...rule.overrides };
+    if (Object.keys(override).length === 0) delete overrides[occKey];
+    else overrides[occKey] = override;
+    const ruleChanged = JSON.stringify(overrides) !== JSON.stringify(rule.overrides);
+    if (!ruleChanged && !occurrences) return false;
+    const next: ItemPatch = {};
+    if (ruleChanged) next.recurrence = { ...rule, overrides };
+    if (occurrences) next.occurrences = occurrences;
+    await patchItem(item.id, next, { silent: true });
+    return true;
   }
 
   if (scope === 'all') {
     await patchItem(item.id, patch, { silent: true });
-    return;
+    return true;
   }
 
   // future: split the series at occKey and apply the patch to the new tail
@@ -272,6 +327,7 @@ export async function updateRecurring(
   await itemRepo.create(head);
   await itemRepo.create(tailPatched);
   toast('Series split', 'success');
+  return true;
 }
 
 export function todayOccKey(): string {
