@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BACKUP_VERSION,
   buildBackup,
   backupToJSON,
   mergeImportedItems,
@@ -28,6 +29,38 @@ describe('backup', () => {
     const parsed = parseBackup(JSON.stringify({ version: 1, tasks: [item('x', 'Legacy')] }));
     expect(parsed.items).toHaveLength(1);
     expect(parsed.items[0].title).toBe('Legacy');
+  });
+
+  describe('payload identity and version', () => {
+    it('rejects a payload produced by another app', () => {
+      const json = JSON.stringify({ app: 'other-app', version: 2, items: [item('a', 'Alpha')] });
+      expect(() => parseBackup(json)).toThrow(/not an eisenmatrix backup/i);
+    });
+
+    it('rejects a too-new format version', () => {
+      const json = JSON.stringify({ app: 'eisenmatrix', version: 3, items: [] });
+      expect(() => parseBackup(json)).toThrow(/format v3/i);
+    });
+
+    it('accepts an older format version carrying the app marker', () => {
+      const parsed = parseBackup(
+        JSON.stringify({ app: 'eisenmatrix', version: 1, items: [item('v1', 'Older')] }),
+      );
+      expect(parsed.version).toBe(1);
+      expect(parsed.items.map((i) => i.id)).toEqual(['v1']);
+    });
+
+    it('accepts a payload with no app or version field', () => {
+      const parsed = parseBackup(JSON.stringify({ items: [item('bare', 'Bare')] }));
+      expect(parsed.version).toBe(1);
+      expect(parsed.items.map((i) => i.id)).toEqual(['bare']);
+    });
+
+    it('still returns the current version for a valid payload', () => {
+      const parsed = parseBackup(backupToJSON(buildBackup([item('a', 'Alpha')], [])));
+      expect(parsed.version).toBe(BACKUP_VERSION);
+      expect(parsed.items.map((i) => i.id)).toEqual(['a']);
+    });
   });
 
   it('resolves import conflicts by strategy', () => {

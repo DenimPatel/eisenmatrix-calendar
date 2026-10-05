@@ -413,7 +413,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Extracted React-free `src/pwa/delivery.ts` (`deliver`/`deliverDigest`); reminderLog is recorded only when a notification was shown OR the document was visible at toast time, otherwise it is left unrecorded for the next tick (bounded by the unchanged 24h LOOKBACK_MS, no new timers). 231 tests green (+9); mutation-checked; simulations show 1440 hidden ticks -> 0 records/0 toasts and 500 flapping ticks -> exactly 1 toast/1 row (no storm); Playwright-verified live delivery with no duplicate on the next tick, zero console errors. Pre-existing follow-ups logged: concurrent ticks can still double-deliver (reminderLog key is a non-unique index — see IMP-036), and raw IndexedDB writes do not reach useLiveQuery.
 
 ### IMP-020 — Validate backup identity/version before import
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data integrity
 - **Type:** improvement
 - **Area / files:** `src/lib/backup.ts` (`parseBackup`, `:35-50`); caller `src/features/settings/SettingsView.tsx` (`importJSON`, `:92-112`)
@@ -427,7 +427,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:**
+- **Notes:** DONE. parseBackup rejects a present-but-foreign `app` and a `version > BACKUP_VERSION` before any Dexie write (SettingsView importJSON already surfaces the message via the IMP-015 toast); the dead `!Array.isArray(items)` branch was removed after proving it fired on 0/13 payload shapes. Back-compat preserved and probed: older version with marker, missing `app`, legacy `tasks` array, non-array `items`, and a real export->import round-trip all still import. 236 tests green; each guard mutation caught.
 
 ### IMP-021 — Gate notification delivery on the `notificationsEnabled` setting
 - **Status:** TODO

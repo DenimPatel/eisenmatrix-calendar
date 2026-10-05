@@ -33,19 +33,36 @@ export interface ParsedBackup {
 }
 
 export function parseBackup(json: string): ParsedBackup {
-  const parsed = JSON.parse(json) as Partial<BackupPayload> & { tasks?: Item[] };
+  const parsed = JSON.parse(json) as {
+    app?: unknown;
+    version?: unknown;
+    exportedAt?: unknown;
+    items?: unknown;
+    tasks?: unknown;
+    lists?: unknown;
+  };
+  // Backups predating the `app` marker carry no identity field, so only a
+  // present-and-different value proves the file is from another producer.
+  if (parsed.app !== undefined && parsed.app !== 'eisenmatrix') {
+    throw new Error(`Not an EisenMatrix backup (found app "${String(parsed.app)}")`);
+  }
+  const version = typeof parsed.version === 'number' ? parsed.version : 1;
+  if (version > BACKUP_VERSION) {
+    throw new Error(
+      `Backup is format v${version}, but this app only imports up to v${BACKUP_VERSION}`,
+    );
+  }
   const items = Array.isArray(parsed.items)
     ? parsed.items
     : Array.isArray(parsed.tasks)
       ? parsed.tasks
       : [];
   const lists = Array.isArray(parsed.lists) ? parsed.lists : [];
-  if (!Array.isArray(items)) throw new Error('Backup does not contain an items array');
   return {
     items: items.filter((i) => i && typeof i === 'object' && 'id' in i) as Item[],
     lists: lists as List[],
     exportedAt: typeof parsed.exportedAt === 'string' ? parsed.exportedAt : null,
-    version: typeof parsed.version === 'number' ? parsed.version : 1,
+    version,
   };
 }
 
