@@ -512,7 +512,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 2). splitSeries now materialises the implied byWeekday/byMonthDay/byMonth from the PRE-split anchor so no later occurrence drifts, gives the tail `count - consumed`, clamps the head's until, and both expansion loops cap on `count !== undefined` so a fully consumed series yields an empty tail. Also null-guards `parseLocalDate(fromKey)` and stops updateRecurring's future branch overwriting the tail anchor. Attempt 1 was rejected for date drift on implicit monthly (Oct 31 -> Oct 30) and a `count:0` tail exploding to 27,757 occurrences; both fixed. 279 tests green; property sweep of 113,100 splits over 20,244 series shows head∪tail == unsplit keys with 0 defects; 4 mutations caught. Disclosed: the tail now persists the implied rule fields (correct); head exception copying (D4) still open.
 
 ### IMP-052 — Fold long ICS lines per RFC 5545
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** interoperability
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts` (`itemsToICS`, `:79-117`)
@@ -526,7 +526,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Fold on octets, not characters, to be safe with non-ASCII; use a pure `foldLine` helper.
+- **Notes:** DONE. Added a pure exported `foldLine` (TextEncoder, octet-based, code-point-safe, 75-octet cap, space-prefixed continuations) and folded every emitted line via `lines.flatMap(foldLine).join('\r\n')`. 282 tests green (+3: 200-char title, multi-byte round-trip, exact 75/76-octet boundary); 5 mutations caught. Independently validated with a strict byte-level unfold parser over 12,974 lines (max physical line exactly 75 octets, strict UTF-8 per line) and a 408-export fuzz proving the unfolded output is byte-identical to the pre-change exporter. Pre-existing gaps disclosed: raw CR in content is not escaped and the export lacks a final CRLF.
 
 ### IMP-053 — Make the calendar "+N more" affordance open the full list
 - **Status:** TODO

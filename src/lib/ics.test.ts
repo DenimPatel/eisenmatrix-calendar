@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { itemsToICS, recurrenceToRRule } from './ics';
+import { foldLine, itemsToICS, recurrenceToRRule } from './ics';
 import { createItem } from '@/domain/itemFactory';
 import type { RecurrenceRule } from '@/types';
 
@@ -100,5 +100,75 @@ describe('ics', () => {
     // Anchored on CRLF so a `UNTIL=20240630T235959Z` suffix cannot satisfy the date-only case.
     expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630\r\n');
     expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959Z\r\n');
+  });
+
+  describe('RFC 5545 line folding', () => {
+    const utf8 = new TextEncoder();
+    const octets = (value: string): number => utf8.encode(value).length;
+    const physicalLines = (ics: string): string[] => ics.split('\r\n');
+
+    /** Collect `NAME:` plus its continuation lines, strip continuations' leading space. */
+    const unfold = (ics: string, name: string): string => {
+      const lines = physicalLines(ics);
+      const start = lines.findIndex((line) => line.startsWith(`${name}:`));
+      const collected: string[] = [];
+      for (let i = start; i < lines.length; i += 1) {
+        if (i > start && !lines[i].startsWith(' ')) break;
+        collected.push(lines[i].slice(i === start ? 0 : 1));
+      }
+      return collected.join('');
+    };
+
+    it('folds a 200-character title and unfolds back byte-for-byte', () => {
+      const title = 'Q'.repeat(200);
+      const ics = itemsToICS([createItem({ kind: 'event', title, start: '2024-05-01T09:00' })]);
+
+      expect(physicalLines(ics).filter((line) => line.startsWith(' ')).length).toBeGreaterThan(1);
+      for (const line of physicalLines(ics)) {
+        expect(octets(line)).toBeLessThanOrEqual(75);
+      }
+      expect(unfold(ics, 'SUMMARY')).toBe(`SUMMARY:${title}`);
+    });
+
+    it('folds multi-byte titles on octet boundaries without breaking characters', () => {
+      const title = 'café 🎯 '.repeat(20);
+      const ics = itemsToICS([
+        createItem({ kind: 'event', title, notes: title, start: '2024-05-01T09:00' }),
+      ]);
+      const strict = new TextDecoder('utf-8', { fatal: true });
+
+      for (const line of physicalLines(ics)) {
+        expect(octets(line)).toBeLessThanOrEqual(75);
+        expect(strict.decode(utf8.encode(line))).toBe(line);
+      }
+      const continuations = physicalLines(ics).filter((line) => line.startsWith(' '));
+      expect(continuations.length).toBeGreaterThan(0);
+      // Octet-based, not character-based: a filled continuation carries fewer
+      // characters than the 75-char limit but still spans the octet budget.
+      expect(continuations.some((line) => octets(line) === 75)).toBe(true);
+      expect(continuations.every((line) => [...line].length < 75)).toBe(true);
+      expect(unfold(ics, 'SUMMARY')).toBe(`SUMMARY:${title}`);
+      expect(unfold(ics, 'DESCRIPTION')).toBe(`DESCRIPTION:${title}`);
+    });
+
+    it('leaves lines of 75 octets or fewer unfolded', () => {
+      const exact = `SUMMARY:${'a'.repeat(67)}`;
+      expect(octets(exact)).toBe(75);
+      expect(foldLine(exact)).toEqual([exact]);
+      expect(foldLine('')).toEqual(['']);
+
+      const over = `SUMMARY:${'a'.repeat(68)}`;
+      expect(octets(over)).toBe(76);
+      expect(foldLine(over)).toEqual([exact, ' a']);
+      for (const line of foldLine(over)) {
+        expect(octets(line)).toBeLessThanOrEqual(75);
+      }
+
+      const short = itemsToICS([
+        createItem({ kind: 'event', title: 'Short', start: '2024-05-01T09:00' }),
+      ]);
+      expect(short).toContain('SUMMARY:Short\r\n');
+      expect(short).not.toContain('\r\n ');
+    });
   });
 });

@@ -3,6 +3,35 @@ import { hasTimeComponent, parseLocalDate } from './date';
 
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
+/** RFC 5545 §3.1 caps a content line at 75 octets, continuation space included. */
+const MAX_LINE_OCTETS = 75;
+
+const utf8 = new TextEncoder();
+
+/** RFC 5545 §3.1: split a content line into <=75-octet physical lines, continuations space-prefixed. */
+export function foldLine(line: string): string[] {
+  if (utf8.encode(line).length <= MAX_LINE_OCTETS) return [line];
+  const folded: string[] = [];
+  const push = (chunk: string): void => {
+    folded.push(folded.length === 0 ? chunk : ` ${chunk}`);
+  };
+  let chunk = '';
+  let octets = 0;
+  for (const char of line) {
+    const size = utf8.encode(char).length;
+    const limit = folded.length === 0 ? MAX_LINE_OCTETS : MAX_LINE_OCTETS - 1;
+    if (chunk && octets + size > limit) {
+      push(chunk);
+      chunk = '';
+      octets = 0;
+    }
+    chunk += char;
+    octets += size;
+  }
+  if (chunk) push(chunk);
+  return folded;
+}
+
 function escapeText(value: string): string {
   return value
     .replace(/\\/g, '\\\\')
@@ -115,5 +144,5 @@ export function itemsToICS(items: Item[]): string {
   }
 
   lines.push('END:VCALENDAR');
-  return lines.join('\r\n');
+  return lines.flatMap(foldLine).join('\r\n');
 }
