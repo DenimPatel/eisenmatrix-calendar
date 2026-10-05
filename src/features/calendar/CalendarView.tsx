@@ -34,6 +34,9 @@ import type { AppSettings, Occurrence } from '@/types';
 
 type CalendarMode = 'day' | 'week' | 'month' | 'year';
 
+const MONTH_CELL_LIMIT = 3;
+const YEAR_CARD_LIMIT = 5;
+
 export function CalendarView() {
   const items = useItems();
   const openEditor = useUiStore((s) => s.openEditor);
@@ -41,6 +44,7 @@ export function CalendarView() {
   const weekStartsOn = settings.weekStartsOn;
   const [currentDate, setCurrentDate] = useState(new Date());
   const [mode, setMode] = useState<CalendarMode>('month');
+  const [expandedDay, setExpandedDay] = useState<string | null>(null);
 
   const interval = useMemo(() => {
     switch (mode) {
@@ -176,6 +180,8 @@ export function CalendarView() {
               const key = formatISODate(day);
               const dayOccurrences = byDay.get(key) ?? [];
               const inMonth = mode !== 'month' || isSameMonth(day, currentDate);
+              const expanded = expandedDay === key;
+              const shown = expanded ? dayOccurrences : dayOccurrences.slice(0, MONTH_CELL_LIMIT);
               return (
                 <Droppable
                   key={key}
@@ -206,7 +212,7 @@ export function CalendarView() {
                     </button>
                   </div>
                   <div className="space-y-1">
-                    {dayOccurrences.slice(0, 3).map((occ) => (
+                    {shown.map((occ) => (
                       <button
                         key={`${occ.item.id}-${occ.occKey}`}
                         type="button"
@@ -225,10 +231,17 @@ export function CalendarView() {
                         {occ.item.title}
                       </button>
                     ))}
-                    {dayOccurrences.length > 3 && (
-                      <div className="pl-1 text-[10px] text-muted">
-                        +{dayOccurrences.length - 3} more
-                      </div>
+                    {dayOccurrences.length > MONTH_CELL_LIMIT && (
+                      <button
+                        type="button"
+                        aria-expanded={expanded}
+                        onClick={() => setExpandedDay((prev) => (prev === key ? null : key))}
+                        className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] text-muted hover:bg-elevated hover:text-accent"
+                      >
+                        {expanded
+                          ? 'Show less'
+                          : `+${dayOccurrences.length - MONTH_CELL_LIMIT} more`}
+                      </button>
                     )}
                   </div>
                 </Droppable>
@@ -326,11 +339,12 @@ function YearMonthCard({
   onOpen: (item: import('@/types').Item, occKey?: string | null) => void;
 }) {
   const occurrences = useOccurrences(items, from, to);
+  const [expanded, setExpanded] = useState(false);
   return (
     <div className="card p-3">
       <h3 className="mb-2 text-sm font-semibold text-fg">{label}</h3>
       <div className="space-y-1">
-        {occurrences.slice(0, 5).map((occ) => (
+        {(expanded ? occurrences : occurrences.slice(0, YEAR_CARD_LIMIT)).map((occ) => (
           <button
             key={`${occ.item.id}-${occ.occKey}`}
             type="button"
@@ -344,8 +358,15 @@ function YearMonthCard({
           </button>
         ))}
         {occurrences.length === 0 && <p className="text-xs text-muted">No items</p>}
-        {occurrences.length > 5 && (
-          <p className="text-[10px] text-muted">+{occurrences.length - 5} more</p>
+        {occurrences.length > YEAR_CARD_LIMIT && (
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((prev) => !prev)}
+            className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] text-muted hover:bg-elevated hover:text-accent"
+          >
+            {expanded ? 'Show less' : `+${occurrences.length - YEAR_CARD_LIMIT} more`}
+          </button>
         )}
       </div>
     </div>

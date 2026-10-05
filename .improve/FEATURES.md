@@ -529,7 +529,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Added a pure exported `foldLine` (TextEncoder, octet-based, code-point-safe, 75-octet cap, space-prefixed continuations) and folded every emitted line via `lines.flatMap(foldLine).join('\r\n')`. 282 tests green (+3: 200-char title, multi-byte round-trip, exact 75/76-octet boundary); 5 mutations caught. Independently validated with a strict byte-level unfold parser over 12,974 lines (max physical line exactly 75 octets, strict UTF-8 per line) and a 408-export fuzz proving the unfolded output is byte-identical to the pre-change exporter. Pre-existing gaps disclosed: raw CR in content is not escaped and the export lacks a final CRLF.
 
 ### IMP-053 — Make the calendar "+N more" affordance open the full list
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / completeness
 - **Type:** feature-improvement
 - **Area / files:** `src/features/calendar/CalendarView.tsx` (month cell `:224-228`, year card `:342-344`)
@@ -543,7 +543,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Reuse `openEditor`/agenda patterns; keep it keyboard reachable.
+- **Notes:** DONE. Month and year `+N more` affordances are now real `aria-expanded` toggle buttons that expand in place, so every capped occurrence is reachable and editable; default (<=3 month / <=5 year) rendering unchanged. 287 tests green (+5, mutation-checked); Playwright-verified 6 items -> `+3 more` -> all 6 open the editor and toggle done, occurrence status survives expand/collapse, focus stays on the toggle, both views, zero console errors. Follow-ups logged: only one month cell expands at a time, the year toggle lacks month context in its accessible name, `expandedDay` is not cleared on month navigation, and the 390px month cell is 52px so the label truncates (pre-existing grid issue).
 
 ### IMP-054 — Preserve parsed quick-add data when the kind is changed
 - **Status:** TODO
