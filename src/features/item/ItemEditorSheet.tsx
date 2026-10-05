@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { SkipForward, Trash2, X } from 'lucide-react';
 import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -23,6 +23,7 @@ import {
   createItemsPersisted,
   deleteItem,
   saveItem,
+  skipOccurrence,
   toggleDone,
   updateRecurring,
 } from '@/domain/itemActions';
@@ -114,6 +115,7 @@ export function ItemEditorSheet() {
   const [tab, setTab] = useState<Tab>('details');
   const [tagInput, setTagInput] = useState('');
   const [scope, setScope] = useState<'occurrence' | 'future' | 'all'>('all');
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const children = useChildren(draft?.id ?? null);
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -122,6 +124,7 @@ export function ItemEditorSheet() {
       setDraft(structuredClone(editor.item));
       setTab('details');
       setScope(editor.item.recurrence && editor.occurrenceKey ? 'occurrence' : 'all');
+      setConfirmDelete(false);
     } else {
       setDraft(null);
     }
@@ -144,6 +147,17 @@ export function ItemEditorSheet() {
   // A single occurrence owns title, notes, status, start and end only. Everything else is
   // shown read-only rather than quietly dropped on save.
   const occurrenceScoped = !!draft.recurrence && !!editor.occurrenceKey && scope === 'occurrence';
+
+  // The destructive control follows the scope: one occurrence can only be skipped, and a
+  // "this and future" delete has no series split to back it, so it stays unavailable there.
+  const scopedToOccurrence = !!draft.recurrence && !!editor.occurrenceKey && scope !== 'all';
+  const skipOnly = scopedToOccurrence && scope === 'occurrence';
+  const deleteUnavailable = scopedToOccurrence && scope === 'future';
+
+  const changeScope = (next: 'occurrence' | 'future' | 'all') => {
+    setScope(next);
+    setConfirmDelete(false);
+  };
 
   const update = (patch: Partial<Item>) =>
     setDraft((prev) => {
@@ -195,7 +209,13 @@ export function ItemEditorSheet() {
   };
 
   const handleDelete = async () => {
-    await deleteItem(draft);
+    const occKey = editor.occurrenceKey;
+    // Skipping is the only per-occurrence removal: `deleteItem` would drop the whole series.
+    if (draft.recurrence && occKey && skipOnly) {
+      await skipOccurrence(draft, occKey);
+    } else {
+      await deleteItem(draft);
+    }
     closeEditor();
   };
 
@@ -239,8 +259,14 @@ export function ItemEditorSheet() {
       }
       footer={
         <div className="flex items-center justify-between gap-2">
-          <Button variant="danger" size="sm" onClick={handleDelete}>
-            <Trash2 size={14} /> Delete
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={deleteUnavailable}
+            onClick={() => setConfirmDelete(true)}
+          >
+            {skipOnly ? <SkipForward size={14} /> : <Trash2 size={14} />}
+            {skipOnly ? 'Skip this occurrence' : 'Delete'}
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={closeEditor}>
@@ -267,7 +293,7 @@ export function ItemEditorSheet() {
               <button
                 key={value}
                 type="button"
-                onClick={() => setScope(value)}
+                onClick={() => changeScope(value)}
                 className={cn(
                   'rounded-full border px-2.5 py-1 font-medium',
                   scope === value
@@ -282,9 +308,41 @@ export function ItemEditorSheet() {
           {occurrenceScoped && (
             <p className="mt-2">
               One occurrence can only change its title, notes, status, start, end and all-day
-              setting. Fields marked “{SERIES_ONLY_HINT}” are disabled for this scope.
+              setting. Fields marked “{SERIES_ONLY_HINT}” are disabled for this scope, and Delete
+              skips this occurrence only.
             </p>
           )}
+          {deleteUnavailable && (
+            <p className="mt-2">
+              Delete is unavailable for “This and future”. Choose “All occurrences” to delete the
+              whole series, or “This occurrence” to skip just this one.
+            </p>
+          )}
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div
+          role="alertdialog"
+          aria-label={skipOnly ? 'Skip this occurrence' : 'Delete the whole series'}
+          className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200"
+        >
+          <p className="font-medium">
+            {skipOnly ? 'Skip this occurrence?' : 'Delete the whole series?'}
+          </p>
+          <p className="mt-1">
+            {skipOnly
+              ? `Only the occurrence on ${editor.occurrenceKey} is skipped. Every other occurrence of “${draft.title}” stays, and this can be undone.`
+              : `This deletes “${draft.title}” and its subtasks, including every other occurrence. It can be undone afterwards.`}
+          </p>
+          <div className="mt-2 flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
+              Keep it
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleDelete}>
+              {skipOnly ? 'Skip occurrence' : 'Delete series'}
+            </Button>
+          </div>
         </div>
       )}
 

@@ -3,7 +3,14 @@ import { db } from '@/db/schema';
 import { itemRepo, type ItemPatch } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem, normalizeItem } from './itemFactory';
-import { deleteItem, deleteItems, todayOccKey, toggleDone, updateRecurring } from './itemActions';
+import {
+  deleteItem,
+  deleteItems,
+  skipOccurrence,
+  todayOccKey,
+  toggleDone,
+  updateRecurring,
+} from './itemActions';
 import { expandOccurrences } from './recurrence';
 import { formatISODate, parseLocalDate } from '@/lib/date';
 import { addDays } from 'date-fns';
@@ -189,6 +196,67 @@ describe('deleteItems', () => {
     const after = await itemRepo.all();
     expect(after).toHaveLength(before.length);
     expect(relationships(after)).toEqual(relationships(before));
+  });
+});
+
+describe('skipOccurrence', () => {
+  const OCC = '2026-07-20';
+  const OTHER = '2026-07-27';
+
+  it('adds the key to the exceptions and keeps the rest of the series', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+
+    await skipOccurrence(before, OCC);
+
+    const after = (await itemRepo.get('s'))!;
+    expect(after.recurrence?.exceptions).toEqual([OCC]);
+    expect(seriesOf(after)).toEqual(seriesOf(before));
+    // Only the skipped day disappears from expansion.
+    expect(occurrenceAt(after, OCC)).toBeUndefined();
+    expect(displayed(occurrenceAt(after, OTHER))).toEqual(displayed(occurrenceAt(before, OTHER)));
+    expect(useUiStore.getState().toasts.map((t) => t.message)).toEqual(['Occurrence skipped']);
+  });
+
+  it('does not write a draft rule the editor never saved', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const stored = (await itemRepo.get('s'))!;
+    const draft = {
+      ...stored,
+      recurrence: { ...stored.recurrence!, freq: 'monthly' as const },
+    };
+
+    await skipOccurrence(draft, OCC);
+
+    const after = (await itemRepo.get('s'))!;
+    expect(after.recurrence?.freq).toBe('weekly');
+    expect(after.recurrence?.exceptions).toEqual([OCC]);
+  });
+
+  it('restores the series on undo', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+
+    await skipOccurrence(before, OCC);
+    expect(useUiStore.getState().undoStack).toHaveLength(1);
+
+    await useUiStore.getState().undo();
+
+    expect(await itemRepo.get('s')).toEqual(before);
+  });
+
+  it('writes nothing for a key that is already skipped, or without a recurrence', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const stored = (await itemRepo.get('s'))!;
+    await skipOccurrence(stored, OCC);
+    const afterFirst = (await itemRepo.get('s'))!;
+
+    await skipOccurrence(afterFirst, OCC);
+    await skipOccurrence(task('p', 'Parent'), OCC);
+
+    expect(await itemRepo.get('s')).toEqual(afterFirst);
+    expect(await itemRepo.get('p')).toBeUndefined();
+    expect(useUiStore.getState().undoStack).toHaveLength(1);
   });
 });
 

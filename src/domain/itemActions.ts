@@ -253,12 +253,16 @@ export async function updateOccurrence(
   await patchItem(item.id, { recurrence: { ...rule, overrides } }, { silent: true });
 }
 
+/** Add `occKey` to the series exceptions so it no longer expands; the series row stays. */
 export async function skipOccurrence(item: Item, occKey: string): Promise<void> {
-  const rule = item.recurrence;
-  if (!rule) return;
+  // The persisted row is the base: the editor hands over a draft that can carry an unsaved
+  // series-wide rule, and skipping one occurrence must not write that rule.
+  const stored = (await itemRepo.get(item.id)) ?? item;
+  const rule = stored.recurrence;
+  if (!rule || rule.exceptions.includes(occKey)) return;
   await patchItem(
     item.id,
-    { recurrence: { ...rule, exceptions: [...new Set([...rule.exceptions, occKey])] } },
+    { recurrence: { ...rule, exceptions: [...rule.exceptions, occKey] } },
     { silent: true },
   );
   toast('Occurrence skipped', 'info');

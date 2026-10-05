@@ -5,7 +5,7 @@
 - **Start SHA:** b9d23246b948187c0239e8c95373e3e1f27cc43f
 - **Last commit:** b9f4151 (IMP-024)
 - **Current item:** (none — between items)
-- **Counters:** commits=38 | done=31 | blocked=1 | needs-human=4 | attempts_current=0
+- **Counters:** commits=39 | done=32 | blocked=1 | needs-human=4 | attempts_current=0
 - **Playwright MCP:** available and working in sub-agents (all visual verifications ran live)
 - **Regression cadence:** every 10 commits — sweeps at 10, 20, 30, 40 all CLEAN; next at 50
 - **Stop file:** .improve/STOP (absent)

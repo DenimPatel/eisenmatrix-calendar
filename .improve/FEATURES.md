@@ -562,7 +562,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Extract the kind-switch data merge into a pure helper for testability.
 
 ### IMP-055 — Occurrence-scoped Delete should skip, not delete the series
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data loss
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`handleDelete`, `:107-110`, scope state `:40,165-192`); `src/domain/itemActions.ts` (`skipOccurrence`, `:209-218`)
@@ -575,7 +575,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** `ItemEditorSheet.handleSave` already branches on `scope`; mirror it for delete.
+- **Notes:** DONE. Occurrence-scoped Delete now skips only that occurrence (control reads "Skip this occurrence", wired to the previously-unused `skipOccurrence`, idempotent and reading the persisted row) instead of destroying the series; confirmation copy is scope-specific; `future`-scope Delete is disabled with explanatory copy pending IMP-037. Series-scoped Delete still removes the series plus descendants with undo, and IMP-016 is unregressed. 310 tests green (+8, 4 domain + 4 editor jsdom); 3 mutations caught; Playwright-verified live (one row survives, `exceptions:["2026-10-19"]`) and a skipped occurrence is excluded from reminders. Follow-ups logged: the hint copy still says "Delete skips" while the button says "Skip this occurrence"; `handleDelete` lacks a programmatic `deleteUnavailable` guard; the skip toast has no Undo (delete does); the alert dialog lacks a focus trap/Escape; a hardcoded rose token.
 
 ### IMP-056 — Prune expired snooze reminders
 - **Status:** TODO

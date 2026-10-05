@@ -98,6 +98,27 @@ async function clickButton(host: HTMLElement, label: string) {
   });
 }
 
+function button(host: HTMLElement, label: string): HTMLButtonElement {
+  const found = [...host.querySelectorAll('button')].find((b) => b.textContent === label);
+  expect(found, `button "${label}"`).toBeDefined();
+  return found as HTMLButtonElement;
+}
+
+function confirmation(host: HTMLElement): HTMLElement {
+  const dialog = host.querySelector('[role="alertdialog"]');
+  expect(dialog).not.toBeNull();
+  return dialog as HTMLElement;
+}
+
+/** Every occurrence key the series expands to inside a wide window. */
+function expandedKeys(item: Item): string[] {
+  return expandOccurrences(
+    item,
+    new Date('2026-07-01T00:00:00'),
+    new Date('2026-08-31T00:00:00'),
+  ).map((occ) => occ.occKey);
+}
+
 /** Whether a control is inert because it sits in a disabled `fieldset`. */
 function isFieldDisabled(el: Element): boolean {
   return (el as HTMLInputElement).disabled || !!el.closest('fieldset[disabled]');
@@ -214,9 +235,7 @@ describe('ItemEditorSheet', () => {
     expect(mounted.host.textContent).toContain('Applies to the whole series');
 
     await clickButton(mounted.host, 'Schedule');
-    expect(
-      isFieldDisabled(mounted.host.querySelector('input[type="datetime-local"]')!),
-    ).toBe(true);
+    expect(isFieldDisabled(mounted.host.querySelector('input[type="datetime-local"]')!)).toBe(true);
 
     // Even a forced change cannot reach the series while this scope is selected.
     await editSelect(urgency, 'high');
@@ -250,6 +269,83 @@ describe('ItemEditorSheet', () => {
     expect(saved.recurrence?.overrides).toEqual({});
     expect(resolveOccurrenceStatus(saved, '2026-07-20').status).toBe('done');
     expect(useUiStore.getState().toasts.map((t) => t.message)).toEqual(['Occurrence updated']);
+
+    await mounted.unmount();
+  });
+
+  it('skips only the open occurrence when the delete control is scoped to it', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    const before = expandedKeys((await itemRepo.get(item.id))!);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    expect(button(mounted.host, 'Skip this occurrence')).toBeDefined();
+    await clickButton(mounted.host, 'Skip this occurrence');
+
+    const confirm = confirmation(mounted.host);
+    expect(confirm.textContent).toContain('Only the occurrence on 2026-07-20 is skipped');
+    expect(confirm.textContent).not.toContain('whole series');
+    await clickButton(confirm, 'Skip occurrence');
+
+    const after = (await itemRepo.get(item.id))!;
+    expect(after.recurrence?.exceptions).toEqual(['2026-07-20']);
+    expect(expandedKeys(after)).toEqual(before.filter((key) => key !== '2026-07-20'));
+    expect(after.title).toBe('Standup');
+    expect(useUiStore.getState().editor.open).toBe(false);
+
+    await mounted.unmount();
+  });
+
+  it('cancels the skip without writing anything', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    const before = (await itemRepo.get(item.id))!;
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Skip this occurrence');
+    await clickButton(confirmation(mounted.host), 'Keep it');
+
+    expect(await itemRepo.get(item.id)).toEqual(before);
+    expect(useUiStore.getState().editor.open).toBe(true);
+
+    await mounted.unmount();
+  });
+
+  it('still deletes the whole series in the all-occurrences scope', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'All occurrences');
+    expect(button(mounted.host, 'Delete')).toBeDefined();
+    await clickButton(mounted.host, 'Delete');
+
+    const confirm = confirmation(mounted.host);
+    expect(confirm.textContent).toContain('deletes “Standup” and its subtasks');
+    await clickButton(confirm, 'Delete series');
+
+    expect(await itemRepo.get(item.id)).toBeUndefined();
+    expect(useUiStore.getState().editor.open).toBe(false);
+
+    await mounted.unmount();
+  });
+
+  it('offers no delete in the this-and-future scope instead of dropping the series', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    const before = (await itemRepo.get(item.id))!;
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'This and future');
+
+    expect(mounted.host.textContent).toContain('Delete is unavailable for “This and future”');
+    expect(button(mounted.host, 'Delete').disabled).toBe(true);
+    expect(mounted.host.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(await itemRepo.get(item.id)).toEqual(before);
 
     await mounted.unmount();
   });
