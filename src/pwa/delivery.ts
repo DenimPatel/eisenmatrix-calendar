@@ -16,6 +16,12 @@ export interface DeliverOptions {
   toastTitle?: string;
   /** Replaces the default reminder notification payload (used by the digest). */
   notification?: AppNotificationOptions;
+  /**
+   * Mirrors the `notificationsEnabled` setting. Device notifications are opt-in,
+   * so it defaults to off and a caller that forgets cannot show one; the in-app
+   * toast fallback is never gated by it.
+   */
+  notifyEnabled?: boolean;
   /** Test seams; production uses the real notification API, store and document. */
   show?: (title: string, options: AppNotificationOptions) => Promise<boolean>;
   pushToast?: PushToast;
@@ -33,6 +39,10 @@ function documentIsVisible(): boolean {
  * (and, ultimately, the `visibilitychange` tick) retries it instead of letting
  * the dedupe window suppress it forever. Retries are bounded by the caller's
  * existing `LOOKBACK_MS` window and happen at most once per tick.
+ *
+ * `notifyEnabled === false` (the `notificationsEnabled` setting) skips the device
+ * notification and falls through to the toast, which is why it does not count as
+ * a failure: reminders still reach the user while the app is open.
  */
 export async function deliver(
   title: string,
@@ -60,13 +70,14 @@ export async function deliver(
     show = showAppNotification,
     pushToast = (toast) => void useUiStore.getState().pushToast(toast),
     isVisible = documentIsVisible,
+    notifyEnabled = false,
   } = options;
 
   // Dedupe per reminder (not per occurrence) so an item with several reminders
   // fires each of them, and snoozes can re-fire under a fresh key.
   if (await reminderLogRepo.wasFired(itemId, dedupeKey)) return false;
 
-  if (await show(title, notification)) {
+  if (notifyEnabled && (await show(title, notification))) {
     await reminderLogRepo.record(itemId, dedupeKey);
     return true;
   }

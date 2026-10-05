@@ -4,8 +4,9 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { SettingsView } from './SettingsView';
 import { db } from '@/db/schema';
-import { itemRepo } from '@/db/repository';
+import { itemRepo, settingsRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
+import { DEFAULT_SETTINGS, type AppSettings } from '@/types';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -202,6 +203,119 @@ describe('SettingsView CSV import', () => {
 
     expect(messages()).toEqual([]);
     expect(await itemRepo.all()).toHaveLength(0);
+    await unmount(mounted);
+  });
+});
+
+describe('SettingsView device notifications', () => {
+  function notificationsSwitch(host: HTMLElement): HTMLButtonElement {
+    const control = host.querySelector<HTMLButtonElement>(
+      '[role="switch"][aria-label="Device notifications"]',
+    );
+    expect(control).not.toBeNull();
+    return control!;
+  }
+
+  async function storedNotifications(): Promise<boolean> {
+    return (await settingsRepo.get<AppSettings>('app', DEFAULT_SETTINGS)).notificationsEnabled;
+  }
+
+  beforeEach(async () => {
+    await db.settings.clear();
+    vi.stubGlobal(
+      'Notification',
+      class {
+        static permission = 'granted';
+        static requestPermission = vi.fn(async () => 'granted');
+      },
+    );
+  });
+
+  it('explains that in-app banners are app-only and the switch is device notifications only', async () => {
+    const mounted = await mountSettings();
+    await drain();
+
+    expect(mounted.host.textContent).toContain('While this app is open');
+    expect(mounted.host.textContent).toContain('show as in-app banners');
+    expect(mounted.host.textContent).toContain('this switch controls device');
+    expect(mounted.host.textContent).not.toContain('always appear as in-app banners');
+    expect(mounted.host.textContent).not.toContain('In-app banners always work');
+    await unmount(mounted);
+  });
+
+  it('offers a single control: no duplicate Enable button next to the switch', async () => {
+    const mounted = await mountSettings();
+    await drain();
+
+    expect(mounted.host.textContent).not.toContain('Enable');
+    const buttons = Array.from(mounted.host.querySelectorAll('button')).map((b) =>
+      b.textContent?.trim(),
+    );
+    expect(buttons).not.toContain('Enable');
+    expect(notificationsSwitch(mounted.host)).not.toBeNull();
+    await unmount(mounted);
+  });
+
+  it('reflects the stored setting and persists turning device notifications off', async () => {
+    await settingsRepo.set('app', { ...DEFAULT_SETTINGS, notificationsEnabled: true });
+    const mounted = await mountSettings();
+    await drain();
+
+    const control = notificationsSwitch(mounted.host);
+    expect(control.getAttribute('aria-checked')).toBe('true');
+
+    await act(async () => {
+      control.click();
+    });
+    await vi.waitFor(async () => expect(await storedNotifications()).toBe(false));
+    await drain();
+    expect(notificationsSwitch(mounted.host).getAttribute('aria-checked')).toBe('false');
+    await unmount(mounted);
+  });
+
+  it.each([
+    [
+      'denied',
+      'Browser blocked notifications — re-allow them for this site in your browser settings',
+    ],
+    ['default', 'Device notifications stay off without browser permission'],
+  ])(
+    'asks for browser permission when turned on and stays off if it is %s',
+    async (result, expected) => {
+      vi.stubGlobal(
+        'Notification',
+        class {
+          static permission = 'default';
+          static requestPermission = vi.fn(async () => result);
+        },
+      );
+      const mounted = await mountSettings();
+      await drain();
+
+      await act(async () => {
+        notificationsSwitch(mounted.host).click();
+      });
+      await drain();
+
+      expect(Notification.requestPermission).toHaveBeenCalledTimes(1);
+      expect(await storedNotifications()).toBe(false);
+      expect(messages()).toContain(expected);
+      await unmount(mounted);
+    },
+  );
+
+  it('enables the setting when the browser grants permission', async () => {
+    const mounted = await mountSettings();
+    await drain();
+
+    await act(async () => {
+      notificationsSwitch(mounted.host).click();
+    });
+    await drain();
+
+    expect(await storedNotifications()).toBe(true);
+    expect(notificationsSwitch(mounted.host).getAttribute('aria-checked')).toBe('true');
+    expect(messages()).not.toContain('Device notifications stay off without browser permission');
     await unmount(mounted);
   });
 });

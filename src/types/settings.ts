@@ -11,6 +11,13 @@ export interface AppSettings {
   digestEnabled: boolean;
   /** `HH:mm` local time for the daily digest. */
   digestTime: string;
+  /**
+   * Opt-in gate for OS/browser device notifications. When false, reminders and
+   * the digest are delivered as in-app banners only. Installations that already
+   * held browser permission get it seeded once by
+   * `runNotificationGateMigration`, so the gate never silently revokes an
+   * existing grant.
+   */
   notificationsEnabled: boolean;
   defaultView: string;
 }

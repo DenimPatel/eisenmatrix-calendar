@@ -20,6 +20,7 @@ import { ReminderRuntime } from '@/pwa/ReminderRuntime';
 import { useTheme } from '@/hooks/useTheme';
 import { setupPWA } from '@/pwa/register';
 import { runLegacyMigration } from '@/db/migrations/legacyTasks';
+import { runNotificationGateMigration } from '@/db/migrations/notificationGate';
 
 export default function App() {
   useTheme();
@@ -28,6 +29,10 @@ export default function App() {
     // Import any v1 localStorage data (with a safety backup) on first boot.
     void runLegacyMigration().catch((error: unknown) => {
       console.warn('Legacy v1 migration failed', error);
+    });
+    // Carry an existing browser notification grant over to the delivery gate.
+    void runNotificationGateMigration().catch((error: unknown) => {
+      console.warn('Notification gate migration failed', error);
     });
     setupPWA();
   }, []);

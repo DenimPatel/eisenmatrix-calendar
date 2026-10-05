@@ -177,6 +177,13 @@ raw payload to the `backups` table and to `eisenmatrix-tasks.v1.bak`, maps all f
 at `item.legacy.completionHistory`. It is idempotent and can be re-run from
 Settings → Data.
 
+`src/db/migrations/notificationGate.ts` preserves notification behavior across the
+`notificationsEnabled` gate: it seeds the key to `true` once for installations that
+already held browser permission (`Notification.permission === 'granted'`), marks
+`migration.notificationGate`, never overrides an explicitly stored value, and leaves a
+permission-less install unmarked so a later grant is still picked up. Both migrations run
+from the `App` mount effect.
+
 ---
 
 ## Deployment

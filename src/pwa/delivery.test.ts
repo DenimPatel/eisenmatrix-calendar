@@ -33,6 +33,7 @@ describe('deliver', () => {
       show: async () => true,
       pushToast: record,
       isVisible: () => false,
+      notifyEnabled: true,
     });
 
     expect(delivered).toBe(true);
@@ -45,6 +46,7 @@ describe('deliver', () => {
       show: async () => false,
       pushToast: record,
       isVisible: () => true,
+      notifyEnabled: true,
     });
 
     expect(delivered).toBe(true);
@@ -60,6 +62,7 @@ describe('deliver', () => {
     const delivered = await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
       show: async () => false,
       pushToast: record,
+      notifyEnabled: true,
     });
 
     expect(delivered).toBe(false);
@@ -74,6 +77,7 @@ describe('deliver', () => {
       show,
       pushToast: record,
       isVisible: () => !hidden,
+      notifyEnabled: true,
     };
 
     await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', options);
@@ -98,6 +102,7 @@ describe('deliver', () => {
     const delivered = await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
       show,
       pushToast: record,
+      notifyEnabled: true,
     });
 
     expect(delivered).toBe(false);
@@ -111,6 +116,7 @@ describe('deliver', () => {
     await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
       show,
       pushToast: record,
+      notifyEnabled: true,
     });
 
     expect(show).toHaveBeenCalledWith('Standup', {
@@ -136,6 +142,7 @@ describe('deliverDigest', () => {
       show: async () => true,
       pushToast: record,
       isVisible: () => false,
+      notifyEnabled: true,
     });
 
     expect(shown).toBe(true);
@@ -149,6 +156,7 @@ describe('deliverDigest', () => {
     const shown = await deliverDigest([item('a')], today, {
       show: async () => false,
       pushToast: record,
+      notifyEnabled: true,
     });
 
     expect(shown).toBe(false);
@@ -159,7 +167,7 @@ describe('deliverDigest', () => {
   it('retries an undelivered digest and toasts once when visible', async () => {
     const show = vi.fn(async () => false);
     let hidden = true;
-    const options = { show, pushToast: record, isVisible: () => !hidden };
+    const options = { show, pushToast: record, isVisible: () => !hidden, notifyEnabled: true };
 
     await deliverDigest([item('a')], today, options);
     await deliverDigest([item('a')], today, options);
@@ -180,5 +188,84 @@ describe('deliverDigest', () => {
     await deliverDigest([item('a')], today, options);
     expect(show).toHaveBeenCalledTimes(3);
     expect(toasts).toHaveLength(1);
+  });
+});
+
+describe('notificationsEnabled gate', () => {
+  it('shows no device notification while the setting is off but still toasts and records', async () => {
+    const show = vi.fn(async () => true);
+
+    const delivered = await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
+      show,
+      pushToast: record,
+      isVisible: () => true,
+      notifyEnabled: false,
+    });
+
+    expect(show).not.toHaveBeenCalled();
+    expect(delivered).toBe(true);
+    expect(toasts).toEqual([
+      { message: 'Standup — 09:00 · 2024-06-10', tone: 'info', duration: 8000 },
+    ]);
+    expect(await reminderLogRepo.wasFired(ITEM_ID, DEDUPE_KEY)).toBe(true);
+  });
+
+  it('treats a caller that passes no gate as notifications off', async () => {
+    const show = vi.fn(async () => true);
+
+    await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
+      show,
+      pushToast: record,
+      isVisible: () => true,
+    });
+
+    expect(show).not.toHaveBeenCalled();
+    expect(toasts).toHaveLength(1);
+  });
+
+  it('leaves a gated reminder undelivered while hidden, then delivers it once enabled', async () => {
+    const show = vi.fn(async () => true);
+
+    await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
+      show,
+      pushToast: record,
+      isVisible: () => false,
+      notifyEnabled: false,
+    });
+    expect(show).not.toHaveBeenCalled();
+    expect(await reminderLogRepo.wasFired(ITEM_ID, DEDUPE_KEY)).toBe(false);
+
+    const delivered = await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', {
+      show,
+      pushToast: record,
+      isVisible: () => false,
+      notifyEnabled: true,
+    });
+
+    expect(delivered).toBe(true);
+    expect(show).toHaveBeenCalledTimes(1);
+    expect(await reminderLogRepo.wasFired(ITEM_ID, DEDUPE_KEY)).toBe(true);
+  });
+
+  it('shows the digest as a toast only while device notifications are off', async () => {
+    const show = vi.fn(async () => true);
+    const today = new Date('2024-06-10T08:00:00');
+
+    const shown = await deliverDigest([item('a')], today, {
+      show,
+      pushToast: record,
+      isVisible: () => true,
+      notifyEnabled: false,
+    });
+
+    expect(show).not.toHaveBeenCalled();
+    expect(shown).toBe(true);
+    expect(toasts).toEqual([
+      {
+        message: 'Daily digest — 1 scheduled today · 0 overdue · 0 habits',
+        tone: 'info',
+        duration: 10000,
+      },
+    ]);
   });
 });

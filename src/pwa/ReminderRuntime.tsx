@@ -16,6 +16,7 @@ import { LOOKBACK_MS, deliver, deliverDigest } from './delivery';
 export function ReminderRuntime() {
   const items = useItems();
   const settings = useSetting<AppSettings>('app', DEFAULT_SETTINGS);
+  const notifyEnabled = settings.notificationsEnabled;
   const pushToast = useUiStore((s) => s.pushToast);
   const openEditor = useUiStore((s) => s.openEditor);
 
@@ -44,6 +45,8 @@ export function ReminderRuntime() {
           scheduled.item.id,
           `${scheduled.occKey}::${scheduled.reminder.id}`,
           scheduled.occKey,
+          'info',
+          { notifyEnabled },
         );
       }
 
@@ -53,7 +56,7 @@ export function ReminderRuntime() {
         const digestAt = new Date(now);
         digestAt.setHours(h || 8, m || 0, 0, 0);
         if (nowMs >= digestAt.getTime() && nowMs - digestAt.getTime() < LOOKBACK_MS) {
-          await deliverDigest(items, now);
+          await deliverDigest(items, now, { notifyEnabled });
         }
       }
     };
@@ -102,7 +105,11 @@ export function ReminderRuntime() {
       document.removeEventListener('visibilitychange', onVisibility);
       navigator.serviceWorker?.removeEventListener('message', onWorkerMessage);
     };
-  }, [items, settings.digestEnabled, settings.digestTime, pushToast, openEditor]);
+    // `notifyEnabled` is a dep on purpose: the setting arrives through a live
+    // query, so flipping it in Settings tears this effect down and rebuilds
+    // `tick` with the new value instead of leaving the 60s interval on a stale
+    // closure; the rebuilt effect also ticks immediately.
+  }, [items, notifyEnabled, settings.digestEnabled, settings.digestTime, pushToast, openEditor]);
 
   useEffect(() => {
     void notificationPermission();

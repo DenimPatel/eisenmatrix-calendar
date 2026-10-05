@@ -430,7 +430,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. parseBackup rejects a present-but-foreign `app` and a `version > BACKUP_VERSION` before any Dexie write (SettingsView importJSON already surfaces the message via the IMP-015 toast); the dead `!Array.isArray(items)` branch was removed after proving it fired on 0/13 payload shapes. Back-compat preserved and probed: older version with marker, missing `app`, legacy `tasks` array, non-array `items`, and a real export->import round-trip all still import. 236 tests green; each guard mutation caught.
 
 ### IMP-021 — Gate notification delivery on the `notificationsEnabled` setting
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** configuration / defaults
 - **Type:** improvement
 - **Area / files:** `src/types/settings.ts` (`:14,23`); `src/pwa/ReminderRuntime.tsx`; `src/features/settings/SettingsView.tsx` (`:150,192-203`)
@@ -443,7 +443,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Chosen behavior is gating (keep the toggle); document it in the copy.
+- **Notes:** Chosen behavior is gating (keep the toggle); document it in the copy. `deliver()` gains a fail-closed `notifyEnabled` option so only the device-notification arm is gated (in-app toasts and the digest fallback are untouched), and `ReminderRuntime` reads the setting through the live query with it in the effect deps so a flip applies without a reload. Back-compat: `src/db/migrations/notificationGate.ts` seeds `notificationsEnabled` to true exactly once for installations that already held browser permission, so no existing user silently loses device notifications; it never overrides an explicit stored value and leaves a permission-less install unmarked. Settings exposes a single switch (the duplicate Enable button was removed) and the copy no longer claims in-app banners "always" appear. 258 tests green; all gate mutations caught.
 
 ### IMP-022 — Add Dependabot and an `npm audit` CI step
 - **Status:** TODO

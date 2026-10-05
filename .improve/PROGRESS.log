@@ -32,3 +32,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T04:51Z | IMP-017-BLOCKED | committed | 2dc439d | bookkeeping commit for blocked item
 2026-10-05T05:06Z | IMP-018 | done | 070e1e1 | quick-added habits default to daily recurrence
 2026-10-05T05:34Z | IMP-019 | done | 8432896 | reminder logged only on real delivery
+2026-10-05T05:44Z | IMP-020 | done | 9361ca1 | backup identity/version validated before import

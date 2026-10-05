@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Bell,
   Download,
   FileJson,
   FileSpreadsheet,
@@ -159,7 +158,11 @@ export function SettingsView() {
     pushToast({ message: 'All data cleared', tone: 'info' });
   };
 
-  const requestNotifications = async () => {
+  const setNotifications = async (on: boolean) => {
+    if (!on) {
+      await persist({ notificationsEnabled: false });
+      return;
+    }
     if (typeof Notification === 'undefined') {
       pushToast({ message: 'Notifications are not supported in this browser', tone: 'error' });
       return;
@@ -167,6 +170,18 @@ export function SettingsView() {
     const result = await Notification.requestPermission();
     setPermission(result);
     await persist({ notificationsEnabled: result === 'granted' });
+    if (result === 'denied') {
+      pushToast({
+        message:
+          'Browser blocked notifications — re-allow them for this site in your browser settings',
+        tone: 'error',
+      });
+    } else if (result !== 'granted') {
+      pushToast({
+        message: 'Device notifications stay off without browser permission',
+        tone: 'error',
+      });
+    }
   };
 
   return (
@@ -208,17 +223,22 @@ export function SettingsView() {
 
       <section className="card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-fg">Notifications</h2>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div className="text-sm">
             <div className="text-fg">Device notifications</div>
             <div className="text-xs text-muted">
-              Permission: <span className="font-medium">{permission}</span>. Without a push server,
-              background delivery depends on your OS and is best-effort. In-app banners always work.
+              Permission: <span className="font-medium">{permission}</span>. While this app is
+              open, reminders and the digest show as in-app banners; this switch controls device
+              notifications only. If the permission prompt was blocked, re-allow notifications for
+              this site in your browser's site settings. Without a push server, background delivery
+              depends on your OS and is best-effort.
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void requestNotifications()}>
-            <Bell size={14} /> Enable
-          </Button>
+          <Toggle
+            checked={settings.notificationsEnabled}
+            label="Device notifications"
+            onChange={(on) => void setNotifications(on)}
+          />
         </div>
         <div className="flex items-center justify-between">
           <div className="text-sm">
