@@ -3,20 +3,20 @@
 - **Phase:** 4 — Improvement loop (active)
 - **Work branch:** improve/auto-20261003
 - **Start SHA:** b9d23246b948187c0239e8c95373e3e1f27cc43f
-- **Last commit:** ff5cb5b (discovery round 1)
+- **Last commit:** b9f4151 (IMP-024)
 - **Current item:** (none — between items)
 - **Counters:** commits=38 | done=31 | blocked=1 | needs-human=4 | attempts_current=0
 - **Playwright MCP:** available and working in sub-agents (all visual verifications ran live)
-- **Regression cadence:** every 10 commits — sweeps at 10, 20, 30 all CLEAN; next at 40
+- **Regression cadence:** every 10 commits — sweeps at 10, 20, 30, 40 all CLEAN; next at 50
 - **Stop file:** .improve/STOP (absent)
 
 ## Backlog summary (82 items)
-- DONE 28, BLOCKED 1 (IMP-017), NEEDS-HUMAN 4 (IMP-034 license, IMP-047 PNG icons, IMP-048 Tailwind v4, IMP-067 required status check), TODO 49.
-- Highest-priority remaining TODO (score order): IMP-052 (ICS folding, 12), IMP-053 (calendar +N more, 12), IMP-054 (quick-add data on kind change, 12), IMP-055 (occurrence delete should skip, 12), IMP-056 (prune snoozes, 12), IMP-024 (mobile nav reachability, 10), IMP-025 (itemActions write-path tests, 10), IMP-026 (eisenhower tests, 10), IMP-027 (Sheet/Dialog accessible name, 10), IMP-029 (pin Node, 10), IMP-031 (CSV quote, 10), IMP-032 (bill payments total, 10), IMP-033 (ARIA toggles, 10), IMP-035 (settings RMW race, 8), IMP-036 (reminder dedupe race, 8), IMP-037 (this-and-future + undo, 8), IMP-038 (validate imported shape, 8), IMP-039 (error boundary, 8), IMP-040 (updateOccurrence fields, 8), IMP-041 (null-guard parseLocalDate, 8), IMP-042 (swallowed errors, 8), IMP-043 (no-explicit-any, 8), then IMP-059..066 (low) and IMP-069..086 (new, 15->6).
+- DONE 31, BLOCKED 1 (IMP-017), NEEDS-HUMAN 4 (IMP-034 license, IMP-047 PNG icons, IMP-048 Tailwind v4, IMP-067 required status check), TODO 47.
+- Highest-priority remaining TODO (score order): IMP-054 (quick-add data on kind change, 12), IMP-055 (occurrence delete should skip, 12), IMP-056 (prune snoozes, 12), IMP-025 (itemActions write-path tests, 10), IMP-026 (eisenhower tests, 10), IMP-027 (Sheet/Dialog accessible name, 10), IMP-029 (pin Node, 10), IMP-031 (CSV quote, 10), IMP-032 (bill payments total, 10), IMP-033 (ARIA toggles, 10), IMP-035 (settings RMW race, 8), IMP-036 (reminder dedupe race, 8), IMP-037 (this-and-future + undo, 8), IMP-038 (validate imported shape, 8), IMP-039 (error boundary, 8), IMP-040 (updateOccurrence fields, 8), IMP-041 (null-guard parseLocalDate, 8), IMP-042 (swallowed errors, 8), IMP-043 (no-explicit-any, 8), then the low batch IMP-046/059..066 and the discovery batch IMP-069..086 (15->6).
 - NOTE: IMP-011 (score 15) is DONE; the "next TODO" listing in the file order can mislead because DONE items remain in place — always select by Status, not file position.
 
 ## Baseline
-Green from the start: typecheck clean, lint clean, tests 10 files/49, build OK. Now 29 files/279 tests. Only quirks: benign Node `--localstorage-file` warning; 12 npm advisories (9 high, 0 critical, dev toolchain) covered by IMP-022's critical-only audit gate.
+Green from the start: typecheck clean, lint clean, tests 10 files/49, build OK. Now 31 files/302 tests. Only quirks: benign Node `--localstorage-file` warning; 12 npm advisories (9 high, 0 critical, dev toolchain) covered by IMP-022's critical-only audit gate.
 
 ## Orchestrator lessons (do not repeat)
 1. **Never issue two edits to `.improve/FEATURES.md` in the same tool batch** — a concurrent edit clobbered IMP-011's status flip and it silently stayed TODO for 20 commits. Always edit one region per message and re-verify the status right after.
