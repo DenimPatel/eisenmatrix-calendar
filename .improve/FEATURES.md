@@ -397,7 +397,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. quickAddToItem falls back to baseRule('daily') (interval 1) when the kind is habit and no recurrence was parsed; explicit rules (every 3 days, mon/wed/fri) still win and non-habits stay null. 222 tests green (+4); Playwright-verified the habit shows on Today/Habits with a streak control and expands Oct 5–Nov 1, zero console errors. Verified no IMP-017 trace reintroduced. Follow-ups logged by the verifier: HabitsView heatmap window ends yesterday so today's completion shows no filled cell (pre-existing); quick-add preview omits the Daily default; Today lists the habit twice.
 
 ### IMP-019 — Only mark a reminder fired when it was actually delivered
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/pwa/ReminderRuntime.tsx` (`deliver`, `:16-47`)
@@ -410,7 +410,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Extract `deliver` so it is testable without mounting React.
+- **Notes:** DONE. Extracted React-free `src/pwa/delivery.ts` (`deliver`/`deliverDigest`); reminderLog is recorded only when a notification was shown OR the document was visible at toast time, otherwise it is left unrecorded for the next tick (bounded by the unchanged 24h LOOKBACK_MS, no new timers). 231 tests green (+9); mutation-checked; simulations show 1440 hidden ticks -> 0 records/0 toasts and 500 flapping ticks -> exactly 1 toast/1 row (no storm); Playwright-verified live delivery with no duplicate on the next tick, zero console errors. Pre-existing follow-ups logged: concurrent ticks can still double-deliver (reminderLog key is a non-unique index — see IMP-036), and raw IndexedDB writes do not reach useLiveQuery.
 
 ### IMP-020 — Validate backup identity/version before import
 - **Status:** TODO

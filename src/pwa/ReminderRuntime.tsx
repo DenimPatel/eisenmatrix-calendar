@@ -5,46 +5,9 @@ import { patchItem, toggleDone } from '@/domain/itemActions';
 import { newId } from '@/lib/id';
 import { upcomingReminders } from '@/domain/reminders';
 import { useUiStore } from '@/store/useUiStore';
-import { expandOccurrences } from '@/domain/recurrence';
-import { addDays, endOfDay, formatISODate, startOfDay } from '@/lib/date';
 import { DEFAULT_SETTINGS, type AppSettings } from '@/types';
-import { notificationPermission, showAppNotification } from './notifications';
-
-const DIGEST_TAG = '__digest__';
-const LOOKBACK_MS = 24 * 60 * 60 * 1000;
-
-async function deliver(
-  title: string,
-  body: string,
-  itemId: string,
-  dedupeKey: string,
-  occurrenceKey: string,
-  tone: 'info' | 'success' | 'error' = 'info',
-) {
-  // Dedupe per reminder (not per occurrence) so an item with several reminders
-  // fires each of them, and snoozes can re-fire under a fresh key.
-  const alreadyFired = await reminderLogRepo.wasFired(itemId, dedupeKey);
-  if (alreadyFired) return false;
-
-  const shown = await showAppNotification(title, {
-    body,
-    tag: `${itemId}:${dedupeKey}`,
-    actions: [
-      { action: 'done', title: 'Done' },
-      { action: 'snooze-10', title: 'Snooze 10m' },
-      { action: 'snooze-60', title: 'Snooze 1h' },
-    ],
-    data: { itemId, occKey: occurrenceKey },
-    requireInteraction: true,
-  });
-
-  if (!shown) {
-    useUiStore.getState().pushToast({ message: `${title} — ${body}`, tone, duration: 8000 });
-  }
-
-  await reminderLogRepo.record(itemId, dedupeKey);
-  return true;
-}
+import { notificationPermission } from './notifications';
+import { LOOKBACK_MS, deliver, deliverDigest } from './delivery';
 
 /**
  * Drives reminder delivery. Runs on load, on visibility change, and every 60s.
@@ -90,32 +53,7 @@ export function ReminderRuntime() {
         const digestAt = new Date(now);
         digestAt.setHours(h || 8, m || 0, 0, 0);
         if (nowMs >= digestAt.getTime() && nowMs - digestAt.getTime() < LOOKBACK_MS) {
-          const todayKey = formatISODate(now);
-          const already = await reminderLogRepo.wasFired(DIGEST_TAG, todayKey);
-          if (!already) {
-            const todayOccurrences = items.flatMap((item) =>
-              expandOccurrences(item, startOfDay(now), endOfDay(now)),
-            );
-            const overdue = items
-              .flatMap((item) =>
-                expandOccurrences(
-                  item,
-                  addDays(startOfDay(now), -30),
-                  addDays(startOfDay(now), -1),
-                ),
-              )
-              .filter((occ) => occ.status !== 'done' && occ.item.kind !== 'habit').length;
-            const habitsLeft = items.filter((i) => i.kind === 'habit').length;
-            const body = `${todayOccurrences.length} scheduled today · ${overdue} overdue · ${habitsLeft} habits`;
-            const shown = await showAppNotification('Your day at a glance', {
-              body,
-              tag: DIGEST_TAG,
-              data: { itemId: '', occKey: todayKey },
-            });
-            if (!shown)
-              pushToast({ message: `Daily digest — ${body}`, tone: 'info', duration: 10000 });
-            await reminderLogRepo.record(DIGEST_TAG, todayKey);
-          }
+          await deliverDigest(items, now);
         }
       }
     };

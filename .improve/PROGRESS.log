@@ -30,3 +30,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T03:57Z | IMP-016 | done (attempt 2) | 1d05687 | occurrence-scoped edits no longer leak to series
 2026-10-05T04:51Z | IMP-017 | BLOCKED | - | 3 attempts; all regressed real titles (phrasal particles). Files restored, nothing committed.
 2026-10-05T04:51Z | IMP-017-BLOCKED | committed | 2dc439d | bookkeeping commit for blocked item
+2026-10-05T05:06Z | IMP-018 | done | 070e1e1 | quick-added habits default to daily recurrence
