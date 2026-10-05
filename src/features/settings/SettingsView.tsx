@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Bell,
   Download,
@@ -60,6 +60,7 @@ export function SettingsView() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [importReport, setImportReport] = useState<string | null>(null);
   const [permission, setPermission] = useState<string>('default');
+  const importDoneRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     void backupRepo.all().then((rows) => setBackupCount(rows.length));
@@ -311,9 +312,10 @@ export function SettingsView() {
         open={!!importReport}
         onClose={() => setImportReport(null)}
         title="Import complete"
+        initialFocusRef={importDoneRef}
         footer={
           <div className="flex justify-end">
-            <Button variant="primary" onClick={() => setImportReport(null)}>
+            <Button ref={importDoneRef} variant="primary" onClick={() => setImportReport(null)}>
               Done
             </Button>
           </div>

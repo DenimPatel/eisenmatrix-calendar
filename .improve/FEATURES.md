@@ -315,7 +315,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. mergeImportedItems pre-builds an original→new id map for `duplicate` and rewrites each duplicate's parentId to the parent's new id; parents outside the incoming set keep the original. skip/overwrite untouched (60k-case differential fuzz byte+identity identical). 180 tests green; 3 mutations caught.
 
 ### IMP-057 — Give the remaining overlays an initial focus target
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/features/shell/ShortcutSheet.tsx` (`:19`); `src/components/ui/Dialog.tsx` (`ConfirmDialog` `:101-121`); `src/features/settings/SettingsView.tsx` (`:292`, `:307`); trap fallback `src/hooks/useFocusTrap.ts` (`:17-23`)
@@ -330,7 +330,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-009
 - **Priority score:** 15
-- **Notes:** Source: `discovered-IMP-009.md` D2. Cancel-first for `ConfirmDialog` is a deliberate safety choice, not the closest-node default. No other item covers the remaining overlays (IMP-009's ACs named only the three primary-input sheets).
+- **Notes:** DONE. Reused IMP-009's initialFocusRef: Dialog gained `titleRef` (heading tabIndex=-1), ShortcutSheet focuses its heading, ConfirmDialog focuses Cancel (safe default; destructive action is last in DOM), SettingsView import dialog focuses Done. 188 tests green (8 new, 7/8 mutation-caught); Playwright-verified focus targets, opener restore, Tab loop intact, layout pixel-identical at 1280/390. Note: the global :focus-visible ring still paints on the focused heading (index.css:64) — outline-none does not suppress it; cosmetic only.
 
 ### IMP-058 — Make the Habits view honor the `weekStartsOn` setting
 - **Status:** TODO

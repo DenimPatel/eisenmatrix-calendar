@@ -24,3 +24,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T01:08Z | IMP-015 | done (attempt 2) | e6d2dc4 | CSV import error handling + deterministic tests
 2026-10-05T01:26Z | IMP-050 | done | 75778cc | habit streak via patchItem w/ shared undo; +IMP-068 backlog item
 2026-10-05T01:48Z | IMP-068 | done | 1c1cbd5 | fixed real boot-migration TypeError (Node localStorage stub)
+2026-10-05T02:15Z | IMP-051 | done | b9c15b7 | duplicate-import parentId remap; sweep#2 CLEAN

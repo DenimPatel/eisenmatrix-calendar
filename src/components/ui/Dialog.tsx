@@ -1,4 +1,4 @@
-import React, { useEffect, type RefObject } from 'react';
+import React, { useEffect, useRef, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -15,6 +15,8 @@ export interface DialogProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Focused on open instead of the first focusable element (the Close button). */
   initialFocusRef?: RefObject<HTMLElement | null>;
+  /** Ref for the rendered title heading, so a caller can focus it as the initial target. */
+  titleRef?: RefObject<HTMLHeadingElement | null>;
 }
 
 const sizes = {
@@ -34,6 +36,7 @@ export function Dialog({
   className,
   size = 'md',
   initialFocusRef,
+  titleRef,
 }: DialogProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(open, initialFocusRef);
 
@@ -73,7 +76,15 @@ export function Dialog({
         {(title || description) && (
           <div className="flex items-start justify-between gap-4 border-b border-border p-4">
             <div>
-              {title && <h2 className="text-lg font-semibold text-fg">{title}</h2>}
+              {title && (
+                <h2
+                  ref={titleRef}
+                  tabIndex={-1}
+                  className="text-lg font-semibold text-fg outline-none"
+                >
+                  {title}
+                </h2>
+              )}
               {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
             </div>
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close dialog">
@@ -107,15 +118,17 @@ export function ConfirmDialog({
   onCancel,
   danger,
 }: ConfirmDialogProps) {
+  const cancelRef = useRef<HTMLButtonElement>(null);
   return (
     <Dialog
       open={open}
       onClose={onCancel}
       title={title}
       size="sm"
+      initialFocusRef={cancelRef}
       footer={
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCancel}>
+          <Button ref={cancelRef} variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
           <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm}>
