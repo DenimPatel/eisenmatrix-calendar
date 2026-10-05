@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseQuickAdd, splitNoteDraft, NOTE_TITLE_MAX } from './quickadd';
+import { parseQuickAdd, quickAddToItem, splitNoteDraft, NOTE_TITLE_MAX } from './quickadd';
+import { expandOccurrences } from './recurrence';
 
 describe('parseQuickAdd', () => {
   it('parses a recurring bill with amount, day and urgency', () => {
@@ -114,6 +115,44 @@ describe('parseQuickAdd', () => {
     expect(explicit.title).toBe('Gym');
     expect(explicit.start).toBe('2024-06-14');
     expect(explicit.recurrence).toBeNull();
+  });
+});
+
+describe('quickAddToItem', () => {
+  it('defaults a habit to a daily rule so it recurs from today', () => {
+    const item = quickAddToItem(parseQuickAdd('habit: meditate', new Date('2024-06-10T12:00:00')));
+    expect(item.kind).toBe('habit');
+    expect(item.recurrence?.freq).toBe('daily');
+    expect(item.recurrence?.interval).toBe(1);
+  });
+
+  it('keeps an explicit recurrence from the input', () => {
+    const item = quickAddToItem(parseQuickAdd('habit: stretch every 3 days'));
+    expect(item.recurrence?.freq).toBe('daily');
+    expect(item.recurrence?.interval).toBe(3);
+  });
+
+  it('expands a quick-added habit across the coming week', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const item = quickAddToItem(parseQuickAdd('habit: meditate', now));
+    const occurrences = expandOccurrences(
+      item,
+      new Date('2024-06-10T00:00:00'),
+      new Date('2024-06-16T23:59:59'),
+    ).map((o) => o.occKey);
+    expect(occurrences).toEqual([
+      '2024-06-10',
+      '2024-06-11',
+      '2024-06-12',
+      '2024-06-13',
+      '2024-06-14',
+      '2024-06-15',
+      '2024-06-16',
+    ]);
+  });
+
+  it('leaves other kinds without a recurrence', () => {
+    expect(quickAddToItem(parseQuickAdd('write report')).recurrence).toBeNull();
   });
 });
 

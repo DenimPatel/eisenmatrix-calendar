@@ -429,7 +429,8 @@ export function quickAddToItem(parsed: QuickAddResult): Item {
     importance: parsed.importance,
     data: data as never,
   });
-  item.recurrence = parsed.recurrence;
+  // A habit only makes sense as a series; default it to daily so streaks are computable.
+  item.recurrence = parsed.recurrence ?? (parsed.kind === 'habit' ? baseRule('daily') : null);
   item.updatedAt = Date.now();
   return item;
 }

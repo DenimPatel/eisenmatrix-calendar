@@ -381,7 +381,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** BLOCKED after MAX_ATTEMPTS=3 (2026-10-05). The spec sample and most cases were solved, but every approach regressed REAL titles by deleting phrasal particles — attempt 1 was ungated ("Log in"->"Log"); attempt 3's `TIME_OR_DATE_PREP` still mutated 96 inputs ("Something to look at 3pm"->"Something to look", "Stand by 3pm"->"Stand"), which is WORSE than HEAD. Files restored to HEAD; IMP-007/010/011 work in quickadd.ts preserved; 218 tests green; nothing committed. Full evidence in `.improve/reports/verify-IMP-017.md`. ROOT CAUSE for a future attempt: consume the introducing preposition WITH the matched time/date expression, and suppress the trailing trim when the candidate word is a phrasal particle (PARTICLE_TAIL guard: sign/log/check/look/stand/follow/turn/put/pick/fill/hand/break/come/go + in/on/by/at). Prefer leaving a harmless dangling preposition over eating a real word.
 
 ### IMP-018 — Make quick-added habits recurring (default daily)
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/quickadd.ts` (`quickAddToItem`, `:345-384`)
@@ -394,7 +394,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:**
+- **Notes:** DONE. quickAddToItem falls back to baseRule('daily') (interval 1) when the kind is habit and no recurrence was parsed; explicit rules (every 3 days, mon/wed/fri) still win and non-habits stay null. 222 tests green (+4); Playwright-verified the habit shows on Today/Habits with a streak control and expands Oct 5–Nov 1, zero console errors. Verified no IMP-017 trace reintroduced. Follow-ups logged by the verifier: HabitsView heatmap window ends yesterday so today's completion shows no filled cell (pre-existing); quick-add preview omits the Daily default; Today lists the habit twice.
 
 ### IMP-019 — Only mark a reminder fired when it was actually delivered
 - **Status:** TODO
