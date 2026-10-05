@@ -7,10 +7,15 @@ export function ToastHost() {
   const dismissToast = useUiStore((s) => s.dismissToast);
 
   return (
+    // The offset is the mobile nav's measured grid height (`--mobile-nav-h`, published by
+    // MobileBottomNav) plus the home-indicator inset and a gap, so the stack — and its Undo
+    // button, which is `pointer-events-auto` — always sits above the bar instead of on top
+    // of nav cells. The 7rem fallback only errs high, before the bar has measured itself.
     <div
+      data-testid="toast-stack"
       aria-live="polite"
       aria-atomic="false"
-      className="pointer-events-none fixed bottom-20 right-4 z-[60] flex w-[min(92vw,22rem)] flex-col gap-2 sm:bottom-4"
+      className="pointer-events-none fixed bottom-[calc(var(--mobile-nav-h,7rem)+env(safe-area-inset-bottom)+1rem)] right-4 z-[60] flex w-[min(92vw,22rem)] flex-col gap-2 sm:bottom-4"
     >
       {toasts.map((toast) => (
         <div

@@ -23,6 +23,7 @@ import {
   Sun,
 } from 'lucide-react';
 import { NAV_ITEMS } from './nav';
+import { MobileBottomNav } from './MobileBottomNav';
 import { isItemDrag, type DropData, type ItemDragData } from './dnd';
 import { cn } from '@/lib/cn';
 import { Button } from '@/components/ui/Button';
@@ -116,7 +117,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {!collapsed && <span className="truncate font-bold">EisenMatrix</span>}
           </div>
 
-          <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
+          {/* Distinct landmark name from the mobile bar's, so a screen reader never
+              announces two identically named navigation landmarks. */}
+          <nav aria-label="Primary sections" className="flex-1 space-y-0.5 overflow-y-auto p-2">
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
@@ -204,30 +207,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-[1600px] flex-1 p-3 pb-24 sm:p-5 sm:pb-6">
+          {/* Bottom padding tracks the mobile bar's measured grid height and the home-indicator
+              inset it reserves, so the last content never ends up under the bar. */}
+          <main className="mx-auto w-full max-w-[1600px] flex-1 p-3 pb-[calc(var(--mobile-nav-h,7rem)+env(safe-area-inset-bottom)+1.75rem)] sm:p-5 sm:pb-6">
             {children}
           </main>
         </div>
       </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-1 overflow-x-auto border-t border-border bg-surface/95 px-1 py-1 backdrop-blur sm:hidden">
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                'flex min-w-[3.25rem] flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[10px] font-medium',
-                isActive ? 'text-accent' : 'text-muted',
-              )
-            }
-          >
-            <item.icon size={18} />
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+      <MobileBottomNav />
 
       <DragOverlay
         dropAnimation={{

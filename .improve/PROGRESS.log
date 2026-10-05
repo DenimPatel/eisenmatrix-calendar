@@ -38,3 +38,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T08:53Z | IMP-023 | done (attempt 2) | 1ddb29c | series split count/anchor correct; no drift, no unbounded tail
 2026-10-05T09:09Z | DISCOVERY-1 | done | ff5cb5b | absorbed 27 discovered files into 18 new items (IMP-069..086)
 2026-10-05T09:27Z | IMP-052 | done | 9c5de51 | RFC 5545 line folding (octet-safe)
+2026-10-05T10:22Z | IMP-053 | done | a4c1793 | calendar +N more expands to full list

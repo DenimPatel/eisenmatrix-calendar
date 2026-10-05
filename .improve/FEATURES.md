@@ -711,7 +711,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-050.md` D2. Fix shape mirrors IMP-050's re-read. The second read must happen inside the action: React batches the two clicks into one tick, so an effect-based reconciliation would not help.
 
 ### IMP-024 — Make all mobile bottom-nav destinations reachable at 390px
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** responsiveness / UX
 - **Type:** bug-fix
 - **Area / files:** `src/features/shell/AppShell.tsx` (mobile nav, `:213-230`)
@@ -724,7 +724,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:** Pair with the mobile bottom-padding fix (not promoted below).
+- **Notes:** DONE (attempt 3; attempts 1-2 were rejected by verification). Replaced the 564px horizontal scroller with a `grid-cols-5` two-row layout so all 10 destinations are visible and tappable at 390px and 320px with no swipe, no clipping and no page scroll; the active cell is a solid `bg-accent` pill that highlights on first paint including deep links, targets are 73x44, and the 1280px rail is byte-identical. Attempt 1 kept the scroller and added a gradient cue (verifier: cue broke WCAG 1.4.3 contrast 6.96:1 -> 1.00:1 over the Bills/Lists labels and created a mis-tap); attempt 2's taller bar then let the toast `Undo` button overlap nav row 1 (destructive mis-tap) and lacked a safe-area inset. Final fix derives the toast and `main` offsets from the measured nav height via a published CSS variable plus a live `env(safe-area-inset-bottom)` term. 302 tests green (31 files); a 9,945-point hit test found 0 foreign elements over the bar and the item stayed deleted after every tap; clearance held at 15px across a 98->152px height change; 8 mutations caught. Residual nit: `publishMobileNavHeight` in src/lib/layout.ts does not guard a non-finite height (unreachable today).
 
 ### IMP-025 — Add tests for the `itemActions` write path
 - **Status:** TODO
