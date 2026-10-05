@@ -27,3 +27,5 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T02:15Z | IMP-051 | done | b9c15b7 | duplicate-import parentId remap; sweep#2 CLEAN
 2026-10-05T02:36Z | IMP-057 | done | bfa3d68 | safe initial focus for remaining dialogs
 2026-10-05T02:55Z | IMP-058 | done | ab0499e | Habits view honors weekStartsOn
+2026-10-05T03:57Z | IMP-016 | done (attempt 2) | 1d05687 | occurrence-scoped edits no longer leak to series
+2026-10-05T04:51Z | IMP-017 | BLOCKED | - | 3 attempts; all regressed real titles (phrasal particles). Files restored, nothing committed.

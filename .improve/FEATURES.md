@@ -365,7 +365,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 2). Scope `occurrence` now writes only `recurrence.overrides` — the base series no longer re-anchors. Attempt 1 failed verification and its 3 issues were fixed: (1) occurrence status now lives solely in `item.occurrences` (one resolver shared by toggleDone/ItemCard; legacy `overrides[key].status` still honored) so the card checkbox is no longer dead; (2) `occurrenceEnd` derives from the resolved start/allDay and can no longer produce an inverted range; (3) series-only fields (urgency/importance/tags/reminders) are disabled and labelled "Applies to the whole series" under this scope, with an honest "Nothing to update" toast. 218 tests green; 23 mutations caught; Playwright-verified with 0 console errors. Minor known gaps: editor draft is the series row (an occurrence's own start/allDay overrides are not shown), the `future`-scope unit test was dropped, and `title`/`notes` overrides are still unrendered.
 
 ### IMP-017 — Strip trailing prepositions from parsed quick-add titles
-- **Status:** TODO
+- **Status:** BLOCKED
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/quickadd.ts` (`titleRaw` cleanup, `:302-305`)
@@ -378,7 +378,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:**
+- **Notes:** BLOCKED after MAX_ATTEMPTS=3 (2026-10-05). The spec sample and most cases were solved, but every approach regressed REAL titles by deleting phrasal particles — attempt 1 was ungated ("Log in"->"Log"); attempt 3's `TIME_OR_DATE_PREP` still mutated 96 inputs ("Something to look at 3pm"->"Something to look", "Stand by 3pm"->"Stand"), which is WORSE than HEAD. Files restored to HEAD; IMP-007/010/011 work in quickadd.ts preserved; 218 tests green; nothing committed. Full evidence in `.improve/reports/verify-IMP-017.md`. ROOT CAUSE for a future attempt: consume the introducing preposition WITH the matched time/date expression, and suppress the trailing trim when the candidate word is a phrasal particle (PARTICLE_TAIL guard: sign/log/check/look/stand/follow/turn/put/pick/fill/hand/break/come/go + in/on/by/at). Prefer leaving a harmless dangling preposition over eating a real word.
 
 ### IMP-018 — Make quick-added habits recurring (default daily)
 - **Status:** TODO
