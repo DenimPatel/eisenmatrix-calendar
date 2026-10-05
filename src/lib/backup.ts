@@ -70,6 +70,15 @@ export function mergeImportedItems(
   let overwritten = 0;
   let duplicated = 0;
 
+  // Pre-pass so a child can be remapped to its parent's new id even when the
+  // parent appears later in the incoming array.
+  const idMap = new Map<string, string>();
+  if (strategy === 'duplicate') {
+    for (const item of incoming) {
+      if (existingIds.has(item.id) && !idMap.has(item.id)) idMap.set(item.id, newId());
+    }
+  }
+
   for (const item of incoming) {
     if (existingIds.has(item.id)) {
       if (strategy === 'skip') {
@@ -82,7 +91,11 @@ export function mergeImportedItems(
         continue;
       }
       duplicated++;
-      toPut.push({ ...item, id: newId() });
+      toPut.push({
+        ...item,
+        id: idMap.get(item.id) ?? newId(),
+        parentId: item.parentId ? (idMap.get(item.parentId) ?? item.parentId) : item.parentId,
+      });
       continue;
     }
     toPut.push(item);

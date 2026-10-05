@@ -299,7 +299,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. toggleDone re-reads the row via itemRepo.get after setStatus, computes habitStreak from persisted state, and persists via patchItem (history recorded) with a new `trackUndo` option so the derived streak write shares the occurrence write's single undo entry; write stays silent (no toast). 173 tests green; 3 mutations (re-read/patchItem/trackUndo) each caught; Playwright-verified toggle -> 1 day streak -> Cmd+Z -> 0 with history restored, zero console errors.
 
 ### IMP-051 — Remap `parentId` when duplicating imported items
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data integrity
 - **Type:** bug-fix
 - **Area / files:** `src/lib/backup.ts` (`mergeImportedItems`, `:62-92`, duplicate branch `:84-86`); caller `src/features/settings/SettingsView.tsx:98-104`
@@ -312,7 +312,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Only `parentId` cross-references ids today; checklist/history ids are self-contained.
+- **Notes:** DONE. mergeImportedItems pre-builds an original→new id map for `duplicate` and rewrites each duplicate's parentId to the parent's new id; parents outside the incoming set keep the original. skip/overwrite untouched (60k-case differential fuzz byte+identity identical). 180 tests green; 3 mutations caught.
 
 ### IMP-057 — Give the remaining overlays an initial focus target
 - **Status:** TODO

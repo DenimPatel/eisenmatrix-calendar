@@ -53,4 +53,61 @@ describe('backup', () => {
       /^eisenmatrix-backup-\d{4}-\d{2}-\d{2}\.json$/,
     );
   });
+
+  describe('parentId remapping on duplicate', () => {
+    const parent = { ...item('p', 'Parent'), parentId: null };
+    const child = { ...item('c', 'Child'), parentId: 'p' };
+
+    it('repoints a duplicated child at the duplicated parent', () => {
+      const { toPut, duplicated } = mergeImportedItems([parent, child], [parent, child], 'duplicate');
+      expect(duplicated).toBe(2);
+
+      const dupParent = toPut.find((i) => i.title === 'Parent');
+      const dupChild = toPut.find((i) => i.title === 'Child');
+      expect(dupParent?.id).not.toBe('p');
+      expect(dupChild?.id).not.toBe('c');
+      expect(dupChild?.parentId).toBe(dupParent?.id);
+    });
+
+    it('repoints when the child precedes the parent in the incoming array', () => {
+      const { toPut } = mergeImportedItems([parent, child], [child, parent], 'duplicate');
+      const dupParent = toPut.find((i) => i.title === 'Parent');
+      expect(toPut.find((i) => i.title === 'Child')?.parentId).toBe(dupParent?.id);
+    });
+
+    it('keeps the original parentId when the parent is not in the incoming set', () => {
+      const orphanChild = { ...item('c', 'Child'), parentId: 'live-parent' };
+      const { toPut } = mergeImportedItems(
+        [item('live-parent', 'Live Parent'), orphanChild],
+        [orphanChild],
+        'duplicate',
+      );
+
+      const dupChild = toPut.find((i) => i.title === 'Child');
+      expect(dupChild?.id).not.toBe('c');
+      expect(dupChild?.parentId).toBe('live-parent');
+    });
+
+    it('keeps the parentId when the incoming parent is not itself duplicated', () => {
+      const freshParent = { ...item('new-p', 'Fresh Parent'), parentId: null };
+      const incomingChild = { ...item('new-c', 'Child'), parentId: 'new-p' };
+      const { toPut } = mergeImportedItems(
+        [parent, child],
+        [freshParent, incomingChild],
+        'duplicate',
+      );
+
+      expect(toPut.map((i) => i.title)).toEqual(['Fresh Parent', 'Child']);
+      expect(toPut[1].parentId).toBe('new-p');
+    });
+
+    it('leaves skip and overwrite parentIds untouched', () => {
+      const skip = mergeImportedItems([parent, child], [parent, child], 'skip');
+      expect(skip.toPut).toEqual([]);
+
+      const overwrite = mergeImportedItems([parent, child], [parent, child], 'overwrite');
+      expect(overwrite.toPut.map((i) => i.id)).toEqual(['p', 'c']);
+      expect(overwrite.toPut[1].parentId).toBe('p');
+    });
+  });
 });

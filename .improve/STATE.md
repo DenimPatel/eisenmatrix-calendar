@@ -3,11 +3,11 @@
 - **Phase:** 4 — Improvement loop
 - **Work branch:** improve/auto-20261003
 - **Start SHA:** b9d23246b948187c0239e8c95373e3e1f27cc43f
-- **Last commit:** IMP-068 (see PROGRESS.log for SHA)
+- **Last commit:** IMP-051 (see PROGRESS.log for SHA)
 - **Current item:** (none)
-- **Counters:** commits=20 | done=18 | blocked=0 | needs-human=0 | attempts_current=0
+- **Counters:** commits=21 | done=19 | blocked=0 | needs-human=0 | attempts_current=0
 - **Playwright MCP:** available
-- **Regression cadence:** every 10 commits — sweep #1 done at commit 10 (CLEAN); next at commit 20
+- **Regression cadence:** every 10 commits — sweeps at 10 and 20 both CLEAN; next at 30
 - **Stop file:** .improve/STOP (absent)
 
 ## Backlog summary
