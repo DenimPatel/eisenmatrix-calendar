@@ -203,7 +203,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Lone weekday consumed and resolved via nextWeekday (today not counted); multi-weekday/next/every paths byte-identical. 131 tests green; mutation-checked. Caveat: bare `wed`/`sat`/`sun` used as ordinary words are now consumed (see discovered-IMP-010.md §3b); lone `fri` yields "Untitled".
 
 ### IMP-011 — Keep "on the 5th" when not monthly (or don't strip it)
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/quickadd.ts` (`monthDayMatch`, `:209-215`)
