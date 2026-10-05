@@ -35,3 +35,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T05:44Z | IMP-020 | done | 9361ca1 | backup identity/version validated before import
 2026-10-05T06:32Z | IMP-021 | done (attempt 2) | bda9e65 | notificationsEnabled now gates delivery + one-time permission seed
 2026-10-05T06:40Z | IMP-022 | done | 729ff0f | Dependabot + critical-only npm audit in CI
+2026-10-05T08:53Z | IMP-023 | done (attempt 2) | 1ddb29c | series split count/anchor correct; no drift, no unbounded tail

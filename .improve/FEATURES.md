@@ -1,7 +1,7 @@
 # FEATURES.md — Prioritized Improvement Backlog
 
 Repo: `eisenmatrix-calendar` · Baseline SHA: `b9d23246b948187c0239e8c95373e3e1f27cc43f`
-Generated: 2026-10-04 · Reviewed 2026-10-04 (backlog critic) against the recon reports and the actual source.
+Generated: 2026-10-04 · Reviewed 2026-10-04 (backlog critic) and 2026-10-05 (discovery absorption) against the recon reports, the 27 `.improve/reports/discovered-IMP-*.md` files and the actual source.
 
 This backlog is ordered by **priority score descending** (ties broken by impact, then lower effort).
 Every item is independently verifiable and cites real files. `Depends on` is respected: an item's
@@ -348,6 +348,40 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 15
 - **Notes:** DONE. HabitsView reads weekStartsOn via useSetting for windowStart and renders the legend from the shared weekdayLabels helper (no second label-order copy; exactly one startOfWeek definition). 192 tests green; Playwright-verified Sun-first 2026-07-12 vs Mon-first 2026-07-13 at 1280/390, zero console errors. Follow-ups logged: legend is aria-hidden so weekday order is never announced; pre-existing `--elevated:255 255 255` makes empty heatmap cells white-on-white in light theme.
 
+### IMP-069 — Make editor-created items undoable
+- **Status:** TODO
+- **Category:** correctness / undo integrity
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts` (`saveItem`, `:76-92`; create branch `:82-84`, undo pushed only for edits `:85-89`); contrast `createItemPersisted` `:59-64`; caller `src/features/item/ItemEditorSheet.tsx:193`
+- **Intent:** `saveItem` pushes an undo entry only when the row already exists, so a task created from the editor (`N` → title → Save) is **not** undoable while a quick-added one is. `⌘Z` after creating silently does nothing — the undo stack is empty, not the shortcut broken — so the user has to find and delete the item by hand.
+- **Acceptance criteria:**
+  1. The create branch of `saveItem` pushes an undo entry with the same `Create "<title>"` shape `createItemPersisted` uses (`:59-64`), whose closure removes the new row.
+  2. After creating a task in the editor and invoking the top undo entry, the row is gone from IndexedDB and the undo stack is back to its previous depth.
+  3. The edit branch keeps its existing `Edit "<title>"` entry, and `options.silent` still suppresses only the toast — never the undo entry.
+  4. Saving an existing item does not push two entries.
+- **Verification method:** Add a case in `src/domain/itemActions.test.ts` (fake-indexeddb): call `saveItem(createItem({ kind: 'task', title: 'New task' }))`, drain `useUiStore`'s undo stack, invoke the top closure, assert the row is gone and the previous entry is on top again. Playwright at preview: press `N`, save a title, press `⌘+Z`, assert the card disappears. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 15
+- **Notes:** Source: `discovered-IMP-013.md` §3. `itemRepo.create` is a `put` (`src/db/repository.ts:43-46`), so the edit branch's restore-by-`create` is safe; only the missing create entry is in scope. IMP-025's undo helper is the natural home for the test.
+
+### IMP-070 — Habits created outside quick add must still get the daily default
+- **Status:** TODO
+- **Category:** correctness / feature gap
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemFactory.ts` (`createItem`, `:60` hardcodes `recurrence: null`); `src/features/habits/HabitsView.tsx:75` and `:90` (`createItem({ kind: 'habit', start: today })`); the quick-add copy of the default `src/domain/quickadd.ts:432-433`
+- **Intent:** IMP-018 defaulted quick-added habits to daily, but `createItem` still hardcodes `recurrence: null`, so both "New habit" buttons and the editor produce a habit that exists on its start day only — exactly the symptom IMP-018 fixed (no expansion, wrong "done today", no streak). Two code paths now disagree about what a habit is.
+- **Acceptance criteria:**
+  1. `createItem({ kind: 'habit' })` with no caller-supplied rule yields a daily `interval: 1` recurrence; a caller-supplied `recurrence` always wins.
+  2. "New habit" in `HabitsView` (`:75`, `:90`) produces a habit that expands for the next 7 days, not just its start day.
+  3. `quickAddToItem` keeps its explicit default (`:433`) and its output is unchanged; no other kind gains a default rule.
+  4. Pre-existing single-occurrence habits are **not** rewritten — this item adds no migration.
+- **Verification method:** Unit-test `createItem` for `habit` (default rule, explicit rule preserved) plus a non-habit control in `src/domain/itemFactory.test.ts` or an existing domain test; Playwright at preview: click "New habit", save, and assert the Habits grid shows filled cells for the next 7 days. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 15
+- **Notes:** Source: `discovered-IMP-018.md` §2 — the sibling of IMP-018, which applied the same default to the quick-add path only. It is not a hard dependency: the two changes touch disjoint code (`createItem` vs. `quickAddToItem`), which is also why they must be done together for the behavior to be consistent. IMP-018's §3 (a one-time backfill for habits already stored without a rule) is deliberately excluded: rewriting stored series is high blast radius and belongs in Settings → Data behind a confirmation.
+
 ### IMP-016 — Fix "This occurrence" edits leaking to the whole series
 - **Status:** DONE
 - **Category:** correctness / bug-fix
@@ -574,6 +608,107 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Depends on:** IMP-009
 - **Priority score:** 12
 - **Notes:** Source: `discovered-IMP-009.md` D3. Risk is med only because existing tests assert the 20 ms timing; confidence 4 because the right primitive (layout effect vs. `requestAnimationFrame`) is a small design choice.
+
+### IMP-071 — Backfill `data` so a row without it cannot crash the editor
+- **Status:** TODO
+- **Category:** correctness / robustness
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/KindFields.tsx:20` (`item.data.estimateMinutes` and ~30 sibling unguarded reads); `src/domain/itemFactory.ts:120` (`normalizeItem`'s `data: { ...base.data, ... }`); `src/lib/ics.ts:100` (`item.data.location`)
+- **Intent:** every kind field reads `item.data.X` unguarded, so opening the editor for a row that bypassed `createItem`/`normalizeItem` (a hand-written legacy row, an import edge case) throws `TypeError: Cannot read properties of undefined` and takes down the whole React tree — a blank screen, not a dialog error.
+- **Acceptance criteria:**
+  1. `normalizeItem` backfills a missing or `null` `data` with `defaultDataFor(kind)` (the spread at `:120` covers a partial payload; a wholly absent `data` must not survive), and `csvToItems`/`parseBackup` keep producing a full row.
+  2. Opening the editor for an item stored with no `data` renders the Details tab with that kind's default fields instead of throwing.
+  3. No `TypeError` from `KindFields` or `itemsToICS` for an item whose `data` is `undefined`.
+- **Verification method:** Extend `src/lib/backup.test.ts` (or `csv.test.ts`) with a payload item lacking `data` and assert `normalizeItem` returns the kind defaults; Playwright: seed such a row, open the editor, assert the dialog renders. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-012.md` §2. Overlaps IMP-038's import validator — if that lands first it may already close the import path, but the reported repro was a hand-written row that never passes through an import, so both the `normalizeItem` backfill and the defensive reads are needed.
+
+### IMP-072 — Refuse an unrecognized import file instead of reporting success
+- **Status:** TODO
+- **Category:** correctness / data integrity
+- **Type:** bug-fix
+- **Area / files:** `src/lib/backup.ts:55-59` (`items` falls back to `[]`); `src/lib/csv.ts:124-127` (`records.length < 2 → return []`), `:137` (`title: get('title')`); callers `src/features/settings/SettingsView.tsx:102-118`, `:122-140`
+- **Intent:** both importers are total functions, so picking the wrong file reports success. `parseBackup('{"hello":"world"}')` yields 0 items and Settings toasts "Backup imported · Imported 0 items"; a junk `.csv` containing commas or newlines parses its first junk line as the header and imports N **untitled blank** items into the database with no warning.
+- **Acceptance criteria:**
+  1. `csvToItems` rejects a payload whose header row contains none of the exported `CSV_COLUMNS` keys, and rows whose resolved `title` is empty are skipped and counted, never persisted as blanks.
+  2. `parseBackup` throws a clear error when the payload carries neither `items` nor `tasks`; a legacy `{ version: 1 }` payload that does carry `items: []` still imports.
+  3. Both failures surface as the existing `Import failed:` error toast, no success toast appears, and no row reaches Dexie.
+  4. Real exports still round-trip: `exportJSON → importJSON` and `exportCSV → importCSV` report the same counts as before.
+- **Verification method:** Extend `src/lib/csv.test.ts` with a junk payload asserting a throw and no blank items, and `src/lib/backup.test.ts` with `{"hello":"world"}` asserting a throw; keep the round-trip cases green. Playwright: import a junk `.csv` and assert an error toast and an unchanged item count. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-020
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-015.md` §1–2 and `discovered-IMP-020.md` §1. Complements IMP-020's identity/version guards, which cannot see a payload with no identity field at all. `parseBackup`'s unvalidated `lists` cast (`:60,62`) rides with IMP-038 rather than here.
+
+### IMP-073 — Consume every schedule token in quick add; stop eating ordinary words
+- **Status:** TODO
+- **Category:** correctness / input parsing
+- **Type:** bug-fix
+- **Area / files:** `src/domain/quickadd.ts:175-179` (the recurrence lexer only knows `every <n> <unit>` / `every <unit>`), `:210-229` (a single `weekdayListRe.exec`; a bare `every` is never consumed)
+- **Intent:** three leaks of the same kind. (a) `'gym every fri'` leaves the title `Gym every` — a bare `every` matches no branch. (b) The weekday list is matched once, so a second weekday survives: `'sun the tomatoes fri'` → title `The tomatoes fri`. (c) A lone weekday is consumed wherever it appears, so `sun` used as a verb silently re-dates the item **and** deletes the word from the title (recorded as a caveat in IMP-010's notes).
+- **Acceptance criteria:**
+  1. A leftover bare `every` is consumed once a weekday or `every <unit>` recurrence has been established — `'gym every fri'` yields title `Gym` and a weekly rule with `byWeekday: [5]`.
+  2. Every weekday group in the input is consumed (loop, not a single `exec`); `'sun the tomatoes fri'` leaves no weekday token in the title.
+  3. A lone weekday is consumed as a date hint only when it ends the input or immediately follows `on|every|at|start`; otherwise it stays in the title and the item is **not** re-dated.
+  4. IMP-010/IMP-011's verified cases are unchanged: `'gym fri'`, `'call mon'`, `'mon/wed/fri'`, `'next fri'` and every `'on the <N>'` case keep their current title and date.
+- **Verification method:** Extend `src/domain/quickadd.test.ts` with the three repros above plus the AC4 control set; mutation-check that removing each gate fails a case. Run `npm run test`, then a differential sweep of the existing input corpus asserting byte-identical output outside the three new shapes. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** IMP-010, IMP-011
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-010.md` §1 and §3. Deliberately **not** the IMP-017 approach: nothing here trims a preposition or a trailing particle from a title — it only decides whether a matched schedule token is consumed. AC4 is the regression guard IMP-017 lacked.
+
+### IMP-074 — Emit a floating `UNTIL` to match a floating `DTSTART` in ICS
+- **Status:** TODO
+- **Category:** interoperability / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/lib/ics.ts:48` (`UNTIL=…T235959Z`), `:35` (`dateOnlyStart = false` default), `:104` (timed `DTSTART` is floating), `:110` (the call site)
+- **Intent:** a timed event exports `DTSTART:20240506T090000` — floating, no `Z` and no `TZID` — alongside `UNTIL=20240630T235959Z`, even though `dateOnly(until)` was built from **local** `getFullYear/getMonth/getDate`. RFC 5545 §3.3.10 requires `UNTIL` to match the `DTSTART` value type, so the `Z` claims a UTC instant that was never computed; an importer in a negative-UTC-offset zone can resolve the bound to the previous day and drop the final occurrence — the same off-by-one IMP-014 fixed one clause down. The `dateOnlyStart = false` default separately lets a future caller that forgets the flag re-emit `Z` for a date-only series, which is precisely the bug IMP-014 fixed.
+- **Acceptance criteria:**
+  1. A timed series exports `UNTIL=YYYYMMDDT235959` with no `Z`, matching its floating `DTSTART`; the all-day branch keeps IMP-014's bare `YYYYMMDD` and never gains a time.
+  2. `recurrenceToRRule`'s value-type argument is **required** (no default), so `itemsToICS` and the tests cannot disagree; `npm run typecheck` fails if a default is reintroduced.
+  3. No local→UTC shift: the emitted calendar day equals the stored `until` day for `TZ` in `-11..+14`.
+  4. Timed output for rules without `until` is byte-identical to HEAD.
+- **Verification method:** Extend `src/lib/ics.test.ts` with a timed rule carrying `until` and assert the exact `RRULE` line; run the suite under `TZ=-11` and `TZ=+14`; confirm `npm run typecheck` errors if the parameter's default is restored. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-014
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-014.md` §1 and §4. This **amends IMP-014 AC2** ("for timed events `UNTIL` remains a UTC date-time"), which was written before the floating-`DTSTART` mismatch was found. The RFC clause is objective, so this is not a human decision, but the implementer must update that criterion's wording in the same change.
+
+### IMP-075 — Export multi-day all-day items with an exclusive `DTEND`
+- **Status:** TODO
+- **Category:** interoperability / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/lib/ics.ts:107-109` (the all-day branch emits `DTSTART;VALUE=DATE` and nothing else)
+- **Intent:** RFC 5545 gives a `DATE` `DTSTART` an implicit one-day duration, so an all-day item with `start: '2024-05-06', end: '2024-05-09'` exports as a **single-day** event and the extra days are silently dropped in every importer.
+- **Acceptance criteria:**
+  1. An all-day item spanning more than one day emits `DTEND;VALUE=DATE:<end + 1 day>` (exclusive, RFC 5545 §3.6.1).
+  2. A one-day all-day item emits no `DTEND` — byte-identical to HEAD.
+  3. Timed items are untouched: `DTSTART`/`DTEND` keep the floating timed form.
+  4. Month-end clamping holds (`2024-01-31` + 3 days → a valid February `DTEND`).
+- **Verification method:** Extend `src/lib/ics.test.ts` with a 4-day all-day item and a one-day control, asserting the exact `DTSTART`/`DTEND` lines; run `npm run test` and the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-014.md` §2; previously named in this backlog's closing summary as a below-the-cut follow-up. Same file as IMP-052 (line folding) — do both in one pass if the file is already open.
+
+### IMP-076 — `setStatus` must merge into the persisted occurrence map
+- **Status:** TODO
+- **Category:** correctness / concurrency
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts` (`occurrenceStateFor`, `:152-165`, spreads the caller's map; `setStatus`, `:183-198`); caller `src/features/habits/HabitsView.tsx:60-63` (`markToday` toggles with the render-time `item`)
+- **Intent:** `occurrenceStateFor` spreads the **caller's** `item.occurrences` into the patch, so two writes for the same item that start from one render snapshot (two habit cards toggled in quick succession, or a double-fired `markToday`) each persist a whole map missing the other's entry — the second write silently drops the first toggle. IMP-050 made the *streak* authoritative but left the occurrence map itself a read-modify-write on a prop.
+- **Acceptance criteria:**
+  1. The occurrence merge is applied to the **persisted** map (re-read inside the action), so a write never drops a sibling occurrence written after the caller's snapshot.
+  2. Calling `setStatus(item, 'done', k1)` then `setStatus(item, 'done', k2)` from the same stale `item` persists both `k1` and `k2`.
+  3. `toggleDone`'s habit streak still derives from the persisted post-toggle state (IMP-050 AC1) and still shares the occurrence write's single undo entry.
+  4. A genuinely no-op write (same status, same `completedAt`) still writes nothing and pushes no undo entry.
+- **Verification method:** Add the stale-snapshot case to `src/domain/itemActions.test.ts` (fake-indexeddb): toggle two occurrences of one series from one captured `item`, assert both persisted, then invoke the pushed undo and assert both are restored. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** IMP-050
+- **Priority score:** 12
+- **Notes:** Source: `discovered-IMP-050.md` D2. Fix shape mirrors IMP-050's re-read. The second read must happen inside the action: React batches the two clicks into one tick, so an effect-based reconciliation would not help.
 
 ### IMP-024 — Make all mobile bottom-nav destinations reachable at 390px
 - **Status:** TODO
@@ -839,6 +974,91 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 10
 - **Notes:** NEEDS-HUMAN: branch-protection rules are not versioned — only the repo administrator can apply them, and the acceptance criteria cannot be checked in-repo. Scored 10 rather than higher precisely because it is unverifiable here. Already flagged as a follow-up in IMP-005's notes.
 
+### IMP-077 — Seed the editor's schedule fields from the resolved occurrence
+- **Status:** TODO
+- **Category:** correctness / scheduling
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx:118` (`setDraft(structuredClone(editor.item))`), `:84-95` (`occurrencePatch`), `:175-192` (`handleSave`); `src/domain/itemActions.ts:281-283` (the override `start` write)
+- **Intent:** opening an occurrence seeds the draft from the **series** row, so (a) the Schedule tab shows the series start/time instead of that occurrence's — a moved occurrence looks un-moved — and (b) `occurrencePatch` then sends `start` = the *series date* with the edited time, so the persisted override is `2026-09-28T14:45` for occurrence `2026-10-04`: it resolves to the wrong calendar day even though it renders under the right `occKey`. IMP-016 made the write safe; this is where it is still wrong.
+- **Acceptance criteria:**
+  1. When the editor opens with an `occurrenceKey`, the occurrence-owned draft fields (`start`, `end`, `allDay`) are seeded from the resolved occurrence (that key's occurrence from `expandOccurrences`, merged with its override), not from `item.start`/`item.end`.
+  2. Under scope `occurrence`, a changed time writes an override whose **date** is the occurrence's own date: editing occurrence `2026-10-04` to 14:45 stores `2026-10-04T14:45`, never the series' date.
+  3. The seeded occurrence values never leak into an `all`-scope save: saving with scope `all` after opening an occurrence still patches the series with the series' own values.
+  4. A non-recurring item's editor (no `occurrenceKey`) is unchanged.
+- **Verification method:** Extend `src/domain/itemActions.test.ts` with an occurrence-scope save whose patch carries an edited time, asserting `overrides[key].start` keeps `key`'s date; Playwright: drag one occurrence to a new time, reopen it, assert the Schedule tab shows the moved time and that saving keeps it on that day. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-016
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-012.md` §1 and `discovered-IMP-016.md` §3 — the "editor draft is the series row" gap IMP-016's notes left open. `updateOccurrence` (`src/domain/itemActions.ts:236-241`) writes a caller-supplied `start` and carries the same hazard; IMP-040 already works in that function.
+
+### IMP-078 — Stop listing a daily habit twice on Today
+- **Status:** TODO
+- **Category:** UX / correctness
+- **Type:** improvement
+- **Area / files:** `src/features/today/TodayView.tsx:57-59` (Overdue already skips habits), `:162-176` (the agenda maps every occurrence), `:186-196` (the Habits panel)
+- **Intent:** Overdue filters `kind !== 'habit'` but the agenda does not, so every daily habit renders twice on Today — once as an agenda card and once in the Habits panel directly below. Benign before IMP-018 (a habit had a single occurrence and the panel was the point of view); now every quick-added habit hits it.
+- **Acceptance criteria:**
+  1. A habit appears at most once on the Today route — either the agenda filters `kind !== 'habit'` like Overdue, or the Habits panel stops duplicating it.
+  2. The agenda's `x/y done` label and progress ring count exactly the set the agenda renders.
+  3. The Habits panel's streak text, per-day marks and "done today" ring are unchanged.
+  4. Non-habit items' agenda rendering is unchanged.
+- **Verification method:** Playwright at preview: quick-add `habit: journal`, open Today, assert exactly one visible "Journal" entry, toggle it and assert the Habits panel's ring updates. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-070
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-018.md` §4 (pre-existing for explicitly recurring habits, and logged as a verifier follow-up in IMP-018's notes). Which of the two sections keeps the habit is a UI call; either satisfies AC1.
+
+### IMP-079 — One Escape must close only the topmost overlay
+- **Status:** TODO
+- **Category:** correctness / accessibility
+- **Type:** bug-fix
+- **Area / files:** `src/components/ui/Dialog.tsx:40-51` (per-instance `document` keydown listener); `src/hooks/useKeyboardShortcuts.ts:26-30` (the `⌘K` branch runs before the `isOverlayOpen` guard); `src/store/useUiStore.ts` (overlay state is a set of independent booleans)
+- **Intent:** nothing makes the overlay set mutually exclusive and nothing clears one flag when another opens, so two dialogs can be stacked — the `⌘K` branch deliberately sits before the overlay guard so the palette stays reachable from the editor's title field. Each open `Dialog` registers its own document-level Escape listener, so **one** Escape closes both, and both focus traps are live at once.
+- **Acceptance criteria:**
+  1. With two overlays open, a single Escape closes exactly the topmost one; the other stays open and focus returns into it.
+  2. With one overlay open, Escape still closes it (unchanged).
+  3. The store gains a "most recently opened overlay" notion (an incrementing token or an explicit stack) instead of relying on independent booleans, so `Dialog` can decide whether it is on top.
+  4. `⌘K` still opens the palette from a text field (IMP-013's intent preserved); stacking remains reachable, so AC1 is what must hold.
+- **Verification method:** Playwright at preview: open the editor, focus the title, press `⌘K` (two dialogs on screen), press Escape once and assert only the palette closed and the editor is still open with focus back in its title field; press Escape again and assert the editor closes. Add jsdom cases in a new `src/components/ui/Dialog.test.tsx`. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-013.md` §1 and §4. Whether `⌘K` *should* be reachable while the editor is open is a product decision and is explicitly out of scope here (AC4 keeps it) — only the Escape semantics are fixed.
+
+### IMP-080 — Catch a rejected `rerunMigration` in Settings
+- **Status:** TODO
+- **Category:** error handling
+- **Type:** bug-fix
+- **Area / files:** `src/features/settings/SettingsView.tsx:144-153` (`rerunMigration`, an `async` handler with no `try`/`catch`); the pattern to copy at `:118` and `:140`
+- **Intent:** `rerunMigration` is an `async` click handler with no `try`/`catch`, so an IndexedDB failure (unavailable storage, blocked upgrade, quota) escapes as an unhandled rejection with **no** user feedback — exactly the gap IMP-015 closed for `importJSON`/`importCSV` in the same file. IMP-068 hardened the boot call site (`src/App.tsx:30-32`) and left this user-triggered twin behind.
+- **Acceptance criteria:**
+  1. The `settingsRepo.remove` + `runLegacyMigration` pair is wrapped in `try`/`catch` and pushes an error toast through the existing `describeError` helper.
+  2. On failure the result toast does not appear, and the migration marker is not left deleted in a way that would re-run an already-completed import.
+  3. On success the existing migrated/not-found toast is unchanged.
+  4. No unhandled rejection reaches the console when `runLegacyMigration` rejects.
+- **Verification method:** Add a case to `src/features/settings/SettingsView.test.tsx` (or IMP-015's existing file) stubbing `runLegacyMigration` to reject, click the re-run button and assert an error toast and no unhandled rejection; then run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-015
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-068.md` §1. Same class as IMP-039's boot-promise hardening but reachable by a single user click, so it is worth doing on its own. `discovered-IMP-015.md` §3 (a `pickFile` outside the `try`) is already resolved by IMP-015's implementation and needs nothing here.
+
+### IMP-081 — Pin GitHub Actions to full commit SHAs
+- **Status:** TODO
+- **Category:** security / CI automation
+- **Type:** tooling
+- **Area / files:** `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` (every `uses:` entry: `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-pages-artifact@v3`, `actions/deploy-pages@v4`); `.github/dependabot.yml` (added by IMP-022)
+- **Intent:** every action is pinned to a mutable major tag, so a repointed tag runs unreviewed code with the repository's contents/Pages permissions. IMP-022 added Dependabot for `github-actions` but explicitly did not pin, and both IMP-005's and IMP-022's notes defer it to "IMP-022/IMP-048" — both of which are now resolved, so nothing owns it.
+- **Acceptance criteria:**
+  1. Each `uses:` is a 40-character commit SHA with the version kept in a trailing `# vX.Y.Z` comment.
+  2. `.github/dependabot.yml` still declares the `github-actions` ecosystem, and its SHA updates remain enabled.
+  3. `deploy.yml` still cannot deploy when the gate fails, and the check name referenced by IMP-067 AC1 is unchanged.
+  4. No workflow references a third-party action by a moving tag.
+- **Verification method:** `grep -n "uses:" .github/workflows/*.yml` shows only SHA pins; `npx prettier --check .github/workflows/*.yml` exits 0; run one PR-triggered CI run and confirm the gate and deploy jobs behave exactly as before. No source change.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-022
+- **Priority score:** 10
+- **Notes:** Source: `discovered-IMP-005.md` §3 and `discovered-IMP-022.md` §1. Scored 10: cheap and standard supply-chain hardening, but no product impact for a single-user static site.
+
 ### IMP-035 — Fix settings read-modify-write races between theme and Settings
 - **Status:** TODO
 - **Category:** correctness / concurrency
@@ -986,6 +1206,57 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 8
 - **Notes:**
 
+### IMP-082 — Guard the split tail against an empty series and an inverted range
+- **Status:** TODO
+- **Category:** correctness / recurrence
+- **Type:** bug-fix
+- **Area / files:** `src/domain/recurrence.ts` (`splitSeries`, `:373-416`, tail keeps `recurrence.until` at `:407`); `src/domain/itemActions.ts` (`updateRecurring`'s `future` branch, `:318-338`, tail field filter at `:325-327`)
+- **Intent:** two ways "This and future" writes a broken row. (a) The tail inherits the original `until`, so splitting a series whose `until` has already passed persists a **recurring row that expands to zero occurrences** — a phantom series in every list. (b) The editor exposes `start` and `end` independently and the branch keeps the shifted `end` whenever the user edited only `start`, so `tail.end` can precede `tail.start` and the tail renders as a zero-length event.
+- **Acceptance criteria:**
+  1. Splitting at or past a key beyond the series' last occurrence writes no tail row (an explanatory toast is shown instead), and the head is left exactly as the unsplit series would render.
+  2. A tail whose patched `end` precedes its patched `start` is normalized before the write (the `end` is dropped, or moved to follow the `start`); no persisted row has `end < start`.
+  3. A normal mid-series split still yields head + tail with occurrence counts unchanged (IMP-023's invariants hold).
+  4. The guard is a no-op for `count`-limited, unbounded and mid-range `until` splits.
+- **Verification method:** Extend `src/domain/itemActions.test.ts` with a split past an existing `until` (assert no zero-occurrence recurring row is persisted) and a start-only edit (assert the tail's end is not before its start); re-run IMP-023's split property sweep in `src/domain/recurrence.test.ts`. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** IMP-037
+- **Priority score:** 8
+- **Notes:** Source: `discovered-IMP-023.md` (the empty-tail and inverted-tail-range bullets). Both guards belong in the function IMP-037 already rewrites (persisted head + undo), so sequencing them after it saves a second pass over the highest-risk path in `domain`. The tail's wholesale copy of `exceptions`/`overrides` is a tidy-up and stays out of scope.
+
+### IMP-083 — Make the boot smoke test observe boot effects and run the suite twice in CI
+- **Status:** TODO
+- **Category:** test coverage / CI reliability
+- **Type:** test
+- **Area / files:** `src/test/app.smoke.test.tsx:31-33`; `src/App.tsx:28-38` (the fire-and-forget boot promises); `.github/workflows/ci.yml` (the test step)
+- **Intent:** the smoke test mounts `<App />` and asserts rendered text only, so both boot migrations are unobserved — IMP-068's defect survived ~10 commits precisely because nothing could see it, and the same blindness now covers `runNotificationGateMigration`. Separately, Vitest 4's unhandled-error **reporting** is timing-dependent (the rejection fired on every mount but was reported in only ~1 of 11 runs), so a single-run gate cannot detect this class of leak at all.
+- **Acceptance criteria:**
+  1. The smoke test awaits an observable handle for the boot migrations (an exported promise or a test-only hook) and asserts the outcome — the `migration.legacy` marker is written — after mount.
+  2. The same assertion covers `runNotificationGateMigration`, or the item records why that one is not observable.
+  3. `ci.yml`'s test step runs the suite twice (`vitest run && vitest run`), making a timing-dependent unhandled rejection deterministic.
+  4. `npm run test` stays green locally; only the CI test step's runtime grows.
+- **Verification method:** Break or stub `runLegacyMigration` to reject and confirm the smoke test fails; run `npm run test` 10 consecutive times and grep for "Unhandled" (0 matches, all exit 0); `npx prettier --check .github/workflows/ci.yml`.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-005
+- **Priority score:** 8
+- **Notes:** Source: `discovered-IMP-068.md` §2 and §3. The doubled run is the cheapest available detector for the failure IMP-068 actually had. No production code changes.
+
+### IMP-084 — Remap `parentId` for every incoming item under the duplicate strategy
+- **Status:** TODO
+- **Category:** correctness / data integrity
+- **Type:** bug-fix
+- **Area / files:** `src/lib/backup.ts:88-96` (the `idMap` pre-pass covers colliding ids only), `:110-117` (the `parentId` rewrite, applied only inside the `duplicate` branch)
+- **Intent:** under `duplicate`, only **colliding** ids get a new id, so an incoming child with a *fresh* id whose `parentId` points at a *colliding* parent is written verbatim and re-attaches to the live original parent instead of the freshly duplicated one. IMP-051 fixed the colliding-child case and left this residual gap, so an imported subtree is not self-consistent.
+- **Acceptance criteria:**
+  1. Under `duplicate`, `parentId` is rewritten for **every** incoming item whose `parentId` resolves in `idMap`, whether or not the child itself collided.
+  2. A fresh-id child whose parent is not in the incoming set keeps its original `parentId` (IMP-051 AC2 unchanged).
+  3. `skip` and `overwrite` behavior is byte-identical.
+  4. A parent whose id appears twice in one incoming payload still resolves to a single canonical target (IMP-051's `!idMap.has` policy is preserved, not changed).
+- **Verification method:** Extend `src/lib/backup.test.ts`: existing DB holds `p`; the incoming set is `p` plus a fresh-id `new-c` with `parentId: 'p'`; assert the written child's `parentId` equals the duplicated parent's new id and differs from `'p'`. Re-run the 60k-case differential fuzz IMP-051 used. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-051
+- **Priority score:** 8
+- **Notes:** Source: `discovered-IMP-051.md` D1. Low severity — it needs a mixed colliding/fresh import — but the fix widens an existing map lookup. D2 (two same-id incoming rows collapse to one) is left alone because the choice of winner is an import-semantics policy, and D3 (a dangling `parentId` is unvalidated) rides with IMP-038.
+
 ### IMP-060 — Share one items live query instead of one per component
 - **Status:** TODO
 - **Category:** performance / data flow
@@ -1002,6 +1273,40 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Depends on:** IMP-008
 - **Priority score:** 7.5
 - **Notes:** Source: `discovered-IMP-008.md` §4 — explicitly out of scope for IMP-008 because it restructures data flow across 12 files. 12 production call sites counted (not the 13 reported, which included the hook and its test). `useItems` is deliberately the only hook refactored; `useItem`/`useChildren` keep their per-site queries.
+
+### IMP-085 — Render the occurrence-level `title` override
+- **Status:** TODO
+- **Category:** correctness / scheduling UI
+- **Type:** bug-fix
+- **Area / files:** `src/types/item.ts:136-149` (`Occurrence` has no resolved title); `src/domain/recurrence.ts:205-224` (`buildOccurrence`); `src/features/item/ItemCard.tsx:111` (renders `item.title`)
+- **Intent:** IMP-016 correctly routes a "This occurrence" retitle into `recurrence.overrides[occKey].title`, but nothing resolves or renders it. Before IMP-016 the edit was visible on **every** occurrence (the leak); now it is visible **nowhere** — the user saves, sees "Occurrence updated", and observes no change anywhere.
+- **Acceptance criteria:**
+  1. An occurrence's effective title is resolved as `override?.title ?? item.title` — either a new `Occurrence.title` set in `buildOccurrence`, or one shared resolver that the engine and the card both call.
+  2. `ItemCard` renders the resolved title, so Today, Matrix and Calendar (three call sites that already pass `occurrenceKey`) all show it.
+  3. Retitling one occurrence of a weekly series leaves every other occurrence's title unchanged, in the UI and in the stored row.
+  4. A non-recurring item and an occurrence with no title override render exactly as before.
+- **Verification method:** Unit-test the resolver for the override and no-override cases in `src/domain/recurrence.test.ts`; Playwright: retitle one occurrence of a weekly task, assert the new title on that day's card and the old title on every other day. Run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** IMP-016
+- **Priority score:** 7.5
+- **Notes:** Source: `discovered-IMP-016.md` §1. `notes` overrides are stored the same way but are not rendered on cards at all today, so `title` is the only user-visible half. Prefer engine-side resolution over teaching `ItemCard` about recurrence, since three call sites already carry an occurrence.
+
+### IMP-086 — Never drop an undelivered reminder silently; stop rebuilding the digest every tick
+- **Status:** TODO
+- **Category:** reliability / reminders
+- **Type:** improvement
+- **Area / files:** `src/pwa/delivery.ts:78-92` (`deliver`), `:96-126` (`deliverDigest` re-expands every item before attempting delivery); `src/pwa/ReminderRuntime.tsx:37-51` and `:54-61` (both `deliver` return values ignored)
+- **Intent:** a reminder that cannot be delivered — permission denied **and** the tab hidden — is retried once per 60 s tick until its `fireAt` leaves the 24 h `LOOKBACK_MS` window, then it is never delivered, never recorded, and nothing tells the user. IMP-019 fixed the "do not mark it fired" half; the outcome is still a silent loss. While that state lasts the digest's dedupe never trips, so every tick re-runs two full `expandOccurrences` sweeps over all items (~1440 times/day), and `deliver`'s meaningful boolean is dead information at both call sites.
+- **Acceptance criteria:**
+  1. A failed delivery attempt is persisted distinctly from a delivery (a timestamped attempt/failure row, never the `reminderLog` "fired" key), so an undelivered reminder remains discoverable after its `fireAt` has aged out.
+  2. The user learns about it without a new route: a one-time toast (or a Settings row) reporting how many reminders passed their fire time undelivered — never on every tick.
+  3. `deliverDigest` does not re-expand every item on a tick where it cannot deliver (cache the last attempted build, or short-circuit on permission/visibility before the sweeps), and the runtime consumes `deliver`'s return value to drive AC2.
+  4. Dedupe invariants hold: a reminder that eventually delivers produces exactly one toast and one `reminderLog` row (500 flapping ticks → 1 toast/1 row), and repeated undeliverable ticks never append a second failure record for the same key.
+- **Verification method:** Extend the `src/pwa/delivery.ts` unit tests with a rejecting `show` plus a hidden document: assert a failure row is written, a pending count is exposed, and a second tick performs no further `expandOccurrences` sweeps (spy on it). Playwright: deny notification permission, background the tab, assert no duplicate delivery. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-019
+- **Priority score:** 6
+- **Notes:** Source: `discovered-IMP-019.md` §1–3. Scored 6 because the "surface it" half is a small product choice (toast vs. Settings row, left to the implementation) and the honest fix is mostly plumbing. IMP-056 prunes expired absolute reminders in the same component, so the two can share a pass.
 
 ### IMP-046 — Rename the agent guide to `AGENTS.md` and fix the README link
 - **Status:** TODO
@@ -1072,8 +1377,10 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 
 ---
 
-_End of backlog (64 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are ICS all-day `DTEND`, command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (82 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
-_Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (rides with IMP-022/IMP-048), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
+_Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
+
+_Third pass (2026-10-05, re-read of all 27 `discovered-IMP-*.md` reports against the current source; promoted as IMP-069…IMP-086, 18 items, no new NEEDS-HUMAN): editor-created items missing undo; habits created outside quick add still rule-less; a missing `data` payload crashing the editor; unrecognized JSON/CSV imports reporting success; leftover `every`/second weekday/eager lone-weekday consumption in quick add; floating-vs-UTC `UNTIL` and the `dateOnlyStart` default in ICS; multi-day all-day export without `DTEND`; `setStatus` read-modify-write on the caller's occurrence map; the editor seeding occurrence fields from the series row and writing the override with the series date; a daily habit listed twice on Today; one Escape closing every stacked overlay; the uncaught `rerunMigration` rejection; full-SHA pinning of GitHub Actions; empty/inverted split tails; a smoke test that cannot see boot effects plus a doubled CI test run; `parentId` remapping for non-colliding incoming children; the unrendered occurrence `title` override; and undelivered reminders being dropped silently while the digest re-expands each tick. Findings from those reports already fixed by DONE items were **not** re-proposed: the preview service-worker/hash-navigation trap (IMP-065), `pickFile` outside the `try` (fixed by IMP-015's implementation), the `overrides[key].status` shadowing the card checkbox (fixed by IMP-016's `withoutOverrideStatus`), the no-op "Occurrence updated" toast (fixed in `handleSave`), the already-noted "Nothing to update" path, the shared-SW observation of `data.streak` (an IMP-050 criterion), and IMP-017's phrasal-particle trimming, which stays BLOCKED and was not re-proposed in any form. Still below the cut from the same reports: the quick-add anchor/`dueAt` mismatch for `byWeekday`/`byMonthDay` rules (superseded by IMP-077's editor-display finding), `on the 0th`/`45th` tokens surviving in the title (IMP-011 AC3 makes that intended), the ambiguous month-day-plus-weekday input, `data.streak` as a write-only denormalized field (removing it would revert IMP-050 AC2), `buildHistory`'s whole-`data` diffs, the tail's wholesale copy of `exceptions`/`overrides`, same-id rows collapsing under `duplicate`, `lists` being unvalidated on import (IMP-038), a raw-IndexedDB write being invisible to `useLiveQuery` and Node 25's `localStorage` stub (both verification notes), the headless-Chromium `requestPermission` trap, and the one-frame settings default render seen by Sunday-start users (cosmetic, and the fix is architectural)._
 
 _Rejected during critic review (not checkable / premise false / not a defect): the former history-blob item (`buildHistory` already skips `occurrences` at `itemActions.ts:32`), the former hardcoded-color item (badge classes in `labels.ts` already carry `dark:` variants; `bg-white` is a cosmetic knob only), and the former "reset all data" item (the confirm copy already enumerates exactly the tables it clears). The former standalone `npm ci` item was merged into IMP-005._
