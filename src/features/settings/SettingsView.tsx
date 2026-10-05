@@ -38,6 +38,16 @@ import {
 import { DEFAULT_SETTINGS, type AppSettings, type ThemePreference } from '@/types';
 import { cn } from '@/lib/cn';
 
+function describeError(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'string' && error) return error;
+  if (error && typeof error === 'object') {
+    const { message } = error as { message?: unknown };
+    if (typeof message === 'string' && message) return message;
+  }
+  return 'Unknown error';
+}
+
 export function SettingsView() {
   const items = useItems(true);
   const lists = useLists();
@@ -90,9 +100,9 @@ export function SettingsView() {
   };
 
   const importJSON = async () => {
-    const file = await pickFile('application/json,.json');
-    if (!file) return;
     try {
+      const file = await pickFile('application/json,.json');
+      if (!file) return;
       const parsed = parseBackup(await readTextFile(file));
       const incoming = parsed.items.map(normalizeItem);
       const { toPut, skipped, overwritten, duplicated } = mergeImportedItems(
@@ -107,20 +117,28 @@ export function SettingsView() {
       );
       pushToast({ message: 'Backup imported', tone: 'success' });
     } catch (error) {
-      pushToast({ message: `Import failed: ${(error as Error).message}`, tone: 'error' });
+      pushToast({ message: `Import failed: ${describeError(error)}`, tone: 'error' });
     }
   };
 
   const importCSV = async () => {
-    const file = await pickFile('.csv,text/csv');
-    if (!file) return;
-    const parsed = csvToItems(await readTextFile(file)).map(normalizeItem);
-    const { toPut, skipped, overwritten, duplicated } = mergeImportedItems(items, parsed, strategy);
-    await itemRepo.createMany(toPut);
-    setImportReport(
-      `Imported ${toPut.length} items · skipped ${skipped} · overwritten ${overwritten} · duplicated ${duplicated}`,
-    );
-    pushToast({ message: 'CSV imported', tone: 'success' });
+    try {
+      const file = await pickFile('.csv,text/csv');
+      if (!file) return;
+      const parsed = csvToItems(await readTextFile(file)).map(normalizeItem);
+      const { toPut, skipped, overwritten, duplicated } = mergeImportedItems(
+        items,
+        parsed,
+        strategy,
+      );
+      await itemRepo.createMany(toPut);
+      setImportReport(
+        `Imported ${toPut.length} items · skipped ${skipped} · overwritten ${overwritten} · duplicated ${duplicated}`,
+      );
+      pushToast({ message: 'CSV imported', tone: 'success' });
+    } catch (error) {
+      pushToast({ message: `Import failed: ${describeError(error)}`, tone: 'error' });
+    }
   };
 
   const rerunMigration = async () => {

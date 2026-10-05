@@ -267,7 +267,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. recurrenceToRRule takes `dateOnlyStart` and emits bare UNTIL=YYYYMMDD when DTSTART is VALUE=DATE; itemsToICS passes the same `!timed` boolean that chose DTSTART so they cannot disagree. Timed output byte-identical; local dates only (no UTC shift); TZ -11..+14 verified. 160 tests green; mutation-checked. Footgun logged: default `false` arg.
 
 ### IMP-015 — Handle CSV import errors and surface feedback
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** error handling
 - **Type:** bug-fix
 - **Area / files:** `src/features/settings/SettingsView.tsx` (`importCSV`, `:114-124`)
@@ -280,7 +280,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:**
+- **Notes:** DONE (attempt 2). importCSV wraps parse/pick/persist in try/catch and pushes the same `Import failed:` toast as importJSON via a `describeError(unknown)` helper that tolerates non-Error rejections; success toast/report unchanged. New SettingsView.test.tsx (deterministic: IS_REACT_ACT_ENVIRONMENT, drain() in afterEach before restoreAllMocks, vi.waitFor). 170 tests green over 9 full-suite runs incl. 3 shuffled seeds; 3 mutations caught. NOTE: the spec's verification recipe (malformed .csv) is unreachable because csvToItems never throws.
 
 ### IMP-050 — Habit completion must record undo/history and use fresh state
 - **Status:** TODO

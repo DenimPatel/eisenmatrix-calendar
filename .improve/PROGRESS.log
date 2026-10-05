@@ -20,3 +20,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-04T04:23Z | IMP-011 | done | 9ccb94f | on-the-N applied or kept; +nextMonthDay
 2026-10-04T04:39Z | IMP-012 | done | 4f4b361 | item cards show occurrence time; +resolveCardTime
 2026-10-04T05:00Z | IMP-013 | done | 905aa6a | shortcuts suppressed behind overlays; +16 tests
+2026-10-04T05:07Z | IMP-014 | done | 8da083f | RFC-5545 UNTIL for all-day events
