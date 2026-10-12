@@ -578,7 +578,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Occurrence-scoped Delete now skips only that occurrence (control reads "Skip this occurrence", wired to the previously-unused `skipOccurrence`, idempotent and reading the persisted row) instead of destroying the series; confirmation copy is scope-specific; `future`-scope Delete is disabled with explanatory copy pending IMP-037. Series-scoped Delete still removes the series plus descendants with undo, and IMP-016 is unregressed. 310 tests green (+8, 4 domain + 4 editor jsdom); 3 mutations caught; Playwright-verified live (one row survives, `exceptions:["2026-10-19"]`) and a skipped occurrence is excluded from reminders. Follow-ups logged: the hint copy still says "Delete skips" while the button says "Skip this occurrence"; `handleDelete` lacks a programmatic `deleteUnavailable` guard; the skip toast has no Undo (delete does); the alert dialog lacks a focus trap/Escape; a hardcoded rose token.
 
 ### IMP-056 — Prune expired snooze reminders
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data health
 - **Type:** bug-fix
 - **Area / files:** `src/pwa/ReminderRuntime.tsx` (snooze branch, `:141-153`); `src/features/item/ReminderEditor.tsx`
@@ -591,7 +591,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Run the prune alongside the existing `reminderLogRepo.pruneBefore` boot effect in `ReminderRuntime`.
+- **Notes:** Run the prune alongside the existing `reminderLogRepo.pruneBefore` boot effect in `ReminderRuntime`. DONE (commit to follow). 3 implement→verify cycles: attempt 1 ranked the soonest absolute above a `now - LOOKBACK_MS` cutoff, which let an already-delivered snooze delete a pending one (data loss); attempt 2 shipped the correct classification but introduced a duplicate-delivery regression (the prune's `items` write rebuilt the tick effect mid-flight). Final: `pruneExpiredAbsolute` deletes only rows strictly outside the delivery window (`absolute <= now - lookbackMs`), `withSnooze` replaces instead of appends, and a boot tick-gate keeps the prune off the boot tick's trigger path so delivery stays exactly-once. Files: `src/domain/reminders.ts`, `src/domain/itemActions.ts`, `src/pwa/ReminderRuntime.tsx`, plus `src/pwa/ReminderRuntime.delivery.test.tsx`. Verified PASS by an independent reviewer (32 files / 329 tests, 6 consecutive green runs; gate-removal mutation fails 12/12; browser cold-reload exactly-once 3/3). Left open and picked up as items: IMP-036 (atomic dedupe) unchanged. Discoveries D1–D5 in `reports/discovered-IMP-056.md`.
 
 ### IMP-059 — Focus overlays in the mount commit, not 20 ms later
 - **Status:** TODO

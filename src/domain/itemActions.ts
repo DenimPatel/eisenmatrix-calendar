@@ -3,6 +3,7 @@ import { newId } from '@/lib/id';
 import { formatISODate } from '@/lib/date';
 import { useUiStore } from '@/store/useUiStore';
 import { resolveOccurrenceStatus, splitSeries } from './recurrence';
+import { pruneExpiredAbsolute } from './reminders';
 import { habitStreak } from './stats';
 import type {
   HistoryEntry,
@@ -340,6 +341,35 @@ export async function updateRecurring(
   await itemRepo.create(tailPatched);
   toast('Series split', 'success');
   return true;
+}
+
+/**
+ * One prune pass for the snooze reminders a reminder list has accumulated. Snoozes append an
+ * `absolute` reminder per press and nothing removed them, so the list grew without bound and
+ * stale rows kept showing in the reminder editor.
+ *
+ * `lookbackMs` is the delivery layer's window (`LOOKBACK_MS`), not a wider grace: it is what
+ * tells `pruneExpiredAbsolute` which rows a tick could still deliver, so a snooze that is past
+ * but inside the window is left for the tick to fire and reclaimed by a *later* pass. Runs as a
+ * boot maintenance pass, so it reads the items once and rewrites only the rows that actually
+ * change; no history, undo or toast, because no user edit is being overwritten. Returns how many
+ * items were rewritten.
+ */
+export async function pruneItemReminders(
+  now: number = Date.now(),
+  lookbackMs = 0,
+): Promise<number> {
+  const items = await itemRepo.all();
+  const entries: Array<{ id: string; patch: ItemPatch }> = [];
+  for (const item of items) {
+    if (!item.reminders?.some((reminder) => typeof reminder.absolute === 'number')) continue;
+    const reminders = pruneExpiredAbsolute(item.reminders, now, lookbackMs);
+    if (reminders.length === item.reminders.length) continue;
+    entries.push({ id: item.id, patch: { reminders } });
+  }
+  if (entries.length === 0) return 0;
+  await itemRepo.updateMany(entries);
+  return entries.length;
 }
 
 export function todayOccKey(): string {

@@ -1,13 +1,36 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useItems, useSetting } from '@/hooks/useData';
 import { itemRepo, reminderLogRepo } from '@/db/repository';
-import { patchItem, toggleDone } from '@/domain/itemActions';
+import { patchItem, pruneItemReminders, toggleDone } from '@/domain/itemActions';
 import { newId } from '@/lib/id';
-import { upcomingReminders } from '@/domain/reminders';
+import { upcomingReminders, withSnooze } from '@/domain/reminders';
 import { useUiStore } from '@/store/useUiStore';
-import { DEFAULT_SETTINGS, type AppSettings } from '@/types';
+import { DEFAULT_SETTINGS, type AppSettings, type Item, type Reminder } from '@/types';
 import { notificationPermission } from './notifications';
 import { LOOKBACK_MS, deliver, deliverDigest } from './delivery';
+
+interface TickGate {
+  /** Resolves the first time the gate is opened. */
+  settled: Promise<void>;
+  /** Idempotent: later calls are no-ops, so only the first opening is observed. */
+  open(): void;
+}
+
+function createTickGate(): TickGate {
+  let resolve!: () => void;
+  const settled = new Promise<void>((done) => {
+    resolve = done;
+  });
+  let opened = false;
+  return {
+    settled,
+    open() {
+      if (opened) return;
+      opened = true;
+      resolve();
+    },
+  };
+}
 
 /**
  * Drives reminder delivery. Runs on load, on visibility change, and every 60s.
@@ -19,6 +42,9 @@ export function ReminderRuntime() {
   const notifyEnabled = settings.notificationsEnabled;
   const pushToast = useUiStore((s) => s.pushToast);
   const openEditor = useUiStore((s) => s.openEditor);
+  // Holds the boot prune back until a tick that can actually deliver something has settled.
+  const bootGate = useRef(createTickGate());
+  const tickedItems = useRef<Item[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +87,15 @@ export function ReminderRuntime() {
       }
     };
 
-    void tick();
+    // The live query's first emission is what gives a tick something to deliver, so the tick
+    // that runs against a *changed* item set is the one whose in-flight deliveries the boot
+    // prune has to stay clear of.
+    const afterEmission = tickedItems.current !== null && tickedItems.current !== items;
+    tickedItems.current = items;
+
+    void tick().finally(() => {
+      if (afterEmission) bootGate.current.open();
+    });
     const interval = window.setInterval(() => void tick(), 60_000);
     const onVisibility = () => {
       if (!document.hidden) void tick();
@@ -70,8 +104,7 @@ export function ReminderRuntime() {
 
     const onWorkerMessage = (event: MessageEvent) => {
       const data = event.data as
-        | { type?: string; itemId?: string; occKey?: string; action?: string }
-        | undefined;
+        { type?: string; itemId?: string; occKey?: string; action?: string } | undefined;
       if (data?.type !== 'OPEN_ITEM' || !data.itemId) return;
       void itemRepo.get(data.itemId).then(async (item) => {
         if (!item) return;
@@ -81,14 +114,14 @@ export function ReminderRuntime() {
         }
         if (data.action?.startsWith('snooze-')) {
           const minutes = Number(data.action.replace('snooze-', '')) || 10;
+          const snooze: Reminder = {
+            id: newId(),
+            absolute: Date.now() + minutes * 60_000,
+            label: `Snoozed ${minutes}m`,
+          };
           await patchItem(
             item.id,
-            {
-              reminders: [
-                ...item.reminders,
-                { id: newId(), absolute: Date.now() + minutes * 60_000, label: `Snoozed ${minutes}m` },
-              ],
-            },
+            { reminders: withSnooze(item.reminders, snooze) },
             { silent: true, trackHistory: false },
           );
           pushToast({ message: `Snoozed for ${minutes} minutes`, tone: 'info' });
@@ -114,6 +147,19 @@ export function ReminderRuntime() {
   useEffect(() => {
     void notificationPermission();
     void reminderLogRepo.pruneBefore(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    void (async () => {
+      // `items` is a dep of the tick effect above, so this pass's write tears that effect down
+      // and rebuilds it, starting another tick. `deliver`'s dedupe is a check-then-record
+      // (IMP-036), so a prune landing while a tick is still delivering gets the same reminder
+      // notified and logged twice — every cold load that had something to prune. Waiting for
+      // the boot tick to settle first keeps the prune off that path: each `deliver` records
+      // its `reminderLog` row before returning, so the rebuilt tick finds them already fired.
+      await bootGate.current.settled;
+      // One pass on load, not per tick: the lookback is the delivery window, so a snooze inside it
+      // is left for the first tick to fire (which keeps a snooze missed while the app was closed
+      // alive) and only rows older than the window — which no tick can reach again — are dropped.
+      await pruneItemReminders(Date.now(), LOOKBACK_MS);
+    })();
   }, []);
 
   return null;

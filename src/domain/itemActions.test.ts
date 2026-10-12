@@ -1,20 +1,22 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from '@/db/schema';
-import { itemRepo, type ItemPatch } from '@/db/repository';
+import { itemRepo, reminderLogRepo, type ItemPatch } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem, normalizeItem } from './itemFactory';
 import {
   deleteItem,
   deleteItems,
+  pruneItemReminders,
   skipOccurrence,
   todayOccKey,
   toggleDone,
   updateRecurring,
 } from './itemActions';
 import { expandOccurrences } from './recurrence';
+import { upcomingReminders } from './reminders';
 import { formatISODate, parseLocalDate } from '@/lib/date';
 import { addDays } from 'date-fns';
-import type { HabitItem, Item, Occurrence, TaskItem } from '@/types';
+import type { HabitItem, Item, Occurrence, Reminder, TaskItem } from '@/types';
 
 function task(id: string, title: string, parentId: string | null = null): Item {
   return normalizeItem({ ...createItem({ kind: 'task', title }), id, parentId });
@@ -678,5 +680,115 @@ describe('updateRecurring (scope: occurrence) resolved ranges', () => {
       end: '2026-07-27',
       allDay: true,
     });
+  });
+});
+
+describe('pruneItemReminders', () => {
+  const NOW = Date.now();
+
+  /** Dated today, so `upcomingReminders` has an occurrence to hang an absolute off. */
+  function snoozed(id: string, reminders: Reminder[]): Item {
+    return normalizeItem({
+      ...createItem({ kind: 'task', title: id, start: formatISODate(new Date()) }),
+      id,
+      reminders,
+    });
+  }
+
+  /** The row minus the two fields the prune pass is allowed to touch. */
+  function otherFields(item: Item): Omit<Item, 'reminders' | 'updatedAt'> {
+    const { reminders: _pruned, updatedAt: _written, ...rest } = item;
+    return rest;
+  }
+
+  it('drops the expired snoozes of an item and keeps its relative and pending reminders', async () => {
+    await itemRepo.create(
+      snoozed('s', [
+        { id: 'rel', offsetMinutes: -10 },
+        { id: 'past', absolute: NOW - 2 * 24 * 60 * 60_000, label: 'Snoozed 10m' },
+        { id: 'pending', absolute: NOW + 10 * 60_000, label: 'Snoozed 10m' },
+      ]),
+    );
+    const before = (await itemRepo.get('s'))!;
+
+    const pruned = await pruneItemReminders(NOW);
+
+    expect(pruned).toBe(1);
+    const after = (await itemRepo.get('s'))!;
+    expect(after.reminders.map((r) => r.id)).toEqual(['rel', 'pending']);
+    // Nothing else on the row moved, and the machine pass leaves no user-facing trace.
+    expect(otherFields(after)).toEqual(otherFields(before));
+    expect(after.history).toEqual(before.history);
+    expect(useUiStore.getState().toasts).toEqual([]);
+  });
+
+  it('writes nothing when no item holds an expired absolute', async () => {
+    await itemRepo.createMany([
+      snoozed('relative', [{ id: 'rel', offsetMinutes: -10 }]),
+      snoozed('pending', [{ id: 'future', absolute: NOW + 60_000 }]),
+      snoozed('empty', []),
+    ]);
+    const before = await itemRepo.all();
+
+    expect(await pruneItemReminders(NOW)).toBe(0);
+    expect(await itemRepo.all()).toEqual(before);
+    // An unchanged `updatedAt` proves the pass did not rewrite rows that needed no prune,
+    // which is what keeps the boot pass to a single read plus at most one bulk write.
+    for (const item of await itemRepo.all()) {
+      const prior = before.find((b) => b.id === item.id)!;
+      expect(item.updatedAt).toBe(prior.updatedAt);
+    }
+  });
+
+  it('keeps a snooze that is past but still inside the delivery lookback', async () => {
+    await itemRepo.create(snoozed('s', [{ id: 'missed', absolute: NOW - 5 * 60_000 }]));
+
+    expect(await pruneItemReminders(NOW, 24 * 60 * 60_000)).toBe(0);
+    expect((await itemRepo.get('s'))!.reminders.map((r) => r.id)).toEqual(['missed']);
+
+    // Once it is older than any tick can still deliver, the next pass reclaims it.
+    expect(await pruneItemReminders(NOW)).toBe(1);
+    expect((await itemRepo.get('s'))!.reminders).toEqual([]);
+  });
+
+  it('keeps the 60-minute snooze a delivered 10-minute snooze once destroyed', async () => {
+    // The reported regression: 10m snooze → it fires (reminderLog row written) → 60m snooze →
+    // reload. Ranking by soonness alone kept the fired row and deleted the pending request.
+    const firedAt = NOW - 10 * 60_000;
+    await reminderLogRepo.record('ab', '2026-07-20::fired', firedAt);
+    await itemRepo.create(
+      snoozed('ab', [
+        { id: 'fired', absolute: firedAt, label: 'Snoozed 10m' },
+        { id: 'owed', absolute: NOW + 50 * 60_000, label: 'Snoozed 60m' },
+      ]),
+    );
+
+    await pruneItemReminders(NOW, 24 * 60 * 60_000);
+
+    // Nothing is deleted: the fired row can never fire again anyway, and the pending row is
+    // the one the user is still owed.
+    const after = (await itemRepo.get('ab'))!;
+    expect(after.reminders.map((r) => r.id)).toEqual(['fired', 'owed']);
+
+    // And the pending request is still reachable by a tick, at its own timestamp.
+    const scheduled = upcomingReminders(
+      [after],
+      new Date(NOW - 24 * 60 * 60_000),
+      new Date(NOW + 50 * 60_000),
+    ).filter((entry) => entry.reminder.id === 'owed');
+    expect(scheduled.map((entry) => entry.fireAt)).toEqual([NOW + 50 * 60_000]);
+  });
+
+  it('reclaims a row the delivery window can no longer reach, from a two-snooze stack', async () => {
+    await itemRepo.create(
+      snoozed('stale', [
+        { id: 'fired', absolute: NOW - 10 * 60_000, label: 'Snoozed 10m' },
+        { id: 'owed', absolute: NOW + 50 * 60_000, label: 'Snoozed 60m' },
+      ]),
+    );
+
+    // A day later the 10-minute row is outside every tick's lookback, so only it goes.
+    expect(await pruneItemReminders(NOW + 24 * 60 * 60_000, 24 * 60 * 60_000)).toBe(1);
+    expect((await itemRepo.get('stale'))!.reminders.map((r) => r.id)).toEqual(['owed']);
   });
 });

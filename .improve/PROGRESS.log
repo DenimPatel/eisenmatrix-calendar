@@ -41,3 +41,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-05T10:22Z | IMP-053 | done | a4c1793 | calendar +N more expands to full list
 2026-10-05T12:47Z | IMP-024 | done (attempt 3) | b9f4151 | mobile nav two-row layout; all 10 destinations reachable
 2026-10-05T13:26Z | SWEEP-40 | CLEAN | 70ae911 | 302 tests x5 runs, 0 console errors, light+dark both widths
+2026-10-05T13:53Z | IMP-055 | done | 4195d45 | occurrence delete skips, series survives
