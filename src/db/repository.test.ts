@@ -2,7 +2,14 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from './schema';
 import { itemRepo, listRepo, reminderLogRepo, settingsRepo } from './repository';
 import { createItem, defaultDataFor, normalizeItem } from '@/domain/itemFactory';
-import { ITEM_KINDS, type Item, type ItemKind, type List } from '@/types';
+import {
+  ITEM_KINDS,
+  type AppSettings,
+  type Item,
+  type ItemKind,
+  type List,
+  DEFAULT_SETTINGS,
+} from '@/types';
 
 function task(id: string, title: string, parentId: string | null = null): Item {
   const base = normalizeItem({ ...createItem({ kind: 'task', title }), id });
@@ -134,6 +141,45 @@ describe('listRepo and settingsRepo', () => {
 
     await settingsRepo.set('app', { theme: 'dark' });
     expect(await settingsRepo.get('app', {})).toEqual({ theme: 'dark' });
+  });
+});
+
+describe('settingsRepo', () => {
+  it('merges interleaved writes to different keys without clobbering either', async () => {
+    await settingsRepo.set('app', { ...DEFAULT_SETTINGS, weekStartsOn: 0 });
+
+    await Promise.all([
+      settingsRepo.merge<AppSettings>('app', { theme: 'dark' }, DEFAULT_SETTINGS),
+      settingsRepo.merge<AppSettings>('app', { digestEnabled: true }, DEFAULT_SETTINGS),
+    ]);
+
+    expect(await settingsRepo.get('app', DEFAULT_SETTINGS)).toEqual({
+      ...DEFAULT_SETTINGS,
+      weekStartsOn: 0,
+      theme: 'dark',
+      digestEnabled: true,
+    });
+  });
+
+  it('merges a patch into an existing snapshot without dropping untouched keys', async () => {
+    await settingsRepo.set('app', { ...DEFAULT_SETTINGS, digestTime: '09:30' });
+
+    await settingsRepo.merge<AppSettings>('app', { theme: 'light' }, DEFAULT_SETTINGS);
+
+    expect(await settingsRepo.get('app', DEFAULT_SETTINGS)).toEqual({
+      ...DEFAULT_SETTINGS,
+      theme: 'light',
+      digestTime: '09:30',
+    });
+  });
+
+  it('seeds a missing row from the fallback so readers still see full settings', async () => {
+    await settingsRepo.merge<AppSettings>('app', { theme: 'dark' }, DEFAULT_SETTINGS);
+
+    expect(await settingsRepo.get('app', DEFAULT_SETTINGS)).toEqual({
+      ...DEFAULT_SETTINGS,
+      theme: 'dark',
+    });
   });
 });
 

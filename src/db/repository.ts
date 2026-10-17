@@ -174,6 +174,18 @@ export const settingsRepo = {
   async set(key: string, value: unknown): Promise<void> {
     await getDb().settings.put({ key, value });
   },
+  async merge<T extends object>(
+    key: string,
+    patch: Partial<T>,
+    fallback: T = {} as T,
+  ): Promise<void> {
+    const db = getDb();
+    await db.transaction('rw', db.settings, async () => {
+      const row = await db.settings.get(key);
+      const base = (row?.value ?? fallback) as T;
+      await db.settings.put({ key, value: { ...base, ...patch } });
+    });
+  },
   async remove(key: string): Promise<void> {
     await getDb().settings.delete(key);
   },

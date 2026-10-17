@@ -1060,7 +1060,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). All six third-party uses: entries pinned to 40-hex SHAs with version comments; SHAs independently re-resolved against upstream tags. Verified PASS (workflow Prettier/lint; dependabot and deploy gate intact). Reports: impl-IMP-081.md, verify-IMP-081.md. Source: `discovered-IMP-005.md` §3 and `discovered-IMP-022.md` §1. Scored 10: cheap and standard supply-chain hardening, but no product impact for a single-user static site.
 
 ### IMP-035 — Fix settings read-modify-write races between theme and Settings
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / concurrency
 - **Type:** bug-fix
 - **Area / files:** `src/hooks/useTheme.ts` (`:30-35`); `src/features/settings/SettingsView.tsx` (`persist`, `:59-61`)
@@ -1073,7 +1073,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 8
-- **Notes:** Keep the public `settingsRepo.get('app')` shape for existing readers.
+- **Notes:** DONE (attempt 1). settingsRepo.merge does read+merge+put in one rw transaction; theme and Settings merge only changed keys; interleaved write test fails under old semantics. +3 tests (450). Verified PASS (typecheck/lint, build, format). Reports: impl-IMP-035.md, verify-IMP-035.md. Keep the public `settingsRepo.get("app")` shape.
 
 ### IMP-036 — Make reminder dedupe race-safe
 - **Status:** TODO

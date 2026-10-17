@@ -2,7 +2,7 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 5 | 38 | 1 | 2026-10-17 IMP-080 | concurrency, nested payloads | IMP-089, IMP-090 |
+| Bugs/Correctness | 4 | 4 | 39 | 1 | 2026-10-17 IMP-035 | occurrence writes, nested payloads | IMP-089, IMP-090 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 5 | 3 | 5 | 0 | 2026-10-17 IMP-079 | scope-switch reset, scroll lock | IMP-093 |

@@ -35,11 +35,8 @@ export function useTheme() {
 
   useEffect(() => {
     if (!loaded.current) return;
-    void settingsRepo
-      .get<AppSettings>('app', DEFAULT_SETTINGS)
-      .then((settings) => settingsRepo.set('app', { ...settings, theme }))
-      .catch((error: unknown) => {
-        reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
-      });
+    void settingsRepo.merge<AppSettings>('app', { theme }, DEFAULT_SETTINGS).catch((error) => {
+      reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+    });
   }, [theme]);
 }

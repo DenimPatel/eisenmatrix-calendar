@@ -73,3 +73,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T18:45Z | IMP-078 | done | 628f42c | habits no longer duplicated on Today; +2 tests (443)
 2026-10-17T18:58Z | IMP-081 | done | 0a185e4 | actions pinned to SHAs
 2026-10-17T19:08Z | IMP-079 | done | e9fc259 | topmost-only Escape; +2 tests (445)
+2026-10-17T19:16Z | IMP-080 | done | b9934d5 | rerunMigration failure handled; +2 tests (447)

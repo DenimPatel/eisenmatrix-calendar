@@ -67,7 +67,7 @@ export function SettingsView() {
   }, [items.length]);
 
   const persist = async (patch: Partial<AppSettings>) => {
-    await settingsRepo.set('app', { ...settings, ...patch });
+    await settingsRepo.merge<AppSettings>('app', patch, DEFAULT_SETTINGS);
   };
 
   const exportJSON = () => {
