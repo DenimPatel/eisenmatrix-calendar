@@ -2,16 +2,16 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 12 | 30 | 1 | 2026-10-17 IMP-076 | view-level no-data crashes | IMP-025, IMP-026 |
+| Bugs/Correctness | 4 | 11 | 32 | 1 | 2026-10-17 IMP-088 | concurrency, nested payloads | IMP-089, IMP-090 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
-| UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-059, IMP-079 |
+| UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-079 |
 | Format/Structure | 3 | 2 | 0 | 0 | — | Prettier drift, agent guide naming | IMP-064, IMP-046 |
-| Delivery | 4 | 5 | 2 | 1 | 2026-10-05 IMP-022 | CI duplicate gate, unpinned actions | IMP-063, IMP-081 |
+| Delivery | 4 | 4 | 3 | 1 | 2026-10-17 IMP-029 | CI duplicate gate, unpinned actions | IMP-063, IMP-081 |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
-| Accessibility | 3 | 4 | 3 | 0 | 2026-10-17 IMP-059 | dialog names, ARIA toggles | IMP-027, IMP-033 |
+| Accessibility | 3 | 3 | 4 | 0 | 2026-10-17 IMP-027 | ARIA toggles | IMP-033 |
 | Docs/Onboarding | 3 | 3 | 0 | 1 | — | preview SW reset undocumented | IMP-065 |
-| Tests/Tooling | 4 | 4 | 8 | 0 | 2026-10-12 IMP-056 | write-path and eisenhower coverage | IMP-025, IMP-026 |
+| Tests/Tooling | 4 | 3 | 9 | 0 | 2026-10-17 IMP-025 | eisenhower and hook coverage | IMP-026, IMP-066 |
 
 **Bugs/Correctness (4):** 43 items done overall; IMP-074/075 fixed ICS export and IMP-076 made
 occurrence status writes merge into the persisted map. IMP-088 (view-level no-data reads) and

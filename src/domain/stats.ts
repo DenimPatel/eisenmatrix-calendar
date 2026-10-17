@@ -46,7 +46,9 @@ export interface StreakResult {
 /** Compute habit streaks from stored occurrence state. */
 export function habitStreak(item: Item, today = new Date()): StreakResult {
   if (item.kind !== 'habit') return { current: 0, best: 0, lastAt: null };
-  const target = item.data.target;
+  const target = item.data?.target ?? { count: 1, per: 'day' as const };
+  const targetCount = Math.max(1, Number(target.count) || 1);
+  const per = target.per ?? 'day';
   const weekStartsOn = item.recurrence?.weekStartsOn ?? 1;
 
   const earliest = item.start ? parseLocalDate(item.start)! : addMonths(today, -12);
@@ -56,17 +58,17 @@ export function habitStreak(item: Item, today = new Date()): StreakResult {
 
   for (const occ of occurrences) {
     if (occ.status !== 'done') continue;
-    const key = formatISODate(periodStart(occ.date, target.per, weekStartsOn));
+    const key = formatISODate(periodStart(occ.date, per, weekStartsOn));
     doneByPeriod.set(key, (doneByPeriod.get(key) ?? 0) + 1);
     if (!lastAt || occ.occKey > lastAt) lastAt = occ.occKey;
   }
 
-  const complete = (key: string) => (doneByPeriod.get(key) ?? 0) >= Math.max(1, target.count);
+  const complete = (key: string) => (doneByPeriod.get(key) ?? 0) >= targetCount;
 
   // Current streak: walk backwards from the current period. An incomplete
   // current period does not break the chain (the day is not over yet).
   let current = 0;
-  let cursor = periodStart(today, target.per, weekStartsOn);
+  let cursor = periodStart(today, per, weekStartsOn);
   let isCurrentPeriod = true;
   for (let i = 0; i < 400; i++) {
     const key = formatISODate(cursor);
@@ -78,7 +80,7 @@ export function habitStreak(item: Item, today = new Date()): StreakResult {
       break;
     }
     isCurrentPeriod = false;
-    const prev = periodStart(addDays(cursor, -1), target.per, weekStartsOn);
+    const prev = periodStart(addDays(cursor, -1), per, weekStartsOn);
     if (prev.getTime() >= cursor.getTime()) break;
     cursor = prev;
   }
@@ -98,7 +100,7 @@ export function habitStreak(item: Item, today = new Date()): StreakResult {
       } else {
         run = 0;
       }
-      const next = nextPeriod(cursor, target.per, weekStartsOn);
+      const next = nextPeriod(cursor, per, weekStartsOn);
       if (next.getTime() <= cursor.getTime()) break;
       cursor = next;
     }
@@ -119,7 +121,7 @@ export function goalProgress(goal: Item, children: Item[] = []): GoalProgress {
   if (goal.kind !== 'goal') {
     return { current: 0, target: 1, percent: 0, label: '0%' };
   }
-  const metric = goal.data.metric;
+  const metric = goal.data?.metric ?? { type: 'binary' as const };
   let current = metric.current ?? 0;
   let target = metric.target ?? 1;
 

@@ -1,7 +1,16 @@
+import { normalizeItem } from '@/domain/itemFactory';
 import type { BaseItem, Item, ItemData, ItemKind, List } from '@/types';
 import { getDb, type BackupEntry } from './schema';
 
 export type ItemPatch = Partial<Omit<BaseItem, 'id' | 'kind'>> & { data?: ItemData };
+
+function readItem(item: Item): Item {
+  return normalizeItem(item);
+}
+
+function readItems(items: Item[]): Item[] {
+  return items.map(readItem);
+}
 
 function mergeItem(existing: Item, patch: ItemPatch): Item {
   const next = {
@@ -34,11 +43,12 @@ export async function collectDescendantIds(id: string): Promise<string[]> {
 
 export const itemRepo = {
   async all(): Promise<Item[]> {
-    return getDb().items.toArray();
+    return readItems(await getDb().items.toArray());
   },
 
   async get(id: string): Promise<Item | undefined> {
-    return getDb().items.get(id);
+    const item = await getDb().items.get(id);
+    return item ? readItem(item) : undefined;
   },
 
   async create(item: Item): Promise<Item> {
@@ -77,7 +87,7 @@ export const itemRepo = {
   async collectDescendants(id: string): Promise<Item[]> {
     const ids = await collectDescendantIds(id);
     const descendants = await getDb().items.bulkGet(ids);
-    return descendants.filter((item): item is Item => Boolean(item));
+    return readItems(descendants.filter((item): item is Item => Boolean(item)));
   },
 
   async removeWithChildren(id: string): Promise<void> {
@@ -89,19 +99,19 @@ export const itemRepo = {
   },
 
   async byKind(kind: ItemKind): Promise<Item[]> {
-    return getDb().items.where('kind').equals(kind).toArray();
+    return readItems(await getDb().items.where('kind').equals(kind).toArray());
   },
 
   async byList(listId: string): Promise<Item[]> {
-    return getDb().items.where('listId').equals(listId).toArray();
+    return readItems(await getDb().items.where('listId').equals(listId).toArray());
   },
 
   async children(parentId: string): Promise<Item[]> {
-    return getDb().items.where('parentId').equals(parentId).toArray();
+    return readItems(await getDb().items.where('parentId').equals(parentId).toArray());
   },
 
   async query(predicate: (item: Item) => boolean): Promise<Item[]> {
-    return getDb().items.filter(predicate).toArray();
+    return readItems(await getDb().items.toArray()).filter(predicate);
   },
 
   /** Bulk soft-delete (archive) or restore. */

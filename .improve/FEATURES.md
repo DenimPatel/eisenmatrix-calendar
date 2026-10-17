@@ -1396,7 +1396,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 ---
 
 ### IMP-088 — Normalize items on read so a malformed row cannot blank a view
-- **Status:** TODO
+- **Status:** IN-PROGRESS
 - **Category:** correctness / robustness
 - **Type:** bug-fix
 - **Area / files:** `src/db/repository.ts` (itemRepo read methods), `src/hooks/useData.ts`, `src/domain/itemFactory.ts` (`normalizeItem`), `src/domain/stats.ts`, `src/features/habits/HabitsView.tsx`, `src/features/goals/GoalsView.tsx`, `src/features/bills/BillsView.tsx`
@@ -1410,7 +1410,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** med
 - **Depends on:** IMP-071
 - **Priority score:** 8
-- **Notes:** Found by the IMP-071 verifier (2026-10-17). Prefer one normalization seam over per-component guards; verify `stats.ts` cannot divide by missing target fields.
+- **Notes:** DONE (attempt 1). All `itemRepo` reads normalize through `normalizeItem` (read-only, no write-back); stats guards missing target/metric; +11 tests across repository, stats and six view mounts; browser renders all views from seeded raw rows with zero console errors. Verified PASS (typecheck/lint, 35 files / 397 tests, build). Reports: impl-IMP-088.md, verify-IMP-088.md. Follow-up IMP-090 covers nested partial payloads.
 
 ---
 
@@ -1430,9 +1430,25 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 6
 - **Notes:** Found by the IMP-076 verifier (2026-10-17). Needs care not to nest Dexie transactions; see `repository.ts` update semantics.
 
+### IMP-090 — Deep-normalize nested kind payloads
+- **Status:** TODO
+- **Category:** correctness / robustness
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemFactory.ts` (`normalizeItem`), `src/domain/stats.ts`, `src/features/habits/HabitsView.tsx`, `src/features/goals/GoalsView.tsx`, `src/features/item/KindFields.tsx`
+- **Intent:** IMP-088 makes a missing/null whole `data` object safe, but `normalizeItem` shallow-merges, so `{ target: null }`, `{ target: { count: 2 } }` (no `per`) and `{ metric: null }` still crash kind-specific reads in Habits/Goals/stats. A partially damaged row can blank a view the editor could repair.
+- **Acceptance criteria:**
+  1. Kind defaults are merged deeply enough that nested `target`/`metric` objects are complete after normalization.
+  2. `{target:null}`, `{target:{count:2}}` and `{metric:null}` habits/goals render and stats do not throw.
+  3. Normalization stays read-only; well-formed payloads are byte-identical.
+- **Verification method:** Extend the IMP-088 no-`data` fixtures with nested partial payloads for habit and goal; assert repository read shape, view mounts and `habitStreak`/`goalProgress` do not throw. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-088
+- **Priority score:** 8
+- **Notes:** Found by the IMP-088 verifier (2026-10-17). Prefer a small recursive defaults merge over per-callsite guards.
+
 ---
 
-_End of backlog (85 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (86 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

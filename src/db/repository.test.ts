@@ -1,12 +1,17 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { db } from './schema';
 import { itemRepo, listRepo, reminderLogRepo, settingsRepo } from './repository';
-import { createItem, normalizeItem } from '@/domain/itemFactory';
-import type { Item, List } from '@/types';
+import { createItem, defaultDataFor, normalizeItem } from '@/domain/itemFactory';
+import { ITEM_KINDS, type Item, type ItemKind, type List } from '@/types';
 
 function task(id: string, title: string, parentId: string | null = null): Item {
   const base = normalizeItem({ ...createItem({ kind: 'task', title }), id });
   return { ...base, parentId };
+}
+
+function rawWithoutData(kind: ItemKind): Item {
+  const { data: _data, ...raw } = createItem({ kind, title: `Raw ${kind}` });
+  return raw as Item;
 }
 
 beforeEach(async () => {
@@ -42,6 +47,34 @@ describe('itemRepo', () => {
     expect((await itemRepo.all()).every((i) => i.archivedAt)).toBe(true);
     await itemRepo.setArchived(['a', 'b'], false);
     expect((await itemRepo.all()).every((i) => i.archivedAt === null)).toBe(true);
+  });
+
+  it('backfills missing or null data on read without rewriting the stored rows', async () => {
+    const raw = ITEM_KINDS.map(rawWithoutData);
+    const nulled = ITEM_KINDS.map(
+      (kind) => ({ ...rawWithoutData(kind), data: null }) as unknown as Item,
+    );
+    await db.items.bulkPut([...raw, ...nulled]);
+
+    const expected = new Map(ITEM_KINDS.map((kind) => [kind, defaultDataFor(kind)]));
+    const all = await itemRepo.all();
+    for (const item of [...raw, ...nulled]) {
+      expect(await itemRepo.get(item.id)).toMatchObject({ data: expected.get(item.kind) });
+      expect(all.find((entry) => entry.id === item.id)?.data).toEqual(expected.get(item.kind));
+    }
+
+    const byKind = await itemRepo.byKind('habit');
+    expect(byKind.map((item) => item.data)).toEqual([
+      defaultDataFor('habit'),
+      defaultDataFor('habit'),
+    ]);
+
+    for (const item of raw) {
+      expect(await db.items.get(item.id)).not.toHaveProperty('data');
+    }
+    for (const item of nulled) {
+      expect((await db.items.get(item.id))?.data).toBeNull();
+    }
   });
 
   it('removes children with their parent', async () => {

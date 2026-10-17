@@ -20,6 +20,12 @@ import type {
   RecurrenceRule,
   TaskItem,
 } from '@/types';
+import { ITEM_KINDS } from '@/types';
+
+function withoutData(item: Item): Item {
+  const { data: _data, ...rest } = item;
+  return rest as Item;
+}
 
 function makeHabit(start: string, per: 'day' | 'week' | 'month' = 'month', count = 1): Item {
   const item = createItem({ kind: 'habit', title: 'Read', start, allDay: true });
@@ -368,5 +374,36 @@ describe('overallCompletion', () => {
       done: 0,
       rate: 0,
     });
+  });
+});
+
+describe('missing data', () => {
+  it('uses kind defaults for a habit stored without data', () => {
+    const habit = withoutData(makeHabit('2024-01-01'));
+    expect(habitStreak(habit, new Date(2024, 0, 31))).toEqual({
+      current: 0,
+      best: 0,
+      lastAt: null,
+    });
+  });
+
+  it('uses kind defaults for a goal stored without data', () => {
+    const goal = withoutData(makeGoal({ type: 'numeric', current: 3, target: 8 }));
+    expect(goalProgress(goal)).toEqual({ current: 0, target: 1, percent: 0, label: '0/1' });
+  });
+
+  it('falls back to a binary metric for a goal with an empty payload', () => {
+    const goal = { ...makeGoal({ type: 'numeric' }), data: {} } as GoalItem;
+    expect(goalProgress(goal)).toEqual({ current: 0, target: 1, percent: 0, label: '0/1' });
+  });
+
+  it('does not throw for any kind stored without data', () => {
+    const items = ITEM_KINDS.map((kind) =>
+      withoutData(createItem({ kind, title: kind, start: '2024-01-01' })),
+    );
+    expect(() =>
+      overallCompletion(items, new Date(2024, 0, 1), new Date(2024, 0, 31)),
+    ).not.toThrow();
+    expect(() => activeDayStreak(items, new Date(2024, 0, 31))).not.toThrow();
   });
 });
