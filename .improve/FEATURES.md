@@ -874,7 +874,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Early return before repository/undo/toast; empty call preserves the prior undo entry and toasts. +1 test (420). Verified PASS (typecheck/lint, non-vacuous). Reports: impl-IMP-061.md, verify-IMP-061.md. Source: `discovered-IMP-004.md` §1. Honest scope: both current call sites already guard it — `ShoppingView`'s button is `disabled={!purchasedCount}` (`:138`) and `ListView` only renders the bulk bar when `selection.size > 0` (`:236`) — so this is a latent API hazard, hence the modest score. The "Delete N items" copy counting only selected rows (not cascaded descendants) stays out of scope as cosmetic.
 
 ### IMP-062 — Normalize CRLF in quick-add line splitting
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data hygiene
 - **Type:** bug-fix
 - **Area / files:** `src/domain/quickadd.ts` (`splitNoteDraft`, `:352-357`; line split at `:353`)
@@ -887,7 +887,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-007
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-007.md` §4. Normalize inside `splitNoteDraft` only; the other kind parsers' behavior is pinned by existing tests and must not change.
+- **Notes:** DONE (attempt 1). splitNoteDraft normalizes CRLF/lone CR before splitting; CRLF output equals LF output; +2 tests (427). Verified PASS (typecheck/lint, build, non-vacuous). Reports: impl-IMP-062.md, verify-IMP-062.md. Source: `discovered-IMP-007.md` §4. Normalize inside `splitNoteDraft` only; the other kind parsers' behavior is pinned by existing tests and must not change.
 
 ### IMP-063 — Add CI concurrency groups and stop running the gate twice on `main`
 - **Status:** DONE

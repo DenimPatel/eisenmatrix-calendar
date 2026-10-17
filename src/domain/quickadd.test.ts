@@ -355,6 +355,19 @@ describe('splitNoteDraft', () => {
     expect(splitNoteDraft('a\n\nb')).toEqual({ title: 'a', notes: '\nb' });
   });
 
+  it('normalizes CRLF line endings to match LF', () => {
+    const crlf = splitNoteDraft('Buy milk\r\nCall mum\r\n');
+    expect(crlf.title).toBe('Buy milk');
+    expect(crlf.notes).not.toContain('\r');
+    expect(crlf).toEqual(splitNoteDraft('Buy milk\nCall mum\n'));
+  });
+
+  it('normalizes mixed line endings and lone CR', () => {
+    const draft = splitNoteDraft('a\r\nb\nc\rd');
+    expect(draft).toEqual({ title: 'a', notes: 'b\nc\nd' });
+    expect(draft.title + draft.notes).not.toContain('\r');
+  });
+
   it('handles empty input', () => {
     expect(splitNoteDraft('')).toEqual({ title: '', notes: '' });
   });

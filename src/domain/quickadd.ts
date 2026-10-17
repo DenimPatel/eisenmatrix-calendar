@@ -429,7 +429,7 @@ export interface NoteDraft {
 
 /** Split a quick-captured note into title/body; text past the title cap becomes body. */
 export function splitNoteDraft(text: string): NoteDraft {
-  const [firstLine = '', ...restLines] = text.split('\n');
+  const [firstLine = '', ...restLines] = text.replace(/\r\n?/g, '\n').split('\n');
   const title = firstLine.slice(0, NOTE_TITLE_MAX);
   const overflow = firstLine.slice(NOTE_TITLE_MAX);
   return { title, notes: overflow ? [overflow, ...restLines].join('\n') : restLines.join('\n') };
