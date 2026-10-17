@@ -3,18 +3,18 @@
 ## State
 Session resumed 2026-10-17 on `improve/auto-20261017` from `main` @ `cc609a4`. Baseline and
 every item commit must pass typecheck, lint, tests (currently 32 files / 332 tests) and build.
-IMP-069 and IMP-070 are committed; 35 backlog items are DONE and 42 TODO (plus 4
+IMP-069, IMP-070 and IMP-054 are committed; 36 backlog items are DONE and 41 TODO (plus 4
 NEEDS-HUMAN, 1 BLOCKED).
 
 ## In flight
 None.
 
 ## Recommended next (top TODO by score)
-1. IMP-054 (12) — quick-add data lost when kind changes.
-2. IMP-059 (12) — focus overlay in the mount commit, not a 20 ms timer.
-3. IMP-071 (12) — backfill `data` so rows without it cannot crash the editor.
-4. IMP-072 (12) — reject unrecognized import files.
-5. IMP-073 (12) — consume every schedule token in quick add.
+1. IMP-059 (12) — focus overlay in the mount commit, not a 20 ms timer.
+2. IMP-071 (12) — backfill `data` so rows without it cannot crash the editor.
+3. IMP-072 (12) — reject unrecognized import files.
+4. IMP-073 (12) — consume every schedule token in quick add.
+5. IMP-074 (12) — emit a floating UNTIL to match floating DTSTART.
 
 ## Most neglected dimension
 Visual and UX/Interaction: recent commits concentrated on correctness. Interleave IMP-059,

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { parseQuickAdd, quickAddToItem, splitNoteDraft, NOTE_TITLE_MAX } from './quickadd';
+import {
+  parseQuickAdd,
+  quickAddDataFor,
+  quickAddToItem,
+  splitNoteDraft,
+  NOTE_TITLE_MAX,
+} from './quickadd';
 import { expandOccurrences } from './recurrence';
 
 describe('parseQuickAdd', () => {
@@ -153,6 +159,35 @@ describe('quickAddToItem', () => {
 
   it('leaves other kinds without a recurrence', () => {
     expect(quickAddToItem(parseQuickAdd('write report')).recurrence).toBeNull();
+  });
+});
+
+describe('quickAddDataFor', () => {
+  it('carries parsed shopping fields and drops them for kinds that do not use them', () => {
+    const parsed = parseQuickAdd('buy milk 2L #groceries');
+    const shopping = quickAddDataFor('shopping', parsed);
+    expect(shopping).toMatchObject({ quantity: 2, unit: 'l', purchased: false });
+    expect(shopping).not.toHaveProperty('amount');
+    expect(quickAddDataFor('task', parsed)).toEqual({});
+  });
+
+  it('carries parsed bill fields and drops them for kinds that do not use them', () => {
+    const parsed = parseQuickAdd('pay electricity $120');
+    expect(quickAddDataFor('bill', parsed)).toMatchObject({
+      amount: 120,
+      currency: 'USD',
+      payee: 'Pay electricity',
+    });
+    const shopping = quickAddDataFor('shopping', parsed);
+    expect(shopping).toMatchObject({ quantity: 1, purchased: false });
+    expect(shopping).not.toHaveProperty('amount');
+    expect(shopping).not.toHaveProperty('currency');
+  });
+
+  it('restores the parsed values after a kind round-trip', () => {
+    const parsed = parseQuickAdd('buy milk 2L #groceries');
+    expect(quickAddDataFor('bill', parsed)).toMatchObject({ amount: 0, currency: 'USD' });
+    expect(quickAddDataFor('shopping', parsed)).toMatchObject({ quantity: 2, unit: 'l' });
   });
 });
 

@@ -7,7 +7,7 @@ import {
   startOfDay,
 } from '@/lib/date';
 import { newId } from '@/lib/id';
-import { createItem } from './itemFactory';
+import { createItem, defaultDataFor } from './itemFactory';
 import type { Item, ItemKind, Priority, RecurrenceRule } from '@/types';
 
 export interface QuickAddChip {
@@ -389,6 +389,24 @@ export function splitNoteDraft(text: string): NoteDraft {
   const title = firstLine.slice(0, NOTE_TITLE_MAX);
   const overflow = firstLine.slice(NOTE_TITLE_MAX);
   return { title, notes: overflow ? [overflow, ...restLines].join('\n') : restLines.join('\n') };
+}
+
+/**
+ * Build a kind's data payload from a parse, carrying only the parsed fields that
+ * apply to that kind. Always derived from the parse so changing kind and back
+ * restores the original values.
+ */
+export function quickAddDataFor(kind: ItemKind, parsed: QuickAddResult): Item['data'] {
+  const data: Record<string, unknown> = { ...defaultDataFor(kind) };
+  if (kind === 'shopping') {
+    if (parsed.quantity !== undefined) data.quantity = parsed.quantity;
+    if (parsed.unit !== undefined) data.unit = parsed.unit;
+  } else if (kind === 'bill') {
+    if (parsed.amount !== undefined) data.amount = parsed.amount;
+    if (parsed.currency !== undefined) data.currency = parsed.currency;
+    data.payee = parsed.title;
+  }
+  return data as Item['data'];
 }
 
 /** Convert a parsed quick-add into a fully-formed Item. */

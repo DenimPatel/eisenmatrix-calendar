@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Form';
 import { Badge } from '@/components/ui/Badge';
 import { useUiStore } from '@/store/useUiStore';
-import { parseQuickAdd, quickAddToItem } from '@/domain/quickadd';
+import { parseQuickAdd, quickAddDataFor, quickAddToItem } from '@/domain/quickadd';
 import { createItemPersisted } from '@/domain/itemActions';
-import { defaultDataFor } from '@/domain/itemFactory';
 import { listRepo } from '@/db/repository';
 import { useLists } from '@/hooks/useData';
 import { ITEM_KIND_LABELS } from '@/lib/labels';
@@ -48,7 +47,7 @@ export function QuickAdd() {
 
     if (effectiveKind !== item.kind) {
       item.kind = effectiveKind;
-      item.data = defaultDataFor(effectiveKind);
+      item.data = quickAddDataFor(effectiveKind, parsed);
     }
 
     const dateKey = dateOverride || parsed.start?.slice(0, 10) || formatISODate(new Date());

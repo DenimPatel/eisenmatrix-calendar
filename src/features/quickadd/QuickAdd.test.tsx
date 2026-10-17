@@ -60,6 +60,87 @@ describe('QuickAdd', () => {
     await mounted.unmount();
   });
 
+  it('keeps parsed quantity when the kind is changed and changed back', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'buy milk 2L #groceries');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const select = mounted.host.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'bill';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      select.value = 'shopping';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    const add = Array.from(mounted.host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Add',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      add.click();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const items = await db.items.toArray();
+    expect(items).toHaveLength(1);
+    const item = items[0];
+    expect(item.kind).toBe('shopping');
+    if (item.kind !== 'shopping') return;
+    expect(item.data.quantity).toBe(2);
+    expect(item.data.unit).toBe('l');
+
+    await mounted.unmount();
+  });
+
+  it('commits a changed kind with its own data and no shopping fields', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'buy milk 2L #groceries');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const select = mounted.host.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'bill';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    const add = Array.from(mounted.host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Add',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      add.click();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const items = await db.items.toArray();
+    expect(items).toHaveLength(1);
+    const item = items[0];
+    expect(item.kind).toBe('bill');
+    if (item.kind !== 'bill') return;
+    expect(item.data).toMatchObject({ amount: 0, currency: 'USD', payee: 'Milk' });
+    expect(item.data).not.toHaveProperty('quantity');
+    expect(item.data).not.toHaveProperty('unit');
+
+    await mounted.unmount();
+  });
+
   it('closes on Escape and returns focus to the opener', async () => {
     const opener = document.createElement('button');
     opener.type = 'button';

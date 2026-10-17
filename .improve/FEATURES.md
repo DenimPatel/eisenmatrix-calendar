@@ -546,7 +546,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. Month and year `+N more` affordances are now real `aria-expanded` toggle buttons that expand in place, so every capped occurrence is reachable and editable; default (<=3 month / <=5 year) rendering unchanged. 287 tests green (+5, mutation-checked); Playwright-verified 6 items -> `+3 more` -> all 6 open the editor and toggle done, occurrence status survives expand/collapse, focus stays on the toggle, both views, zero console errors. Follow-ups logged: only one month cell expands at a time, the year toggle lacks month context in its accessible name, `expandedDay` is not cleared on month navigation, and the 390px month cell is 52px so the label truncates (pre-existing grid issue).
 
 ### IMP-054 — Preserve parsed quick-add data when the kind is changed
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/features/quickadd/QuickAdd.tsx` (kind override, `:48-51`); `src/domain/quickadd.ts`
@@ -559,7 +559,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Extract the kind-switch data merge into a pure helper for testability.
+- **Notes:** Extract the kind-switch data merge into a pure helper for testability. DONE 2026-10-17: `quickAddDataFor` rebuilds new-kind defaults plus compatible parsed fields; round-trip and commit-while-bill tests added after a verifier caught a vacuous first test. Verified PASS (342 tests, browser round-trip, zero console errors). Commit pending.
 
 ### IMP-055 — Occurrence-scoped Delete should skip, not delete the series
 - **Status:** DONE
