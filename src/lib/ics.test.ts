@@ -49,6 +49,45 @@ describe('ics', () => {
     expect(ics).not.toContain('Idea');
   });
 
+  it('emits an exclusive DTEND for a multi-day all-day item', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Retreat',
+      start: '2024-05-06',
+      end: '2024-05-09',
+      allDay: true,
+    });
+    const lines = itemsToICS([item]).split('\r\n');
+    expect(lines).toContain('DTSTART;VALUE=DATE:20240506');
+    expect(lines).toContain('DTEND;VALUE=DATE:20240510');
+  });
+
+  it('omits DTEND for a one-day all-day item', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Holiday',
+      start: '2024-05-06',
+      end: '2024-05-06',
+      allDay: true,
+    });
+    const lines = itemsToICS([item]).split('\r\n');
+    expect(lines).toContain('DTSTART;VALUE=DATE:20240506');
+    expect(lines.some((line) => line.startsWith('DTEND'))).toBe(false);
+  });
+
+  it('clamps a month-end all-day DTEND to a valid date', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'January project',
+      start: '2024-01-31',
+      end: '2024-02-03',
+      allDay: true,
+    });
+    const lines = itemsToICS([item]).split('\r\n');
+    expect(lines).toContain('DTSTART;VALUE=DATE:20240131');
+    expect(lines).toContain('DTEND;VALUE=DATE:20240204');
+  });
+
   it('does not throw for an event whose data is missing', () => {
     const item = {
       ...createItem({ kind: 'event', title: 'No data', start: '2024-05-01' }),

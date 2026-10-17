@@ -1,5 +1,5 @@
 import type { Item, RecurrenceRule, Reminder } from '@/types';
-import { hasTimeComponent, parseLocalDate } from './date';
+import { addDays, hasTimeComponent, parseLocalDate } from './date';
 
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
@@ -136,6 +136,11 @@ export function itemsToICS(items: Item[]): string {
       if (end) lines.push(`DTEND:${floating(end)}`);
     } else {
       lines.push(`DTSTART;VALUE=DATE:${dateOnly(start)}`);
+      const end = parseLocalDate(item.end);
+      // RFC 5545 §3.6.1: DTEND is exclusive, so a multi-day DATE range ends the day after.
+      if (end && dateOnly(end) > dateOnly(start)) {
+        lines.push(`DTEND;VALUE=DATE:${dateOnly(addDays(end, 1))}`);
+      }
     }
     if (item.recurrence) lines.push(`RRULE:${recurrenceToRRule(item.recurrence, !timed)}`);
     for (const reminder of item.reminders) {

@@ -677,7 +677,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-014.md` §1 and §4. This **amends IMP-014 AC2** ("for timed events `UNTIL` remains a UTC date-time"), which was written before the floating-`DTSTART` mismatch was found. The RFC clause is objective, so this is not a human decision, but the implementer must update that criterion's wording in the same change. DONE 2026-10-17: timed UNTIL is floating, all-day bare, value-type arg required, TZ -11/+14 preserve the day, no-until output byte-identical. Verified PASS (370 tests). Commit pending.
 
 ### IMP-075 — Export multi-day all-day items with an exclusive `DTEND`
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** interoperability / correctness
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts:107-109` (the all-day branch emits `DTSTART;VALUE=DATE` and nothing else)
@@ -691,7 +691,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-014.md` §2; previously named in this backlog's closing summary as a below-the-cut follow-up. Same file as IMP-052 (line folding) — do both in one pass if the file is already open.
+- **Notes:** Source: `discovered-IMP-014.md` §2; previously named in this backlog's closing summary as a below-the-cut follow-up. Same file as IMP-052 (line folding) — do both in one pass if the file is already open. DONE 2026-10-17: multi-day all-day emits exclusive DTEND, one-day/timed byte-identical to HEAD, month/year rollover verified. Verified PASS (373 tests). Commit pending.
 
 ### IMP-076 — `setStatus` must merge into the persisted occurrence map
 - **Status:** TODO

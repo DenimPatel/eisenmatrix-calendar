@@ -50,4 +50,5 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T03:47Z | IMP-071 | done | d6f3590 | missing data backfilled to kind defaults; +12 tests (355); preview editor verified
 2026-10-17T03:53Z | IMP-072 | done | ad61d18 | junk imports rejected before writes; blank CSV titles skipped; 360 tests; preview verified
 2026-10-17T04:03Z | IMP-073 | done (attempt 2) | ee267d6 | schedule tokens consumed; time/relative tails preserved; +10 tests (368); preview verified
-2026-10-17T04:16Z | IMP-074 | done | pending | floating ICS UNTIL matches DTSTART; required value-type; 370 tests; TZ -11/+14 verified
+2026-10-17T04:16Z | IMP-074 | done | 2acc3af | floating ICS UNTIL matches DTSTART; required value-type; 370 tests; TZ -11/+14 verified
+2026-10-17T04:19Z | IMP-075 | done | pending | exclusive DTEND for multi-day all-day ICS; +3 tests (373); rollover verified
