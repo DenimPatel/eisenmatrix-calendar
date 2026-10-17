@@ -43,3 +43,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-032 · Editing a bill amount no longer retroactively changes the monthly Paid total · c52c7b8 · files: `src/domain/bills.ts`, `src/features/bills/BillsView.tsx`
 - 2026-10-17 · IMP-026 · Eisenhower quadrant mapping and priority scoring now have direct tests · 3afe7fb · files: `src/domain/eisenhower.test.ts`
 - 2026-10-17 · IMP-061 · Empty bulk deletes no longer replace the previous undo step or report a phantom deletion · ce661e3 · files: `src/domain/itemActions.ts`
+- 2026-10-17 · IMP-039 · Render and boot/storage failures show a recoverable message instead of a blank page · f916b43 · files: `src/components/ui/ErrorBoundary.tsx`, `src/lib/bootFailure.ts`, `src/main.tsx`, `src/App.tsx`

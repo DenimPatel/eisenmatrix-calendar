@@ -3,15 +3,15 @@
 - **Phase:** 4 — Improvement loop (resumed 2026-10-17)
 - **Work branch:** improve/auto-20261017 (from `main` @ `cc609a4`)
 - **Start SHA:** cc609a4
-- **Last commit:** ce661e3 (IMP-061)
-- **Session items done:** IMP-025, IMP-027, IMP-031, IMP-029, IMP-088, IMP-033, IMP-032, IMP-026, IMP-061, IMP-039
+- **Last commit:** f916b43 (IMP-039; sweep 60 clean)
+- **Session items done:** IMP-025, IMP-027, IMP-031, IMP-029, IMP-088, IMP-033, IMP-032, IMP-026, IMP-061, IMP-039, IMP-063
 - **Current item:** (none — batch in progress)
-- **Counters:** session commits=20 (incl. prior 10) | done=53 | blocked=1 | needs-human=4 | attempts_current=0
+- **Counters:** session commits=21 (incl. prior 10) | done=54 | blocked=1 | needs-human=4 | attempts_current=0
 - **Backlog:** `.improve/FEATURES.md` (legacy layout, 85 items: 37 TODO, 4 NEEDS-HUMAN, 1 BLOCKED)
 - **Baseline:** typecheck/lint clean; 33 files / 375 tests; build OK; CI + Pages deploy green.
 - **Push:** disabled by `.git/hooks/pre-push`; nothing pushed this session.
 - **Stop file:** `.improve/STOP` (absent)
-- **Regression:** sweep 50 CLEAN (40/40 routes, 0 console errors; `reports/regression-50.md`)
+- **Regression:** sweep 60 CLEAN (40/40 route-theme checks, 0 console errors, 425 tests twice; `reports/regression-60.md`)
 - **Session status:** COMPLETE — 10/10 items, final report written; nothing pushed.
 
 ## Selection queue (top TODO by score)

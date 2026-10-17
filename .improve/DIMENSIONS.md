@@ -7,7 +7,7 @@
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 4 | 5 | 3 | 0 | 2026-10-17 IMP-039 | Escape stacking, habit duplicate | IMP-079, IMP-078 |
 | Format/Structure | 3 | 2 | 0 | 0 | — | Prettier drift, agent guide naming | IMP-064, IMP-046 |
-| Delivery | 4 | 4 | 3 | 1 | 2026-10-17 IMP-029 | CI duplicate gate, unpinned actions | IMP-063, IMP-081 |
+| Delivery | 4 | 3 | 4 | 1 | 2026-10-17 IMP-063 | unpinned actions | IMP-081 |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
 | Accessibility | 4 | 2 | 5 | 0 | 2026-10-17 IMP-033 | mobile header semantics | IMP-091 |
 | Docs/Onboarding | 3 | 3 | 0 | 1 | — | preview SW reset undocumented | IMP-065 |
