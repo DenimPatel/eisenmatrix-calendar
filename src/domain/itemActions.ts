@@ -117,6 +117,24 @@ export async function patchItem(
   return updated;
 }
 
+async function patchItemAtomic(
+  id: string,
+  build: (existing: Item) => ItemPatch | null,
+  options?: { silent?: boolean; undoLabel?: string },
+): Promise<Item | undefined> {
+  const result = await itemRepo.updateAtomic(id, (existing) => {
+    const patch = build(existing);
+    if (!patch) return null;
+    return { ...patch, history: [...existing.history, ...buildHistory(existing, patch)] };
+  });
+  if (!result) return undefined;
+  pushUndo(options?.undoLabel ?? `Change “${result.before.title}”`, async () => {
+    await itemRepo.create(result.before);
+  });
+  if (!options?.silent) toast('Updated', 'success');
+  return result.after;
+}
+
 export async function deleteItem(item: Item): Promise<void> {
   const descendants = await itemRepo.collectDescendants(item.id);
   await itemRepo.removeWithChildren(item.id);
@@ -192,23 +210,32 @@ export async function setStatus(
   occKey?: string | null,
 ): Promise<void> {
   const timestamp = Date.now();
-  // The caller's prop can be a render snapshot: apply the merge to the persisted row so a
-  // sibling occurrence written after that snapshot is not dropped by a whole-map write.
-  const stored = (await itemRepo.get(item.id)) ?? item;
   if (occKey) {
     // One occurrence's status lives in `item.occurrences` — the map `toggleDone` writes — so
     // the card checkbox, `resolveOccurrenceStatus` and the stored state always agree.
-    const occurrences = occurrenceStateFor(stored, occKey, status, timestamp);
-    const rule = withoutOverrideStatus(stored, occKey);
-    if (!occurrences && rule === stored.recurrence) return;
-    const patch: ItemPatch = { occurrences: occurrences ?? stored.occurrences };
-    if (rule !== stored.recurrence) patch.recurrence = rule;
-    await patchItem(item.id, patch, { silent: true });
+    await patchItemAtomic(
+      item.id,
+      (stored) => {
+        const occurrences = occurrenceStateFor(stored, occKey, status, timestamp);
+        const rule = withoutOverrideStatus(stored, occKey);
+        if (!occurrences && rule === stored.recurrence) return null;
+        const patch: ItemPatch = { occurrences: occurrences ?? stored.occurrences };
+        if (rule !== stored.recurrence) patch.recurrence = rule;
+        return patch;
+      },
+      { silent: true },
+    );
     return;
   }
-  const completedAt = status === 'done' ? (stored.completedAt ?? timestamp) : null;
-  if (stored.status === status && stored.completedAt === completedAt) return;
-  await patchItem(item.id, { status, completedAt }, { silent: true });
+  await patchItemAtomic(
+    item.id,
+    (stored) => {
+      const completedAt = status === 'done' ? (stored.completedAt ?? timestamp) : null;
+      if (stored.status === status && stored.completedAt === completedAt) return null;
+      return { status, completedAt };
+    },
+    { silent: true },
+  );
 }
 
 export async function toggleDone(item: Item, occKey?: string | null): Promise<void> {

@@ -501,6 +501,25 @@ describe('setStatus (occurrences)', () => {
     expect(restored.occurrences[K2]).toBeUndefined();
   });
 
+  it('persists both keys when two status writes run concurrently', async () => {
+    await itemRepo.create(habit('h', K1));
+    const stale = await storedHabit('h');
+
+    await Promise.all([setStatus(stale, 'done', K1), setStatus(stale, 'done', K2)]);
+
+    const after = await storedHabit('h');
+    expect(after.occurrences[K1]?.status).toBe('done');
+    expect(after.occurrences[K2]?.status).toBe('done');
+    expect(useUiStore.getState().undoStack).toHaveLength(2);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    const firstUndo = await storedHabit('h');
+    expect([firstUndo.occurrences[K1], firstUndo.occurrences[K2]].filter(Boolean)).toHaveLength(1);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await storedHabit('h')).occurrences).toEqual({});
+  });
+
   it('writes nothing and pushes no undo entry when the persisted status already matches', async () => {
     await itemRepo.create(habit('h', K1));
     await setStatus(await storedHabit('h'), 'done', K1);

@@ -1428,7 +1428,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** med
 - **Depends on:** IMP-076
 - **Priority score:** 6
-- **Notes:** Found by the IMP-076 verifier (2026-10-17). Needs care not to nest Dexie transactions; see `repository.ts` update semantics.
+- **Notes:** DONE (attempt 1). itemRepo.updateAtomic reads/merges/writes in one rw transaction; setStatus uses patchItemAtomic, so concurrent keys both persist with two undo entries and no-op writes nothing. +1 test (455). Verified PASS (typecheck/lint, build, format, focused test 10/10, non-vacuous). Reports: impl-IMP-089.md, verify-IMP-089.md. Found by the IMP-076 verifier (2026-10-17).
 
 ### IMP-090 — Deep-normalize nested kind payloads
 - **Status:** TODO

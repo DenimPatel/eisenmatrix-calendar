@@ -77,3 +77,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T19:30Z | IMP-035 | done | 8605686 | atomic settings merge; +3 tests (450)
 2026-10-17T19:45Z | IMP-060 | done | fbcd4fd | shared items live query; +3 tests (453)
 2026-10-17T19:58Z | IMP-087 | done | 3001432 | undo removes created subtask tree; +1 test (454)
+2026-10-17T20:10Z | IMP-083 | done | 2b3b358 | boot smoke observes migrations; CI test runs twice

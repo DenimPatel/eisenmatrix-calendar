@@ -72,6 +72,25 @@ export const itemRepo = {
     return next;
   },
 
+  async updateAtomic(
+    id: string,
+    build: (existing: Item) => ItemPatch | null,
+  ): Promise<{ before: Item; after: Item } | undefined> {
+    const db = getDb();
+    let result: { before: Item; after: Item } | undefined;
+    await db.transaction('rw', db.items, async () => {
+      const existing = await db.items.get(id);
+      if (!existing) return;
+      const before = readItem(existing);
+      const patch = build(before);
+      if (!patch) return;
+      const after = mergeItem(existing, patch);
+      await db.items.put(after);
+      result = { before, after };
+    });
+    return result;
+  },
+
   async updateMany(entries: Array<{ id: string; patch: ItemPatch }>): Promise<void> {
     await getDb().transaction('rw', getDb().items, async () => {
       for (const { id, patch } of entries) {
