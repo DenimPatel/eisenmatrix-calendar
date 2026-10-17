@@ -82,6 +82,9 @@ export async function saveItem(item: Item, options?: { silent?: boolean }): Prom
     await itemRepo.update(item.id, { ...patch, history });
   } else {
     await itemRepo.create({ ...item, updatedAt: Date.now() });
+    pushUndo(`Create “${item.title}”`, async () => {
+      await itemRepo.remove(item.id);
+    });
   }
   if (existing) {
     pushUndo(`Edit “${item.title}”`, async () => {

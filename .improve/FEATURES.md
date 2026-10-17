@@ -349,7 +349,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE. HabitsView reads weekStartsOn via useSetting for windowStart and renders the legend from the shared weekdayLabels helper (no second label-order copy; exactly one startOfWeek definition). 192 tests green; Playwright-verified Sun-first 2026-07-12 vs Mon-first 2026-07-13 at 1280/390, zero console errors. Follow-ups logged: legend is aria-hidden so weekday order is never announced; pre-existing `--elevated:255 255 255` makes empty heatmap cells white-on-white in light theme.
 
 ### IMP-069 — Make editor-created items undoable
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / undo integrity
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`saveItem`, `:76-92`; create branch `:82-84`, undo pushed only for edits `:85-89`); contrast `createItemPersisted` `:59-64`; caller `src/features/item/ItemEditorSheet.tsx:193`
@@ -363,7 +363,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Source: `discovered-IMP-013.md` §3. `itemRepo.create` is a `put` (`src/db/repository.ts:43-46`), so the edit branch's restore-by-`create` is safe; only the missing create entry is in scope. IMP-025's undo helper is the natural home for the test.
+- **Notes:** Source: `discovered-IMP-013.md` §3. `itemRepo.create` is a `put` (`src/db/repository.ts:43-46`), so the edit branch's restore-by-`create` is safe; only the missing create entry is in scope. IMP-025's undo helper is the natural home for the test. DONE 2026-10-17: create branch pushes `Create "<title>"` closure; verified PASS (332 tests, preview undo removes row, one entry per edit). Commit pending.
 
 ### IMP-070 — Habits created outside quick add must still get the daily default
 - **Status:** TODO
@@ -1377,7 +1377,25 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 
 ---
 
-_End of backlog (82 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+### IMP-087 — Undo of an editor-created parent must not leave pre-saved subtasks orphaned
+- **Status:** TODO
+- **Category:** correctness / undo integrity
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx` (subtask persistence before parent save), `src/domain/itemActions.ts` (`saveItem` create branch), `src/domain/itemActions.test.ts`
+- **Intent:** The editor persists subtasks before the parent row, so the new create-undo entry (IMP-069) removes only the parent and leaves its children with a dangling `parentId`. The user sees ghost subtasks the undo was supposed to cancel.
+- **Acceptance criteria:**
+  1. Undoing an editor-created parent also removes the child rows that were created in the same editor session, without touching pre-existing children.
+  2. If the editor cannot tell which children are new, the create path defers child persistence until the parent is saved so the undo closure can remove the whole tree.
+  3. A unit test creates a parent plus child through `saveItem` and asserts no row with the removed `parentId` remains after undo.
+- **Verification method:** Add the case to `src/domain/itemActions.test.ts`; run the four gates. Playwright: `N`, add a subtask, save, undo, confirm the subtask is gone.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-069
+- **Priority score:** 8
+- **Notes:** Found by the IMP-069 verifier (2026-10-17); pre-existing, not introduced by IMP-069.
+
+---
+
+_End of backlog (83 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

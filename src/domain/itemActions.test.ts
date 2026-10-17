@@ -7,6 +7,7 @@ import {
   deleteItem,
   deleteItems,
   pruneItemReminders,
+  saveItem,
   skipOccurrence,
   todayOccKey,
   toggleDone,
@@ -113,6 +114,43 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await db.delete();
+});
+
+describe('saveItem', () => {
+  it('pushes a single create entry whose undo removes the new row', async () => {
+    useUiStore.getState().pushUndo({ label: 'Prior', run: () => {} });
+    const created = createItem({ kind: 'task', title: 'New task' });
+    await saveItem(created);
+    const stack = useUiStore.getState().undoStack;
+    expect(stack).toHaveLength(2);
+    expect(stack[1].label).toBe('Create “New task”');
+
+    expect(await itemRepo.get(created.id)).toBeDefined();
+    expect(await useUiStore.getState().undo()).toBe(true);
+
+    expect(await itemRepo.get(created.id)).toBeUndefined();
+    const remaining = useUiStore.getState().undoStack;
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].label).toBe('Prior');
+  });
+
+  it('keeps the create entry when silent and suppresses only the toast', async () => {
+    const created = createItem({ kind: 'task', title: 'Quiet task' });
+    await saveItem(created, { silent: true });
+    expect(useUiStore.getState().undoStack.map((entry) => entry.label)).toEqual([
+      'Create “Quiet task”',
+    ]);
+    expect(useUiStore.getState().toasts).toEqual([]);
+  });
+
+  it('pushes one edit entry, not a second create entry, when the item exists', async () => {
+    const item = createItem({ kind: 'task', title: 'Existing' });
+    await itemRepo.create(item);
+    await saveItem({ ...item, title: 'Renamed' });
+    expect(useUiStore.getState().undoStack.map((entry) => entry.label)).toEqual([
+      'Edit “Renamed”',
+    ]);
+  });
 });
 
 describe('deleteItem', () => {
