@@ -229,8 +229,8 @@ export function SettingsView() {
           <div className="text-sm">
             <div className="text-fg">Device notifications</div>
             <div className="text-xs text-muted">
-              Permission: <span className="font-medium">{permission}</span>. While this app is
-              open, reminders and the digest show as in-app banners; this switch controls device
+              Permission: <span className="font-medium">{permission}</span>. While this app is open,
+              reminders and the digest show as in-app banners; this switch controls device
               notifications only. If the permission prompt was blocked, re-allow notifications for
               this site in your browser's site settings. Without a push server, background delivery
               depends on your OS and is best-effort.

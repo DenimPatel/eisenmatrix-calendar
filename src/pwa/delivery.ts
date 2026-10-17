@@ -108,11 +108,7 @@ export async function deliverDigest(
   );
   const overdue = items
     .flatMap((item) =>
-      expandOccurrences(
-        item,
-        addDays(startOfDay(now), -30),
-        addDays(startOfDay(now), -1),
-      ),
+      expandOccurrences(item, addDays(startOfDay(now), -30), addDays(startOfDay(now), -1)),
     )
     .filter((occ) => occ.status !== 'done' && occ.item.kind !== 'habit').length;
   const habitsLeft = items.filter((i) => i.kind === 'habit').length;

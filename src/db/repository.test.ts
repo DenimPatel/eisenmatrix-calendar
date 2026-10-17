@@ -109,11 +109,7 @@ describe('itemRepo', () => {
   });
 
   it('terminates on a two-node parent cycle and removes both nodes', async () => {
-    await itemRepo.createMany([
-      task('a', 'A', 'b'),
-      task('b', 'B', 'a'),
-      task('keep', 'Keep'),
-    ]);
+    await itemRepo.createMany([task('a', 'A', 'b'), task('b', 'B', 'a'), task('keep', 'Keep')]);
     await itemRepo.removeWithChildren('a');
     const remaining = (await itemRepo.all()).map((i) => i.id).sort();
     expect(remaining).toEqual(['keep']);

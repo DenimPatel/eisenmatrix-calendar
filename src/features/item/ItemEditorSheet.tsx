@@ -10,13 +10,7 @@ import { useChildren, useLists, useSetting } from '@/hooks/useData';
 import { cn } from '@/lib/cn';
 import { newId } from '@/lib/id';
 import type { ItemPatch } from '@/db/repository';
-import {
-  dateKeyOf,
-  formatISODate,
-  formatTime,
-  hasTimeComponent,
-  parseLocalDate,
-} from '@/lib/date';
+import { dateKeyOf, formatISODate, formatTime, hasTimeComponent, parseLocalDate } from '@/lib/date';
 import { ITEM_KIND_LABELS, ITEM_STATUS_LABELS, PRIORITY_LABELS } from '@/lib/labels';
 import { createItem } from '@/domain/itemFactory';
 import {

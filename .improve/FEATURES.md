@@ -906,7 +906,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 2). Removed CI push trigger so main runs the gate once via Deploy workflow_call; both workflows cancel superseded runs. Attempt 1 shared Deploy.s concurrency group and would self-cancel; retry uses a distinct -ci- group. Verified PASS (YAML/Prettier, 425 tests). Reports: impl-IMP-063.md, verify-IMP-063.md. Source: `discovered-IMP-005.md` §1–2. IMP-005's AC1 asked for both triggers, so option (b) may be rejected on that basis — (a) alone still fixes the wasted runs. Actions stay on major tags; SHA pinning belongs to IMP-022/IMP-048.
 
 ### IMP-064 — Enforce Prettier in CI and format the drifted source files
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** tooling / consistency
 - **Type:** tooling
 - **Area / files:** `package.json` (`scripts`, `format` `:14`); `.github/workflows/ci.yml`; drifted tracked files `src/pwa/ReminderRuntime.tsx`, `src/db/repository.test.ts`, `src/domain/itemActions.test.ts`; `.prettierignore`
@@ -921,7 +921,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-004.md` §4, confirmed by a fresh `npx prettier --check .` run (33 files, incl. `.improve/FEATURES.md`). `eslint-config-prettier` is already installed, so no lint conflict is expected. Do not reformat `.improve/` reports by hand.
+- **Notes:** DONE (attempt 1). Added format:check + required CI step; formatted the five drifted tracked files (formatting-only); .prettierignore excludes generated trees. npx prettier --check . exits 0. Verified PASS (typecheck/lint, 425 tests, build). Reports: impl-IMP-064.md, verify-IMP-064.md. Source: `discovered-IMP-004.md` §4. `eslint-config-prettier` is already installed, so no lint conflict is expected. Do not reformat `.improve/` reports by hand.
 
 ### IMP-065 — Document the preview-build service-worker reset for Playwright verification
 - **Status:** TODO
