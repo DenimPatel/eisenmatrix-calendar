@@ -858,7 +858,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** NEEDS-HUMAN: legal identity of the copyright holder.
 
 ### IMP-061 — `deleteItems([])` must be a no-op
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / undo integrity
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`deleteItems`, `:115-130`; `pushUndo` `:126`, toast `:129`); caller `src/features/shopping/ShoppingView.tsx` (`clearPurchased` `:87-92`)
@@ -871,7 +871,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-004
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-004.md` §1. Honest scope: both current call sites already guard it — `ShoppingView`'s button is `disabled={!purchasedCount}` (`:138`) and `ListView` only renders the bulk bar when `selection.size > 0` (`:236`) — so this is a latent API hazard, hence the modest score. The "Delete N items" copy counting only selected rows (not cascaded descendants) stays out of scope as cosmetic.
+- **Notes:** DONE (attempt 1). Early return before repository/undo/toast; empty call preserves the prior undo entry and toasts. +1 test (420). Verified PASS (typecheck/lint, non-vacuous). Reports: impl-IMP-061.md, verify-IMP-061.md. Source: `discovered-IMP-004.md` §1. Honest scope: both current call sites already guard it — `ShoppingView`'s button is `disabled={!purchasedCount}` (`:138`) and `ListView` only renders the bulk bar when `selection.size > 0` (`:236`) — so this is a latent API hazard, hence the modest score. The "Delete N items" copy counting only selected rows (not cascaded descendants) stays out of scope as cosmetic.
 
 ### IMP-062 — Normalize CRLF in quick-add line splitting
 - **Status:** TODO

@@ -248,6 +248,21 @@ describe('deleteItems', () => {
     expect(relationships(after)).toEqual(relationships(before));
   });
 
+  it('does nothing for an empty selection', async () => {
+    await itemRepo.createMany([task('p', 'Parent'), task('c', 'Child', 'p')]);
+    const before = await itemRepo.all();
+    const toastsBefore = useUiStore.getState().toasts;
+    useUiStore.getState().pushUndo({ label: 'Prior', run: () => {} });
+
+    await deleteItems([]);
+
+    const stack = useUiStore.getState().undoStack;
+    expect(stack).toHaveLength(1);
+    expect(stack[0].label).toBe('Prior');
+    expect(useUiStore.getState().toasts).toEqual(toastsBefore);
+    expect(await itemRepo.all()).toEqual(before);
+  });
+
   it('handles a selection containing both a parent and its child', async () => {
     await itemRepo.createMany([
       task('p', 'Parent'),

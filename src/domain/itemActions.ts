@@ -126,6 +126,7 @@ export async function deleteItem(item: Item): Promise<void> {
 }
 
 export async function deleteItems(items: Item[]): Promise<void> {
+  if (!items.length) return;
   const deleted = [...items];
   const ids = new Set(items.map((i) => i.id));
   for (const item of items) {
