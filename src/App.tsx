@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/features/shell/AppShell';
 import { TodayView } from '@/features/today/TodayView';
@@ -19,8 +19,11 @@ import { ToastHost } from '@/components/ui/ToastHost';
 import { ReminderRuntime } from '@/pwa/ReminderRuntime';
 import { useTheme } from '@/hooks/useTheme';
 import { setupPWA } from '@/pwa/register';
-import { runLegacyMigration } from '@/db/migrations/legacyTasks';
-import { runNotificationGateMigration } from '@/db/migrations/notificationGate';
+import { runLegacyMigration, type MigrationResult } from '@/db/migrations/legacyTasks';
+import {
+  runNotificationGateMigration,
+  type NotificationGateResult,
+} from '@/db/migrations/notificationGate';
 import { ensureDbOpen } from '@/db/repository';
 import {
   OFFLINE_UNAVAILABLE_MESSAGE,
@@ -28,21 +31,34 @@ import {
   STORAGE_UNAVAILABLE_MESSAGE,
 } from '@/lib/bootFailure';
 
-export default function App() {
+export interface BootEffects {
+  legacy: Promise<MigrationResult>;
+  notificationGate: Promise<NotificationGateResult>;
+}
+
+interface AppProps {
+  onBootEffects?: (effects: BootEffects) => void;
+}
+
+export default function App({ onBootEffects }: AppProps = {}) {
   useTheme();
+  const onBootEffectsRef = useRef(onBootEffects);
 
   useEffect(() => {
     void ensureDbOpen().catch((error: unknown) => {
       reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
     });
     // Import any v1 localStorage data (with a safety backup) on first boot.
-    void runLegacyMigration().catch((error: unknown) => {
+    const legacy = runLegacyMigration();
+    void legacy.catch((error: unknown) => {
       reportBootFailure('Data migration failed — some items may be missing.', error);
     });
     // Carry an existing browser notification grant over to the delivery gate.
-    void runNotificationGateMigration().catch((error: unknown) => {
+    const notificationGate = runNotificationGateMigration();
+    void notificationGate.catch((error: unknown) => {
       reportBootFailure('Notification settings could not be restored.', error);
     });
+    onBootEffectsRef.current?.({ legacy, notificationGate });
     try {
       setupPWA();
     } catch (error) {

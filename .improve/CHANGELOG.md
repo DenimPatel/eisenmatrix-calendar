@@ -56,3 +56,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-080 · Failed migration reruns now report an error and preserve the prior marker · b9934d5 · files: `src/features/settings/SettingsView.tsx`
 - 2026-10-17 · IMP-035 · Concurrent theme and Settings writes no longer lose each others keys · 8605686 · files: `src/db/repository.ts`, `src/hooks/useTheme.ts`, `src/features/settings/SettingsView.tsx`
 - 2026-10-17 · IMP-060 · One shared items subscription replaces twelve per-component live queries · fbcd4fd · files: `src/hooks/useData.ts`
+- 2026-10-17 · IMP-087 · Undoing an editor-created parent now removes its new subtasks too · 3001432 · files: `src/domain/itemActions.ts`

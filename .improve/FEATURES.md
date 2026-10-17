@@ -1224,7 +1224,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-023.md` (the empty-tail and inverted-tail-range bullets). Both guards belong in the function IMP-037 already rewrites (persisted head + undo), so sequencing them after it saves a second pass over the highest-risk path in `domain`. The tail's wholesale copy of `exceptions`/`overrides` is a tidy-up and stays out of scope.
 
 ### IMP-083 — Make the boot smoke test observe boot effects and run the suite twice in CI
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** test coverage / CI reliability
 - **Type:** test
 - **Area / files:** `src/test/app.smoke.test.tsx:31-33`; `src/App.tsx:28-38` (the fire-and-forget boot promises); `.github/workflows/ci.yml` (the test step)
@@ -1238,7 +1238,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-005
 - **Priority score:** 8
-- **Notes:** Source: `discovered-IMP-068.md` §2 and §3. The doubled run is the cheapest available detector for the failure IMP-068 actually had. No production code changes.
+- **Notes:** DONE (attempt 1). App exposes an optional onBootEffects test hook; smoke test awaits both migrations and asserts markers; CI runs the suite twice in one Test step. 10 local runs zero Unhandled; reject mutations fail the test. Verified PASS (typecheck/lint, build, format). Reports: impl-IMP-083.md, verify-IMP-083.md. Source: `discovered-IMP-068.md` §2 and §3. The doubled run is the cheapest available detector for the failure IMP-068 actually had. No production code changes.
 
 ### IMP-084 — Remap `parentId` for every incoming item under the duplicate strategy
 - **Status:** TODO
@@ -1510,9 +1510,24 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 6
 - **Notes:** Found by the IMP-079 verifier (2026-10-17). Also normalize the initial/restored value instead of always writing `''`.
 
+### IMP-095 — Decide what cancelling an editor with draft subtasks should do (NEEDS-HUMAN)
+- **Status:** NEEDS-HUMAN
+- **Category:** UX / data hygiene
+- **Type:** improvement
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`addChild`, cancel/close path), `src/domain/itemActions.ts` (`saveItem` create branch)
+- **Intent:** Subtasks are persisted immediately with the parent's generated id. If the user adds a subtask and then cancels the editor, the parent is never saved and the child rows remain orphaned (invisible but stored, included in counts/exports). IMP-087 makes undo safe; it does not address cancel.
+- **Acceptance criteria (proposed):**
+  1. A product decision records whether cancel should delete draft-added subtasks, keep them hidden until a parent exists, or warn the user.
+  2. The chosen behavior is implemented with a test and no orphan rows.
+- **Verification method:** To be defined after the decision.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-087
+- **Priority score:** 6
+- **Notes:** Found by the IMP-087 verifier (2026-10-17). Exact question for the human: "When a user adds subtasks in the editor and cancels without saving the parent, should those subtasks be discarded, kept as orphans, or should the app warn before closing?" Also noted: a subsumed child undo entry stays on the stack after IMP-087's whole-tree undo (no visible corruption).
+
 ---
 
-_End of backlog (90 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (91 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 
