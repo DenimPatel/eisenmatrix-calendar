@@ -81,9 +81,10 @@ export async function saveItem(item: Item, options?: { silent?: boolean }): Prom
     const history = [...existing.history, ...buildHistory(existing, patch)];
     await itemRepo.update(item.id, { ...patch, history });
   } else {
+    const descendants = await itemRepo.collectDescendants(item.id);
     await itemRepo.create({ ...item, updatedAt: Date.now() });
     pushUndo(`Create “${item.title}”`, async () => {
-      await itemRepo.remove(item.id);
+      await itemRepo.removeMany([item.id, ...descendants.map((child) => child.id)]);
     });
   }
   if (existing) {

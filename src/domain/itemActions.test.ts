@@ -4,6 +4,7 @@ import { itemRepo, reminderLogRepo, type ItemPatch } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem, normalizeItem } from './itemFactory';
 import {
+  createItemsPersisted,
   deleteItem,
   deleteItems,
   pruneItemReminders,
@@ -133,6 +134,28 @@ describe('saveItem', () => {
     const remaining = useUiStore.getState().undoStack;
     expect(remaining).toHaveLength(1);
     expect(remaining[0].label).toBe('Prior');
+  });
+
+  it('removes the subtasks saved before the parent on undo, leaving unrelated rows', async () => {
+    const parent = createItem({ kind: 'task', title: 'Parent' });
+    await createItemsPersisted([task('child', 'Child', parent.id)]);
+    await itemRepo.createMany([
+      task('other', 'Unrelated'),
+      task('other-child', 'Other child', 'other'),
+    ]);
+
+    await saveItem(parent);
+    expect(useUiStore.getState().undoStack.map((entry) => entry.label)).toEqual([
+      'Create 1 items',
+      'Create “Parent”',
+    ]);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+
+    expect(await itemRepo.get(parent.id)).toBeUndefined();
+    const remaining = await itemRepo.all();
+    expect(remaining.map((item) => item.id).sort()).toEqual(['other', 'other-child']);
+    expect(remaining.some((item) => item.parentId === parent.id)).toBe(false);
   });
 
   it('keeps the create entry when silent and suppresses only the toast', async () => {

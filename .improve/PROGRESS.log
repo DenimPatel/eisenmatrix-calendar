@@ -75,3 +75,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T19:08Z | IMP-079 | done | e9fc259 | topmost-only Escape; +2 tests (445)
 2026-10-17T19:16Z | IMP-080 | done | b9934d5 | rerunMigration failure handled; +2 tests (447)
 2026-10-17T19:30Z | IMP-035 | done | 8605686 | atomic settings merge; +3 tests (450)
+2026-10-17T19:45Z | IMP-060 | done | fbcd4fd | shared items live query; +3 tests (453)

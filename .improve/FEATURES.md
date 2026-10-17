@@ -1378,7 +1378,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 ---
 
 ### IMP-087 — Undo of an editor-created parent must not leave pre-saved subtasks orphaned
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / undo integrity
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx` (subtask persistence before parent save), `src/domain/itemActions.ts` (`saveItem` create branch), `src/domain/itemActions.test.ts`
@@ -1391,7 +1391,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-069
 - **Priority score:** 8
-- **Notes:** Found by the IMP-069 verifier (2026-10-17); pre-existing, not introduced by IMP-069.
+- **Notes:** DONE (attempt 1). Create-undo snapshots the new parent.s descendants before writing and removes the whole tree in one entry; unrelated rows survive. +1 test (454). Verified PASS (typecheck/lint, build, format, browser). Reports: impl-IMP-087.md, verify-IMP-087.md. Found by the IMP-069 verifier (2026-10-17).
 
 ---
 
