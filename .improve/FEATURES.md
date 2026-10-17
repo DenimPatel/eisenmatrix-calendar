@@ -745,7 +745,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Extended `src/domain/itemActions.test.ts` with saveItem create/edit history + undo, plain and occurrence toggleDone, and confirmed existing descendant/updateRecurring coverage. Verified PASS (typecheck/lint, 33 files / 378 tests). Reports: `.improve/reports/impl-IMP-025.md`, `verify-IMP-025.md`.
 
 ### IMP-026 — Add unit tests for `eisenhower.ts`
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** test coverage
 - **Type:** test
 - **Area / files:** new `src/domain/eisenhower.test.ts`; target `src/domain/eisenhower.ts`
@@ -759,7 +759,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:**
+- **Notes:** DONE (attempt 1). New `eisenhower.test.ts` (15 tests) covers quadrant mapping incl. defaults, score ordering/monotonicity and partitioning. Verified PASS (typecheck/lint, 39 files / 419 tests, build). Reports: impl-IMP-026.md, verify-IMP-026.md.
 
 ### IMP-027 — Give Sheet and Dialog an accessible name
 - **Status:** DONE

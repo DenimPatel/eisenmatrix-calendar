@@ -60,3 +60,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T16:35Z | IMP-029 | done | 9647e37 | engines >=20 + .nvmrc 20 matching CI
 2026-10-17T16:45Z | IMP-088 | done | e1ea1ff | repo read seam normalizes data; +11 tests (397)
 2026-10-17T16:58Z | IMP-033 | done | 8a164e1 | aria-pressed + table/aria-sort semantics; +5 tests (402), attempt 2
+2026-10-17T17:10Z | IMP-032 | done | c52c7b8 | Paid sums recorded payments; +2 tests (404)
