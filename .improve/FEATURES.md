@@ -1396,7 +1396,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 ---
 
 ### IMP-088 — Normalize items on read so a malformed row cannot blank a view
-- **Status:** IN-PROGRESS
+- **Status:** DONE
 - **Category:** correctness / robustness
 - **Type:** bug-fix
 - **Area / files:** `src/db/repository.ts` (itemRepo read methods), `src/hooks/useData.ts`, `src/domain/itemFactory.ts` (`normalizeItem`), `src/domain/stats.ts`, `src/features/habits/HabitsView.tsx`, `src/features/goals/GoalsView.tsx`, `src/features/bills/BillsView.tsx`
@@ -1415,7 +1415,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 ---
 
 ### IMP-089 — Make occurrence writes atomic under concurrent setStatus calls
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / concurrency
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`setStatus` re-read then `patchItem`), `src/db/repository.ts` (`itemRepo.update`), `src/domain/itemActions.test.ts`
@@ -1525,9 +1525,41 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 6
 - **Notes:** Found by the IMP-087 verifier (2026-10-17). Exact question for the human: "When a user adds subtasks in the editor and cancels without saving the parent, should those subtasks be discarded, kept as orphans, or should the app warn before closing?" Also noted: a subsumed child undo entry stays on the stack after IMP-087's whole-tree undo (no visible corruption).
 
+### IMP-096 — Make habit streak derivation atomic with the occurrence toggle
+- **Status:** TODO
+- **Category:** correctness / concurrency
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts` (`toggleDone` habit branch), `src/db/repository.ts` (`updateAtomic`)
+- **Intent:** `setStatus` is atomic, but the habit branch then re-reads the row and writes the derived `data.streak` via a separate `patchItem`. Two unawaited habit toggles can compute streaks from different snapshots, so the persisted streak is last-writer-wins.
+- **Acceptance criteria:**
+  1. The occurrence status and derived streak are computed and written in one transaction (or per-item serialization).
+  2. Concurrent habit toggles end with a streak consistent with the final occurrence state.
+  3. Undo count is unaffected (`trackUndo: false`) and a no-op still writes nothing.
+- **Verification method:** fake-indexeddb test firing two unawaited habit toggles and asserting the persisted streak matches the final state; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-089
+- **Priority score:** 6
+- **Notes:** Found by the IMP-089 verifier (2026-10-17); currently only reachable through rapid double activation.
+
+### IMP-097 — Serialize the remaining occurrence edit writers
+- **Status:** TODO
+- **Category:** correctness / concurrency
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts` (`updateRecurring`, `skipOccurrence`, `saveItem`, `patchItem`), `src/db/repository.ts`
+- **Intent:** These paths still read a row and then call `patchItem`, which re-reads and writes separately, so concurrent calls could drop sibling edits as IMP-089 fixed for `setStatus`. No current UI path fires them concurrently, but the hazard is structural.
+- **Acceptance criteria:**
+  1. Each read-modify-write used by these paths is atomic or serialized per item.
+  2. Concurrent occurrence edits preserve both changes in a test.
+  3. Sequential behavior, history and undo are unchanged.
+- **Verification method:** fake-indexeddb concurrency tests for two of the paths; run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-089
+- **Priority score:** 6
+- **Notes:** Found by the IMP-089 verifier (2026-10-17); targeted follow-up, no reachable repro today.
+
 ---
 
-_End of backlog (91 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (93 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

@@ -78,3 +78,6 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T19:45Z | IMP-060 | done | fbcd4fd | shared items live query; +3 tests (453)
 2026-10-17T19:58Z | IMP-087 | done | 3001432 | undo removes created subtask tree; +1 test (454)
 2026-10-17T20:10Z | IMP-083 | done | 2b3b358 | boot smoke observes migrations; CI test runs twice
+2026-10-17T20:22Z | IMP-089 | done | be7edc1 | atomic occurrence status writes; +1 test (455)
+2026-10-17T20:40Z | SWEEP | clean | be7edc1 | final sweep: 40/40 routes, critical flows, 0 console/network errors; 455 tests twice
+2026-10-17T20:45Z | SESSION | done | be7edc1 | 25 items, 455 tests, sweeps 60/70/final clean; nothing pushed

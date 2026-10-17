@@ -1,25 +1,27 @@
 # Improver State
 
-- **Phase:** 4 — Improvement loop (resumed 2026-10-17)
+- **Phase:** 4 — Improvement loop, session 2 COMPLETE (2026-10-17)
 - **Work branch:** improve/auto-20261017 (from `main` @ `cc609a4`)
-- **Start SHA:** cc609a4
-- **Last commit:** 2b3b358 (IMP-083)
-- **Session items done:** IMP-025, IMP-027, IMP-031, IMP-029, IMP-088, IMP-033, IMP-032, IMP-026, IMP-061, IMP-039, IMP-063, IMP-064, IMP-065, IMP-062, IMP-066, IMP-077, IMP-078, IMP-081, IMP-079, IMP-080, IMP-035, IMP-060, IMP-087, IMP-083, IMP-089
-- **Current item:** (none — batch in progress)
-- **Counters:** session commits=36 (incl. prior 10) | done=68 | blocked=1 | needs-human=4 | attempts_current=0
-- **Backlog:** `.improve/FEATURES.md` (legacy layout, 85 items: 37 TODO, 4 NEEDS-HUMAN, 1 BLOCKED)
-- **Baseline:** typecheck/lint clean; 33 files / 375 tests; build OK; CI + Pages deploy green.
-- **Push:** disabled by `.git/hooks/pre-push`; nothing pushed this session.
+- **Session start SHA:** ef0775c
+- **Last commit:** be7edc1 (IMP-089); final state checkpoint follows
+- **Current item:** (none — 25/25 complete)
+- **Session items done:** IMP-025, IMP-027, IMP-031, IMP-029, IMP-088, IMP-033, IMP-032,
+  IMP-026, IMP-061, IMP-039, IMP-063, IMP-064, IMP-065, IMP-062, IMP-066, IMP-077, IMP-078,
+  IMP-081, IMP-079, IMP-080, IMP-035, IMP-060, IMP-087, IMP-083, IMP-089
+- **Counters:** session commits=36 (incl. prior 10) | done=68 | blocked=1 | needs-human=5 |
+  attempts_current=0
+- **Backlog:** `.improve/FEATURES.md` (legacy layout, 93 items: 68 DONE, 19 TODO, 5
+  NEEDS-HUMAN, 1 BLOCKED)
+- **Baseline:** typecheck/lint clean; 42 files / 455 tests; format:check and build clean.
+- **Push:** disabled by `.git/hooks/pre-push`; nothing pushed.
 - **Stop file:** `.improve/STOP` (absent)
-- **Regression:** sweep 70 CLEAN (40/40 route-theme checks, 28 interaction checks, 0 console errors, 447 tests twice; `reports/regression-70.md`)
-- **Session status:** COMPLETE — 10/10 items, final report written; nothing pushed.
+- **Regression:** sweeps 60, 70 and final all CLEAN (40/40 routes each; final:
+  `reports/regression-final.md`)
+- **Refill:** due next session (19 open TODOs < threshold 20); discovery round recommended.
+- **Self-check:** passed at items 5, 10, 20 and session end; no course corrections needed
+  beyond the four re-verified second attempts documented in FINAL_REPORT.md.
 
-## Selection queue (top TODO by score)
-IMP-025 (10), IMP-026 (10), IMP-027 (10), IMP-029 (10), IMP-031 (10), IMP-032 (10),
-IMP-033 (10), IMP-061 (10)... with IMP-087/088/089 queued at 8/8/6.
-
-## Session goal
-Work through the top 10 TODO items, one commit each, with a fresh implementer and an
-independent verifier per item. COMPLETE: IMP-069/070/054/059/071/072/073/074/075/076.
-Next session should start with IMP-025 and schedule an accessibility/UX item (IMP-027/033)
-for dimension balance.
+## Selection queue (next session, top TODO by score)
+IMP-038 (8), IMP-036 (8), IMP-037 (8), IMP-090 (8), IMP-043 (8), IMP-046 (4)…
+Then IMP-082 (8), IMP-084 (8), IMP-085 (7.5), IMP-086 (6), IMP-091 (6), IMP-092 (6),
+IMP-093 (6), IMP-094 (6), IMP-096 (6), IMP-097 (6).
