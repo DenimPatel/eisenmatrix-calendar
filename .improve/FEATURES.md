@@ -708,7 +708,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** med
 - **Depends on:** IMP-050
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-050.md` D2. Fix shape mirrors IMP-050's re-read. The second read must happen inside the action: React batches the two clicks into one tick, so an effect-based reconciliation would not help. DONE 2026-10-17: setStatus re-reads and merges into the persisted occurrence map, no-op writes stay no-ops, one undo entry per streak write. Verified PASS (375 tests, sequential stale-snapshot reproduction, undo restores both). Follow-up IMP-089 covers truly concurrent unawaited calls. Commit pending.
+- **Notes:** Source: `discovered-IMP-050.md` D2. Fix shape mirrors IMP-050's re-read. The second read must happen inside the action: React batches the two clicks into one tick, so an effect-based reconciliation would not help. DONE 2026-10-17: setStatus re-reads and merges into the persisted occurrence map, no-op writes stay no-ops, one undo entry per streak write. Verified PASS (375 tests, sequential stale-snapshot reproduction, undo restores both). Follow-up IMP-089 covers truly concurrent unawaited calls. Commit 8b46ffa.
 
 ### IMP-024 — Make all mobile bottom-nav destinations reachable at 390px
 - **Status:** DONE

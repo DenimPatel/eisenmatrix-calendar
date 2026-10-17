@@ -21,10 +21,10 @@ command palette + item editor open, mobile 390px. Dev alternative: `npm run dev`
 ## 3. Verified commands (baseline)
 | Command | Status | Notes |
 |---|---|---|
-| `npm install` | n/a | `node_modules` present and newer than lockfile; install not re-run (only if absent/deps change). |
+| `npm install` | n/a | `node_modules` may be absent in a fresh checkout; run it first (benign allowScripts warning for esbuild/fsevents). |
 | `npm run dev` | PASS | Vite, ready ~1s, port 3000, base `/eisenmatrix-calendar/`. |
 | `npm run build` | PASS | `tsc --noEmit && vite build`; PWA injectManifest → `dist/sw.js`, precache 18 entries (~601.93 KiB). |
-| `npm run test` | PASS | Vitest 4; 10 files / 49 tests. Emits benign warning `--localstorage-file was provided without a valid path`. |
+| `npm run test` | PASS | Vitest 4; 33 files / 375 tests (2026-10-17). Emits benign warning `--localstorage-file was provided without a valid path`. |
 | `npm run lint` | PASS | `eslint .` — no output. |
 | `npm run typecheck` | PASS | `tsc --noEmit` — no diagnostics. |
 | `npm run preview` | PASS | `vite preview`; port 4173; serves base path HTTP 200. |
@@ -69,28 +69,26 @@ command palette + item editor open, mobile 390px. Dev alternative: `npm run dev`
   `agents.md` (keep a single canonical copy).
 
 ## 7. Known pre-existing failures (do NOT blame new changes)
-- **No command failures.** `typecheck`, `lint`, `test` (49/49) and `build` all pass cleanly at
-  baseline; any resulting failure is a regression.
+- **No command failures.** `typecheck`, `lint`, `test` (375/375) and `build` all pass cleanly at
+  the 2026-10-17 baseline; any resulting failure is a regression.
 - Benign Node warning on test: `--localstorage-file was provided without a valid path`.
 - `npm audit`: 12 advisories (9 high, 1 moderate, 2 low, 0 critical), all in the dev/build
   toolchain (vite, rollup, tailwind→chokidar/fast-glob/picomatch). Tailwind fix is a **major**
   bump. Pre-existing, not introduced.
-- Pre-existing product defects verifiers may encounter (already known, not regressions):
-  "this occurrence" edits leak to the series; `habitStreak` best-streak over-count; note
-  quick-add truncates first line >80 chars; `deleteItems`/`removeWithChildren` orphan deep
-  children; `updateRecurring` "this and future" loses undo; `deleteItem` undo omits children;
-  calendar ignores `weekStartsOn`; mobile bottom nav overflows at 390px; overlays focus the
-  Close button first; quick-add leaves a trailing preposition. Reproduction evidence is in
-  the recon reports.
-- `defaultView` and `notificationsEnabled` settings are write-only/unread; `skipOccurrence`
-  and `SyncAdapter` have no UI/consumer (known seams).
+- Pre-existing product defects verifiers may encounter (known as of 2026-10-17, not regressions):
+  `updateRecurring` "this and future" undo is incomplete; `skipOccurrence` and `SyncAdapter` have
+  no UI/consumer (known seams); concurrent unawaited `setStatus` calls can still lose a key
+  (IMP-089); view-level reads of a no-`data` row can still crash (IMP-088); an editor-created
+  parent undone via IMP-069 can leave pre-saved subtasks orphaned (IMP-087). Previously listed
+  defects (occurrence edits leaking, habit best-streak, note truncation, descendant deletion,
+  week start, mobile nav, overlay focus, quick-add trailing words) are fixed.
 
 ## 8. Environment notes
-- macOS (darwin); node **v25.6.1**, npm **11.9.0**.
+- macOS (darwin); node **v24.21.0**, npm **11.19.0** (2026-10-17).
 - Base path `/eisenmatrix-calendar/`; `HashRouter` (deep links work on the Pages subpath).
 - Dev port **3000** (host 0.0.0.0); preview port **4173** (`npm run preview`).
 - Playwright MCP available for browser verification.
 - **Push is disabled in this run:** `.git/hooks/pre-push` prints `Pushing disabled by improver`
-  and exits 1. Do not attempt to push; commits stay local on `improve/auto-20261003`.
-- CI (`.github/workflows/deploy.yml`) builds on push to `main` only; it runs **no**
-  lint/test/typecheck gate.
+  and exits 1. Do not attempt to push; commits stay local on `improve/auto-20261017`.
+- CI (`.github/workflows/ci.yml`) runs the quality gate; `deploy.yml` gates Pages on it. The
+  latest `main` CI and Pages runs are green (2026-10-13).

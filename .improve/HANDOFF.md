@@ -4,7 +4,9 @@
 Session resumed 2026-10-17 on `improve/auto-20261017` from `main` @ `cc609a4`. Baseline and
 every item commit must pass typecheck, lint, tests (currently 33 files / 375 tests) and build.
 All ten batch items are committed (IMP-069/070/054/059/071/072/073/074/075/076); 43 backlog
-items are DONE and 37 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED).
+items are DONE and 37 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED). Regression sweep 50 is **CLEAN**:
+40/40 route checks at 1280x800 and 390x844 in light/dark, zero console errors, deep links and
+quick add/editor/exports verified (`.improve/reports/regression-50.md`).
 
 ## In flight
 None. Batch complete; nothing pushed.
