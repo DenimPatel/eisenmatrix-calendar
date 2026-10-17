@@ -68,6 +68,9 @@ export function ListView() {
     }
   };
 
+  const sortDirection = (key: SortKey): 'ascending' | 'descending' | 'none' =>
+    sortKey === key ? (sortAsc ? 'ascending' : 'descending') : 'none';
+
   const toggleSelection = (id: string) => {
     setSelection((prev) => {
       const next = new Set(prev);
@@ -264,123 +267,157 @@ export function ListView() {
           </div>
         )}
 
-        <div className="hidden grid-cols-[2rem_1fr_7rem_7rem_6rem] gap-3 border-b border-border bg-elevated px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted md:grid">
-          <span>
-            <Checkbox
-              checked={allSelected}
-              onChange={() =>
-                setSelection(allSelected ? new Set() : new Set(filtered.map((i) => i.id)))
-              }
-              aria-label="Select all"
-            />
-          </span>
-          <button
-            type="button"
-            className="flex items-center gap-1 text-left"
-            onClick={() => toggleSort('title')}
-          >
-            Item <ArrowUpDown size={12} />
-          </button>
-          <span>List</span>
-          <button
-            type="button"
-            className="flex items-center gap-1"
-            onClick={() => toggleSort('priority')}
-          >
-            Priority <ArrowUpDown size={12} />
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-1"
-            onClick={() => toggleSort('date')}
-          >
-            Date <ArrowUpDown size={12} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          {filtered.map((item) => {
-            const list = lists.find((l) => l.id === item.listId);
-            const quadrant = quadrantOf(item);
-            return (
-              <div
-                key={item.id}
-                className="grid grid-cols-1 items-center gap-2 border-b border-border px-3 py-2 hover:bg-elevated md:grid-cols-[2rem_1fr_7rem_7rem_6rem] md:gap-3"
-              >
+        <div role="table" aria-label="Items" className="flex min-h-0 flex-1 flex-col">
+          <div role="rowgroup">
+            <div
+              role="row"
+              className="hidden grid-cols-[2rem_1fr_7rem_7rem_6rem] gap-3 border-b border-border bg-elevated px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted md:grid"
+            >
+              <span role="columnheader" aria-label="Select">
                 <Checkbox
-                  checked={selection.has(item.id)}
-                  onChange={() => toggleSelection(item.id)}
-                  aria-label={`Select ${item.title}`}
+                  checked={allSelected}
+                  onChange={() =>
+                    setSelection(allSelected ? new Set() : new Set(filtered.map((i) => i.id)))
+                  }
+                  aria-label="Select all"
                 />
+              </span>
+              <div
+                role="columnheader"
+                aria-sort={sortDirection('title')}
+                className="flex items-center"
+              >
                 <button
                   type="button"
-                  className="min-w-0 text-left"
-                  onClick={() => openEditor(item)}
+                  className="flex items-center gap-1 text-left"
+                  onClick={() => toggleSort('title')}
                 >
-                  <div
-                    className={cn(
-                      'truncate text-sm font-medium text-fg',
-                      item.status === 'done' && 'text-muted line-through',
-                    )}
-                  >
-                    {item.title || 'Untitled'}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-muted">
-                    <Badge tone="muted" className="px-1 py-0 text-[10px]">
-                      {ITEM_KIND_LABELS[item.kind]}
-                    </Badge>
-                    {item.tags.slice(0, 2).map((tag) => (
-                      <span key={tag}>#{tag}</span>
-                    ))}
-                  </div>
+                  Item <ArrowUpDown size={12} />
                 </button>
-                <span className="truncate text-xs text-muted">{list?.name ?? '—'}</span>
-                <span className="flex items-center gap-1">
-                  <Badge
-                    tone={quadrant === 'q1' ? 'danger' : quadrant === 'q2' ? 'accent' : 'muted'}
-                  >
-                    {quadrant.toUpperCase()}
-                  </Badge>
-                </span>
-                <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={cn(
-                      'rounded-full border px-2 py-0.5 text-[10px] font-medium',
-                      statusClasses(item.status),
-                    )}
-                  >
-                    {ITEM_STATUS_LABELS[item.status]}
-                  </span>
-                  <span className="text-xs text-muted">{item.start?.slice(0, 10) ?? ''}</span>
-                </div>
               </div>
-            );
-          })}
-          {filtered.length === 0 && (
-            <EmptyState
-              className="m-4"
-              icon={<Search size={20} />}
-              title="No items match"
-              description="Adjust filters or add a new item."
-              action={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setFilters({
-                      search: '',
-                      kinds: [],
-                      statuses: [],
-                      listId: null,
-                      tags: [],
-                    })
-                  }
+              <span role="columnheader">List</span>
+              <div
+                role="columnheader"
+                aria-sort={sortDirection('priority')}
+                className="flex items-center"
+              >
+                <button
+                  type="button"
+                  className="flex items-center gap-1"
+                  onClick={() => toggleSort('priority')}
                 >
-                  Reset filters
-                </Button>
-              }
-            />
-          )}
+                  Priority <ArrowUpDown size={12} />
+                </button>
+              </div>
+              <div
+                role="columnheader"
+                aria-sort={sortDirection('date')}
+                className="flex items-center"
+              >
+                <button
+                  type="button"
+                  className="flex items-center gap-1"
+                  onClick={() => toggleSort('date')}
+                >
+                  Date <ArrowUpDown size={12} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <div role="rowgroup">
+              {filtered.map((item) => {
+                const list = lists.find((l) => l.id === item.listId);
+                const quadrant = quadrantOf(item);
+                return (
+                  <div
+                    key={item.id}
+                    role="row"
+                    className="grid grid-cols-1 items-center gap-2 border-b border-border px-3 py-2 hover:bg-elevated md:grid-cols-[2rem_1fr_7rem_7rem_6rem] md:gap-3"
+                  >
+                    <span role="cell" className="flex items-center">
+                      <Checkbox
+                        checked={selection.has(item.id)}
+                        onChange={() => toggleSelection(item.id)}
+                        aria-label={`Select ${item.title}`}
+                      />
+                    </span>
+                    <div role="cell" className="min-w-0">
+                      <button
+                        type="button"
+                        className="block w-full text-left"
+                        onClick={() => openEditor(item)}
+                      >
+                        <div
+                          className={cn(
+                            'truncate text-sm font-medium text-fg',
+                            item.status === 'done' && 'text-muted line-through',
+                          )}
+                        >
+                          {item.title || 'Untitled'}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted">
+                          <Badge tone="muted" className="px-1 py-0 text-[10px]">
+                            {ITEM_KIND_LABELS[item.kind]}
+                          </Badge>
+                          {item.tags.slice(0, 2).map((tag) => (
+                            <span key={tag}>#{tag}</span>
+                          ))}
+                        </div>
+                      </button>
+                    </div>
+                    <span role="cell" className="truncate text-xs text-muted">
+                      {list?.name ?? '—'}
+                    </span>
+                    <span role="cell" className="flex items-center gap-1">
+                      <Badge
+                        tone={quadrant === 'q1' ? 'danger' : quadrant === 'q2' ? 'accent' : 'muted'}
+                      >
+                        {quadrant.toUpperCase()}
+                      </Badge>
+                    </span>
+                    <div role="cell" className="flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          'rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          statusClasses(item.status),
+                        )}
+                      >
+                        {ITEM_STATUS_LABELS[item.status]}
+                      </span>
+                      <span className="text-xs text-muted">{item.start?.slice(0, 10) ?? ''}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {filtered.length === 0 && (
+              <EmptyState
+                className="m-4"
+                icon={<Search size={20} />}
+                title="No items match"
+                description="Adjust filters or add a new item."
+                action={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setFilters({
+                        search: '',
+                        kinds: [],
+                        statuses: [],
+                        listId: null,
+                        tags: [],
+                      })
+                    }
+                  >
+                    Reset filters
+                  </Button>
+                }
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>

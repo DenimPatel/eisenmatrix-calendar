@@ -7,6 +7,7 @@ import { db } from '@/db/schema';
 import { itemRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { NOTE_TITLE_MAX } from '@/domain/quickadd';
+import { createItem } from '@/domain/itemFactory';
 import type { Item } from '@/types';
 
 interface Mounted {
@@ -70,6 +71,33 @@ beforeEach(async () => {
 
 afterAll(async () => {
   await db.delete();
+});
+
+async function waitForPin(host: HTMLElement, pressed: string): Promise<HTMLButtonElement> {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+    const button = host.querySelector<HTMLButtonElement>('button[aria-label="Toggle pin"]');
+    if (button?.getAttribute('aria-pressed') === pressed) return button;
+  }
+  throw new Error(`pin never became ${pressed}`);
+}
+
+describe('NotesView pin toggle', () => {
+  it('reflects the current pin state with aria-pressed and updates after toggling', async () => {
+    await itemRepo.create(createItem({ kind: 'note', title: 'Pinned thought' }));
+    const mounted = await mountNotes();
+
+    const before = await waitForPin(mounted.host, 'false');
+    await act(async () => {
+      before.click();
+    });
+
+    const after = await waitForPin(mounted.host, 'true');
+    expect(after).not.toBe(before);
+    await unmount(mounted);
+  });
 });
 
 describe('NotesView quick add', () => {

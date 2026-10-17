@@ -106,7 +106,7 @@ beforeEach(async () => {
   picked.pickThrows = false;
   picked.pickError = undefined;
   picked.pickCalls = 0;
-  useUiStore.setState({ toasts: [], undoStack: [] });
+  useUiStore.setState({ theme: 'system', toasts: [], undoStack: [] });
 });
 
 afterEach(async () => {
@@ -203,6 +203,35 @@ describe('SettingsView CSV import', () => {
 
     expect(messages()).toEqual([]);
     expect(await itemRepo.all()).toHaveLength(0);
+    await unmount(mounted);
+  });
+});
+
+describe('SettingsView theme control', () => {
+  function themeButton(host: HTMLElement, option: string): HTMLButtonElement {
+    const button = Array.from(host.querySelectorAll('button')).find(
+      (el) => el.textContent?.trim() === option,
+    );
+    expect(button).toBeDefined();
+    return button!;
+  }
+
+  it('exposes aria-pressed for the selected theme and updates after choosing one', async () => {
+    const mounted = await mountSettings();
+    await drain();
+
+    expect(themeButton(mounted.host, 'system').getAttribute('aria-pressed')).toBe('true');
+    expect(themeButton(mounted.host, 'light').getAttribute('aria-pressed')).toBe('false');
+    expect(themeButton(mounted.host, 'dark').getAttribute('aria-pressed')).toBe('false');
+
+    await act(async () => {
+      themeButton(mounted.host, 'dark').click();
+    });
+
+    expect(useUiStore.getState().theme).toBe('dark');
+    expect(themeButton(mounted.host, 'dark').getAttribute('aria-pressed')).toBe('true');
+    expect(themeButton(mounted.host, 'system').getAttribute('aria-pressed')).toBe('false');
+    expect(themeButton(mounted.host, 'light').getAttribute('aria-pressed')).toBe('false');
     await unmount(mounted);
   });
 });

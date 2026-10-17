@@ -826,7 +826,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:**
 
 ### IMP-033 — Add missing ARIA state/roles to toggles and sortable headers
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/features/settings/SettingsView.tsx` (`:159-175`), `src/features/notes/NotesView.tsx` (`:126-136`), `src/features/bills/BillsView.tsx` (`:121-133`), `src/features/habits/HabitsView.tsx` (`:97-109`), `src/features/list/ListView.tsx` (`:277-298`)
@@ -840,7 +840,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:** The "List" column header is the only unsortable one; give it an explicit non-sort state or make it sortable.
+- **Notes:** DONE (attempt 2). Theme/pin/bill/habit expose aria-pressed; ListView uses real table semantics with aria-sort on columnheaders. Attempt 1 put aria-sort on buttons and failed AC3; retry fixed it. +5 tests (402). Verified PASS (typecheck/lint, build, browser snapshots, pixel-identical layouts). Reports: impl-IMP-033.md, verify-IMP-033.md.
 
 ### IMP-034 — Add a LICENSE file matching the README (NEEDS-HUMAN)
 - **Status:** NEEDS-HUMAN

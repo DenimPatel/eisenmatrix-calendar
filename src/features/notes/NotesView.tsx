@@ -125,6 +125,7 @@ function NoteGrid({
               type="button"
               onClick={() => onPin(note)}
               aria-label="Toggle pin"
+              aria-pressed={(note as Item & { kind: 'note' }).data.pinned}
               className={cn(
                 'rounded p-1 text-muted hover:text-accent',
                 (note as Item & { kind: 'note' }).data.pinned && 'text-accent',

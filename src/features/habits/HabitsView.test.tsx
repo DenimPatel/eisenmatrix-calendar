@@ -84,6 +84,34 @@ afterAll(async () => {
   await db.delete();
 });
 
+async function waitForMarkToday(host: HTMLElement, label: string): Promise<HTMLButtonElement> {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+    const button = host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
+    if (button) return button;
+  }
+  throw new Error(`mark-today never became ${label}`);
+}
+
+describe('HabitsView mark today', () => {
+  it('exposes aria-pressed and updates after toggling', async () => {
+    const mounted = await mountHabits(1);
+
+    const before = await waitForMarkToday(mounted.host, 'Complete today');
+    expect(before.getAttribute('aria-pressed')).toBe('false');
+
+    await act(async () => {
+      before.click();
+    });
+
+    const after = await waitForMarkToday(mounted.host, 'Undo today');
+    expect(after.getAttribute('aria-pressed')).toBe('true');
+    await unmount(mounted);
+  });
+});
+
 describe('HabitsView weekStartsOn', () => {
   it('renders a Sunday-first heatmap when weekStartsOn is 0', async () => {
     const mounted = await mountHabits(0);

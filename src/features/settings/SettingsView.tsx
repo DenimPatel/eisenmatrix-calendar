@@ -198,6 +198,7 @@ export function SettingsView() {
                 key={option}
                 type="button"
                 onClick={() => setTheme(option)}
+                aria-pressed={theme === option}
                 className={cn(
                   'flex-1 rounded-md px-3 py-1.5 text-sm font-medium capitalize',
                   theme === option ? 'bg-accent text-accent-fg' : 'text-muted hover:text-fg',

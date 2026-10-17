@@ -38,3 +38,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-027 · Sheet and Dialog now announce a real accessible name and description · aeea3e3 · files: `src/components/ui/Sheet.tsx`, `src/components/ui/Dialog.tsx`
 - 2026-10-17 · IMP-031 · CSV rows with mid-field quotes now parse literally instead of swallowing the rest of the row · 2e455ce · files: `src/lib/csv.ts`
 - 2026-10-17 · IMP-029 · Node 20 is now declared in engines and pinned in .nvmrc, matching CI · 9647e37 · files: `package.json`, `.nvmrc`
+- 2026-10-17 · IMP-088 · Items with missing data open with kind defaults in every view; repository reads normalize without rewriting rows · e1ea1ff · files: `src/db/repository.ts`, `src/domain/stats.ts`

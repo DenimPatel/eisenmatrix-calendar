@@ -111,6 +111,7 @@ export function HabitsView() {
                           : 'border-border text-muted hover:border-accent',
                       )}
                       aria-label={doneToday ? 'Undo today' : 'Complete today'}
+                      aria-pressed={doneToday}
                     >
                       {doneToday ? '✓' : '○'}
                     </button>

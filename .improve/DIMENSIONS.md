@@ -9,7 +9,7 @@
 | Format/Structure | 3 | 2 | 0 | 0 | — | Prettier drift, agent guide naming | IMP-064, IMP-046 |
 | Delivery | 4 | 4 | 3 | 1 | 2026-10-17 IMP-029 | CI duplicate gate, unpinned actions | IMP-063, IMP-081 |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
-| Accessibility | 3 | 3 | 4 | 0 | 2026-10-17 IMP-027 | ARIA toggles | IMP-033 |
+| Accessibility | 4 | 2 | 5 | 0 | 2026-10-17 IMP-033 | mobile header semantics | IMP-091 |
 | Docs/Onboarding | 3 | 3 | 0 | 1 | — | preview SW reset undocumented | IMP-065 |
 | Tests/Tooling | 4 | 3 | 9 | 0 | 2026-10-17 IMP-025 | eisenhower and hook coverage | IMP-026, IMP-066 |
 

@@ -122,6 +122,7 @@ export function BillsView() {
                       type="button"
                       onClick={() => void markPaid(bill, occ.occKey)}
                       aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
+                      aria-pressed={paid}
                       className={cn(
                         'flex h-7 w-7 items-center justify-center rounded-full border transition-colors',
                         paid
