@@ -258,7 +258,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Intent:** `UNTIL` is always emitted as `YYYYMMDDT235959Z` while all-day events use `DTSTART;VALUE=DATE`. RFC 5545 requires `UNTIL` to match the `DTSTART` value type, and tagging local fields `Z` can shift the day; importers may reject or misread it.
 - **Acceptance criteria:**
   1. For an all-day/date-only start, `UNTIL` is emitted as a bare `YYYYMMDD` matching `DTSTART`.
-  2. For timed events, `UNTIL` remains a UTC date-time.
+  2. For timed events, `UNTIL` is a floating date-time with no `Z`, matching the floating `DTSTART` (amended by IMP-074).
   3. Existing output for rules without `until` is unchanged.
 - **Verification method:** Extend `src/lib/ics.test.ts` with all-day and timed rules having `until`; assert the exact `RRULE` line. Run `npm run test`.
 - **Effort:** S    **Risk:** low
@@ -660,7 +660,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-010.md` §1 and §3. Deliberately **not** the IMP-017 approach: nothing here trims a preposition or a trailing particle from a title — it only decides whether a matched schedule token is consumed. AC4 is the regression guard IMP-017 lacked. DONE 2026-10-17: loops weekday groups, consumes bare `every`, gates lone weekdays by position; attempt 2 restored time/relative-date tails (`gym fri 7am`) and tagged `every week #tag fri`. AC2's "no weekday token" wording is subordinate to AC3 for a leading non-hint weekday (`sun the tomatoes` keeps `Sun`). Verified PASS (368 tests, preview, 80+ input differential vs HEAD, zero console errors). Commit pending.
 
 ### IMP-074 — Emit a floating `UNTIL` to match a floating `DTSTART` in ICS
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** interoperability / correctness
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts:48` (`UNTIL=…T235959Z`), `:35` (`dateOnlyStart = false` default), `:104` (timed `DTSTART` is floating), `:110` (the call site)
@@ -674,7 +674,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-014
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-014.md` §1 and §4. This **amends IMP-014 AC2** ("for timed events `UNTIL` remains a UTC date-time"), which was written before the floating-`DTSTART` mismatch was found. The RFC clause is objective, so this is not a human decision, but the implementer must update that criterion's wording in the same change.
+- **Notes:** Source: `discovered-IMP-014.md` §1 and §4. This **amends IMP-014 AC2** ("for timed events `UNTIL` remains a UTC date-time"), which was written before the floating-`DTSTART` mismatch was found. The RFC clause is objective, so this is not a human decision, but the implementer must update that criterion's wording in the same change. DONE 2026-10-17: timed UNTIL is floating, all-day bare, value-type arg required, TZ -11/+14 preserve the day, no-until output byte-identical. Verified PASS (370 tests). Commit pending.
 
 ### IMP-075 — Export multi-day all-day items with an exclusive `DTEND`
 - **Status:** TODO

@@ -13,7 +13,7 @@ describe('ics', () => {
       exceptions: [],
       overrides: {},
     };
-    expect(recurrenceToRRule(rule)).toBe('FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR');
+    expect(recurrenceToRRule(rule, false)).toBe('FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR');
   });
 
   it('exports events with alarms and escapes text', () => {
@@ -36,6 +36,7 @@ describe('ics', () => {
     expect(ics).toContain('BEGIN:VCALENDAR');
     expect(ics).toContain('DTSTART:20240501T090000');
     expect(ics).toContain('RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=WE');
+    expect(ics).not.toContain('UNTIL=');
     expect(ics).toContain('TRIGGER:-PT30M');
     expect(ics).toContain('SUMMARY:Sync\\, daily\\; standup');
   });
@@ -73,13 +74,25 @@ describe('ics', () => {
     );
   });
 
-  it('emits a UTC date-time UNTIL for timed starts', () => {
+  it('emits a floating date-time UNTIL for timed starts', () => {
     expect(recurrenceToRRule({ ...weeklyRule, until: '2024-06-30' }, false)).toBe(
-      'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959Z',
+      'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959',
     );
-    expect(recurrenceToRRule({ ...weeklyRule, until: '2024-06-30' })).toBe(
-      'FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959Z',
-    );
+  });
+
+  it('keeps the stored until day without a local-to-UTC shift', () => {
+    for (const until of ['2024-01-01', '2024-06-30', '2024-12-31']) {
+      expect(recurrenceToRRule({ ...weeklyRule, until }, false)).toBe(
+        `FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=${until.split('-').join('')}T235959`,
+      );
+    }
+  });
+
+  it('requires the value-type argument at compile time', () => {
+    expect(
+      // @ts-expect-error dateOnlyStart is required so DTSTART and UNTIL cannot disagree
+      recurrenceToRRule(weeklyRule),
+    ).toBeTypeOf('string');
   });
 
   it('omits UNTIL entirely when the rule has none', () => {
@@ -109,7 +122,7 @@ describe('ics', () => {
     expect(ics).toContain('DTSTART:20240506T090000');
     // Anchored on CRLF so a `UNTIL=20240630T235959Z` suffix cannot satisfy the date-only case.
     expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630\r\n');
-    expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959Z\r\n');
+    expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959\r\n');
   });
 
   describe('RFC 5545 line folding', () => {

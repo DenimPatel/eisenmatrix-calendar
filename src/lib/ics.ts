@@ -61,7 +61,7 @@ function dateOnly(date: Date): string {
 }
 
 /** `dateOnlyStart` must mirror the emitted DTSTART: DATE value types need a bare `UNTIL`. */
-export function recurrenceToRRule(rule: RecurrenceRule, dateOnlyStart = false): string {
+export function recurrenceToRRule(rule: RecurrenceRule, dateOnlyStart: boolean): string {
   const parts = [`FREQ=${rule.freq.toUpperCase()}`, `INTERVAL=${Math.max(1, rule.interval)}`];
   if (rule.byWeekday?.length)
     parts.push(`BYDAY=${rule.byWeekday.map((d) => DAY_CODES[d]).join(',')}`);
@@ -74,7 +74,8 @@ export function recurrenceToRRule(rule: RecurrenceRule, dateOnlyStart = false): 
   if (rule.count) parts.push(`COUNT=${rule.count}`);
   if (rule.until) {
     const until = parseLocalDate(rule.until);
-    if (until) parts.push(`UNTIL=${dateOnly(until)}${dateOnlyStart ? '' : 'T235959Z'}`);
+    // Match the floating DTSTART: a `Z` would claim a UTC instant built from local fields.
+    if (until) parts.push(`UNTIL=${dateOnly(until)}${dateOnlyStart ? '' : 'T235959'}`);
   }
   return parts.join(';');
 }
