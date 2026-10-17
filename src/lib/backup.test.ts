@@ -31,6 +31,18 @@ describe('backup', () => {
     expect(parsed.items[0].title).toBe('Legacy');
   });
 
+  it('rejects a payload carrying neither items nor tasks', () => {
+    expect(() => parseBackup('{"hello":"world"}')).toThrow(/not an eisenmatrix backup/i);
+    expect(() => parseBackup('{}')).toThrow(/no items or tasks/i);
+    expect(() => parseBackup('null')).toThrow(/not an eisenmatrix backup/i);
+  });
+
+  it('accepts a legacy payload that carries an empty items array', () => {
+    const parsed = parseBackup(JSON.stringify({ version: 1, items: [] }));
+    expect(parsed.version).toBe(1);
+    expect(parsed.items).toEqual([]);
+  });
+
   it('normalizes a parsed item stored without data to its kind defaults', () => {
     const parsed = parseBackup(
       JSON.stringify({

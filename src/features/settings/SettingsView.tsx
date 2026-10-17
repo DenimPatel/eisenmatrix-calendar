@@ -125,7 +125,8 @@ export function SettingsView() {
     try {
       const file = await pickFile('.csv,text/csv');
       if (!file) return;
-      const parsed = csvToItems(await readTextFile(file)).map(normalizeItem);
+      const { items: parsedItems, skippedBlank } = csvToItems(await readTextFile(file));
+      const parsed = parsedItems.map(normalizeItem);
       const { toPut, skipped, overwritten, duplicated } = mergeImportedItems(
         items,
         parsed,
@@ -133,7 +134,7 @@ export function SettingsView() {
       );
       await itemRepo.createMany(toPut);
       setImportReport(
-        `Imported ${toPut.length} items · skipped ${skipped} · overwritten ${overwritten} · duplicated ${duplicated}`,
+        `Imported ${toPut.length} items · skipped ${skipped + skippedBlank} · overwritten ${overwritten} · duplicated ${duplicated}`,
       );
       pushToast({ message: 'CSV imported', tone: 'success' });
     } catch (error) {

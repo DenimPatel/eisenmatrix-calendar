@@ -2,27 +2,28 @@
 
 ## State
 Session resumed 2026-10-17 on `improve/auto-20261017` from `main` @ `cc609a4`. Baseline and
-every item commit must pass typecheck, lint, tests (currently 32 files / 332 tests) and build.
-IMP-069, IMP-070, IMP-054, IMP-059 and IMP-071 are committed; 38 backlog items are DONE and
-41 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED).
+every item commit must pass typecheck, lint, tests (currently 33 files / 360 tests) and build.
+IMP-069, IMP-070, IMP-054, IMP-059, IMP-071 and IMP-072 are committed; 39 backlog items are
+DONE and 40 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED).
 
 ## In flight
 None.
 
 ## Recommended next (top TODO by score)
-1. IMP-072 (12) — reject unrecognized import files.
-2. IMP-073 (12) — consume every schedule token in quick add.
-3. IMP-074 (12) — emit a floating UNTIL to match floating DTSTART.
-4. IMP-075 (12) — exclusive DTEND for multi-day all-day export.
-5. IMP-076 (12) — merge setStatus into the persisted occurrence map.
+1. IMP-073 (12) — consume every schedule token in quick add.
+2. IMP-074 (12) — emit a floating UNTIL to match floating DTSTART.
+3. IMP-075 (12) — exclusive DTEND for multi-day all-day export.
+4. IMP-076 (12) — merge setStatus into the persisted occurrence map.
+5. IMP-025 (10) — tests for the itemActions write path.
 
 ## New discoveries
 IMP-087 (undo leaves pre-saved subtasks orphaned) and IMP-088 (view-level no-data crashes)
 were added from verifier findings.
 
 ## Most neglected dimension
-Visual and UX/Interaction: recent commits concentrated on correctness. Interleave IMP-059,
-IMP-078 and IMP-079 rather than running ten correctness items in a row.
+Visual and UX/Interaction: the session has been correctness-heavy. After the current batch,
+schedule IMP-078 (duplicate daily habit on Today), IMP-079 (Escape closes topmost only) and
+IMP-033 (ARIA state).
 
 ## Warnings
 - `node_modules` is absent in a fresh checkout; run `npm install` first (benign allowScripts

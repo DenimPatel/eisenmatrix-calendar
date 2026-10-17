@@ -121,21 +121,38 @@ function safeJSON<T>(value: string, fallback: T): T {
   }
 }
 
-export function csvToItems(text: string): Partial<Item>[] {
+export interface ParsedCSV {
+  items: Partial<Item>[];
+  skippedBlank: number;
+}
+
+export function csvToItems(text: string): ParsedCSV {
   const records = parseCSV(text);
-  if (records.length < 2) return [];
+  if (records.length === 0) {
+    throw new Error('Not an EisenMatrix CSV (empty file)');
+  }
   const [header, ...rows] = records;
   const index = Object.fromEntries(header.map((h, i) => [h.trim(), i]));
+  if (!header.some((h) => CSV_COLUMNS.includes(h.trim()))) {
+    throw new Error('Not an EisenMatrix CSV (no recognized columns)');
+  }
 
-  return rows.map((row) => {
+  const items: Partial<Item>[] = [];
+  let skippedBlank = 0;
+  for (const row of rows) {
     const get = (key: string) => {
       const i = index[key];
       return i === undefined ? '' : (row[i] ?? '');
     };
+    const title = get('title');
+    if (String(title).trim() === '') {
+      skippedBlank++;
+      continue;
+    }
     const item: Record<string, unknown> = {
       id: get('id') || undefined,
       kind: get('kind') || 'task',
-      title: get('title'),
+      title,
       notes: get('notes'),
       status: get('status') || 'todo',
       urgency: get('urgency') || 'low',
@@ -161,6 +178,7 @@ export function csvToItems(text: string): Partial<Item>[] {
     };
     const legacyRaw = get('legacy');
     if (legacyRaw) item.legacy = safeJSON(legacyRaw, undefined);
-    return item as Partial<Item>;
-  });
+    items.push(item as Partial<Item>);
+  }
+  return { items, skippedBlank };
 }

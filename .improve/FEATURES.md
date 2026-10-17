@@ -626,7 +626,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-012.md` §2. Overlaps IMP-038's import validator — if that lands first it may already close the import path, but the reported repro was a hand-written row that never passes through an import, so both the `normalizeItem` backfill and the defensive reads are needed. DONE 2026-10-17: normalizeItem merges kind defaults over missing/null/partial data, KindFields normalizes its input, ICS guards location; verified PASS (355 tests, seeded no-data row opens editor, zero console errors). Follow-up IMP-088 covers residual view-level crashes. Commit pending.
 
 ### IMP-072 — Refuse an unrecognized import file instead of reporting success
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data integrity
 - **Type:** bug-fix
 - **Area / files:** `src/lib/backup.ts:55-59` (`items` falls back to `[]`); `src/lib/csv.ts:124-127` (`records.length < 2 → return []`), `:137` (`title: get('title')`); callers `src/features/settings/SettingsView.tsx:102-118`, `:122-140`
@@ -640,7 +640,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-020
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-015.md` §1–2 and `discovered-IMP-020.md` §1. Complements IMP-020's identity/version guards, which cannot see a payload with no identity field at all. `parseBackup`'s unvalidated `lists` cast (`:60,62`) rides with IMP-038 rather than here.
+- **Notes:** Source: `discovered-IMP-015.md` §1–2 and `discovered-IMP-020.md` §1. Complements IMP-020's identity/version guards, which cannot see a payload with no identity field at all. `parseBackup`'s unvalidated `lists` cast (`:60,62`) rides with IMP-038 rather than here. DONE 2026-10-17: header/identity validation before any write, blank-title rows skipped and counted, round-trips intact; verified PASS (360 tests, junk CSV/JSON show Import failed with unchanged count, zero console errors). Commit pending.
 
 ### IMP-073 — Consume every schedule token in quick add; stop eating ordinary words
 - **Status:** TODO

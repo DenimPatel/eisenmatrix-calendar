@@ -44,7 +44,7 @@ describe('csv', () => {
     item.occurrences = { '2024-05-01': { status: 'done', completedAt: 42 } };
 
     const csv = itemsToCSV([item]);
-    const [restored] = csvToItems(csv).map(normalizeItem);
+    const [restored] = csvToItems(csv).items.map(normalizeItem);
 
     expect(restored.title).toBe(item.title);
     expect(restored.notes).toBe(item.notes);
@@ -55,8 +55,31 @@ describe('csv', () => {
   });
 
   it('normalizes a row without a data column to the kind defaults', () => {
-    const [goal] = csvToItems('id,kind,title\r\ncsv-1,goal,Read more').map(normalizeItem);
+    const [goal] = csvToItems('id,kind,title\r\ncsv-1,goal,Read more').items.map(normalizeItem);
 
     expect(goal.data).toEqual({ metric: { type: 'binary' }, horizon: 'month' });
+  });
+
+  it('rejects a payload whose header has no exported columns', () => {
+    expect(() => csvToItems('hello,world\r\nfoo,bar')).toThrow(/not an eisenmatrix csv/i);
+    expect(() => csvToItems('junk')).toThrow(/not an eisenmatrix csv/i);
+    expect(() => csvToItems('')).toThrow(/empty file/i);
+  });
+
+  it('skips and counts rows with an empty title', () => {
+    const result = csvToItems(
+      'id,kind,title\r\nblank-1,task,\r\nblank-2,task,"   "\r\ncsv-1,goal,Keep me',
+    );
+
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].title).toBe('Keep me');
+    expect(result.items.some((i) => !i.title?.trim())).toBe(false);
+    expect(result.skippedBlank).toBe(2);
+  });
+
+  it('round-trips an empty export as zero items', () => {
+    const result = csvToItems(itemsToCSV([]));
+    expect(result.items).toEqual([]);
+    expect(result.skippedBlank).toBe(0);
   });
 });

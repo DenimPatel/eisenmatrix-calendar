@@ -33,7 +33,11 @@ export interface ParsedBackup {
 }
 
 export function parseBackup(json: string): ParsedBackup {
-  const parsed = JSON.parse(json) as {
+  const parsed = JSON.parse(json) as unknown;
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Not an EisenMatrix backup');
+  }
+  const payload = parsed as {
     app?: unknown;
     version?: unknown;
     exportedAt?: unknown;
@@ -43,25 +47,26 @@ export function parseBackup(json: string): ParsedBackup {
   };
   // Backups predating the `app` marker carry no identity field, so only a
   // present-and-different value proves the file is from another producer.
-  if (parsed.app !== undefined && parsed.app !== 'eisenmatrix') {
-    throw new Error(`Not an EisenMatrix backup (found app "${String(parsed.app)}")`);
+  if (payload.app !== undefined && payload.app !== 'eisenmatrix') {
+    throw new Error(`Not an EisenMatrix backup (found app "${String(payload.app)}")`);
   }
-  const version = typeof parsed.version === 'number' ? parsed.version : 1;
+  const version = typeof payload.version === 'number' ? payload.version : 1;
   if (version > BACKUP_VERSION) {
     throw new Error(
       `Backup is format v${version}, but this app only imports up to v${BACKUP_VERSION}`,
     );
   }
-  const items = Array.isArray(parsed.items)
-    ? parsed.items
-    : Array.isArray(parsed.tasks)
-      ? parsed.tasks
-      : [];
-  const lists = Array.isArray(parsed.lists) ? parsed.lists : [];
+  const hasItems = Array.isArray(payload.items);
+  const hasTasks = Array.isArray(payload.tasks);
+  if (!hasItems && !hasTasks) {
+    throw new Error('Not an EisenMatrix backup (no items or tasks array)');
+  }
+  const items = hasItems ? payload.items : payload.tasks;
+  const lists = Array.isArray(payload.lists) ? payload.lists : [];
   return {
-    items: items.filter((i) => i && typeof i === 'object' && 'id' in i) as Item[],
+    items: (items as unknown[]).filter((i) => i && typeof i === 'object' && 'id' in i) as Item[],
     lists: lists as List[],
-    exportedAt: typeof parsed.exportedAt === 'string' ? parsed.exportedAt : null,
+    exportedAt: typeof payload.exportedAt === 'string' ? payload.exportedAt : null,
     version,
   };
 }
