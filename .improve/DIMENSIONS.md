@@ -2,7 +2,7 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 11 | 32 | 1 | 2026-10-17 IMP-088 | concurrency, nested payloads | IMP-089, IMP-090 |
+| Bugs/Correctness | 4 | 10 | 33 | 1 | 2026-10-17 IMP-032 | concurrency, nested payloads | IMP-089, IMP-090 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-079 |

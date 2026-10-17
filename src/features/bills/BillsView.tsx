@@ -6,6 +6,7 @@ import { useUiStore } from '@/store/useUiStore';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { sumRecordedPayments } from '@/domain/bills';
 import { createItem } from '@/domain/itemFactory';
 import { patchItem } from '@/domain/itemActions';
 import {
@@ -47,9 +48,7 @@ export function BillsView() {
     (sum, occ) => sum + (occ.item as BillItem).data.amount,
     0,
   );
-  const monthlyPaid = monthOccurrences
-    .filter((occ) => (occ.item as BillItem).data.payments?.[occ.occKey])
-    .reduce((sum, occ) => sum + (occ.item as BillItem).data.amount, 0);
+  const monthlyPaid = sumRecordedPayments(monthOccurrences);
 
   const markPaid = (item: Item, occKey: string) => markBillPaid(item, occKey);
 

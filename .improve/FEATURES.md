@@ -810,7 +810,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Quotes open only at field start; mid-field quotes are literal; RFC-4180 round-trips intact; +1 test (386). Verified PASS (typecheck/lint, build). Reports: impl-IMP-031.md, verify-IMP-031.md.
 
 ### IMP-032 — Sum recorded bill payments for the "Paid" total
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/features/bills/BillsView.tsx` (`:50-52`)
@@ -823,7 +823,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:**
+- **Notes:** DONE (attempt 1). New `sumRecordedPayments` helper sums recorded per-occurrence amounts for the visible month; editing the bill amount no longer rewrites history; unpaid bills contribute 0. +2 tests (404). Verified PASS (typecheck/lint, build, browser: Paid stayed 142 after amount edit). Reports: impl-IMP-032.md, verify-IMP-032.md.
 
 ### IMP-033 — Add missing ARIA state/roles to toggles and sortable headers
 - **Status:** DONE
@@ -1446,9 +1446,25 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 8
 - **Notes:** Found by the IMP-088 verifier (2026-10-17). Prefer a small recursive defaults merge over per-callsite guards.
 
+### IMP-091 — Keep column context when the mobile List header is hidden
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/list/ListView.tsx` (header row, responsive classes), `src/features/list/ListView.test.tsx`
+- **Intent:** Below `md` the table header row is hidden, so the accessibility tree has no `columnheader` nodes; mobile screen-reader users cannot tell what the row values mean or which sort is active.
+- **Acceptance criteria:**
+  1. At 390px the List still exposes column names to assistive tech (visually-hidden header row with `columnheader` cells, or equivalent per-cell labels).
+  2. `aria-sort` remains exposed on the active sortable column at mobile width.
+  3. Visual layout at 390px is unchanged (no visible header appears).
+- **Verification method:** Playwright at 390×844 snapshot the Lists view and assert columnheader roles/names and the active aria-sort; compare screenshots to baseline. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-033
+- **Priority score:** 6
+- **Notes:** Found by the IMP-033 verifier (2026-10-17); non-blocking but a real mobile AT gap.
+
 ---
 
-_End of backlog (86 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (87 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 
