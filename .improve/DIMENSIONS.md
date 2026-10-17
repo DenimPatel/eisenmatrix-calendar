@@ -2,7 +2,7 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 19 | 21 | 1 | 2026-10-17 IMP-069 | recurrence/reminder edge cases | IMP-070, IMP-054 |
+| Bugs/Correctness | 4 | 18 | 22 | 1 | 2026-10-17 IMP-070 | recurrence/reminder edge cases | IMP-054, IMP-059 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-059, IMP-079 |
@@ -13,8 +13,9 @@
 | Docs/Onboarding | 3 | 3 | 0 | 1 | — | preview SW reset undocumented | IMP-065 |
 | Tests/Tooling | 4 | 4 | 8 | 0 | 2026-10-12 IMP-056 | write-path and eisenhower coverage | IMP-025, IMP-026 |
 
-**Bugs/Correctness (4):** 34 items done overall; IMP-069 closed the editor-create undo gap and
-added three tests. Remaining TODO items are mostly narrow edge cases (quick add, imports, ICS).
+**Bugs/Correctness (4):** 35 items done overall; IMP-069 closed the editor-create undo gap and
+IMP-070 aligned habit creation with quick add. Remaining TODO items are narrow edge cases
+(quick add, imports, ICS).
 **Content (4):** the app has no editorial content dimension; the one open item is a license
 question for humans, and one label-level fix remains (IMP-046).
 **Visual (3):** no visual regressions in the last sweep; mobile nav was fixed, but no visual
@@ -31,5 +32,5 @@ regression measured yet.
 and several toggles/sort headers lack ARIA state.
 **Docs/Onboarding (3):** AGENTS.md is accurate; the preview service-worker reset needed by
 browser verification is undocumented.
-**Tests/Tooling (4):** 332 tests across 32 files, suite green and deterministic across repeated
+**Tests/Tooling (4):** 337 tests across 33 files, suite green and deterministic across repeated
 runs; itemActions write paths and eisenhower logic still lack direct tests.

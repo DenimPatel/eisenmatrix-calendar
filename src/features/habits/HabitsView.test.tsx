@@ -6,7 +6,17 @@ import { HabitsView } from './HabitsView';
 import { db } from '@/db/schema';
 import { itemRepo, settingsRepo } from '@/db/repository';
 import { createItem } from '@/domain/itemFactory';
-import { addDays, formatISODate, parseLocalDate, startOfWeek, todayKey } from '@/lib/date';
+import { expandOccurrences } from '@/domain/recurrence';
+import {
+  addDays,
+  endOfDay,
+  formatISODate,
+  parseLocalDate,
+  startOfDay,
+  startOfWeek,
+  todayKey,
+} from '@/lib/date';
+import { useUiStore } from '@/store/useUiStore';
 import { DEFAULT_SETTINGS } from '@/types/settings';
 
 const DAYS = 12 * 7;
@@ -67,6 +77,7 @@ function heatmapDayKeys(host: HTMLElement): string[] {
 beforeEach(async () => {
   await db.items.clear();
   await db.settings.clear();
+  useUiStore.getState().closeEditor();
 });
 
 afterAll(async () => {
@@ -97,6 +108,35 @@ describe('HabitsView weekStartsOn', () => {
     expect(weekdayHeader(mounted.host)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
     expect(parseLocalDate(heatmapDayKeys(mounted.host)[0])!.getDay()).toBe(1);
     await unmount(mounted);
+  });
+
+  it('creates a new habit that expands daily for the coming week', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(<HabitsView />);
+    });
+
+    const button = Array.from(host.querySelectorAll('button')).find((el) =>
+      el.textContent?.includes('New habit'),
+    );
+    expect(button).toBeDefined();
+    await act(async () => {
+      button!.click();
+    });
+
+    const draft = useUiStore.getState().editor.item;
+    expect(draft?.kind).toBe('habit');
+    expect(draft?.recurrence?.freq).toBe('daily');
+    const occurrences = expandOccurrences(
+      draft!,
+      startOfDay(new Date()),
+      endOfDay(addDays(new Date(), 6)),
+    );
+    expect(occurrences).toHaveLength(7);
+
+    await unmount({ host, root });
   });
 
   it('anchors the window start to the configured week start for both settings', async () => {

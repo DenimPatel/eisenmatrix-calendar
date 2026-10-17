@@ -366,7 +366,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-013.md` §3. `itemRepo.create` is a `put` (`src/db/repository.ts:43-46`), so the edit branch's restore-by-`create` is safe; only the missing create entry is in scope. IMP-025's undo helper is the natural home for the test. DONE 2026-10-17: create branch pushes `Create "<title>"` closure; verified PASS (332 tests, preview undo removes row, one entry per edit). Commit pending.
 
 ### IMP-070 — Habits created outside quick add must still get the daily default
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / feature gap
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemFactory.ts` (`createItem`, `:60` hardcodes `recurrence: null`); `src/features/habits/HabitsView.tsx:75` and `:90` (`createItem({ kind: 'habit', start: today })`); the quick-add copy of the default `src/domain/quickadd.ts:432-433`
@@ -380,7 +380,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Source: `discovered-IMP-018.md` §2 — the sibling of IMP-018, which applied the same default to the quick-add path only. It is not a hard dependency: the two changes touch disjoint code (`createItem` vs. `quickAddToItem`), which is also why they must be done together for the behavior to be consistent. IMP-018's §3 (a one-time backfill for habits already stored without a rule) is deliberately excluded: rewriting stored series is high blast radius and belongs in Settings → Data behind a confirmation.
+- **Notes:** Source: `discovered-IMP-018.md` §2 — the sibling of IMP-018, which applied the same default to the quick-add path only. It is not a hard dependency: the two changes touch disjoint code (`createItem` vs. `quickAddToItem`), which is also why they must be done together for the behavior to be consistent. IMP-018's §3 (a one-time backfill for habits already stored without a rule) is deliberately excluded: rewriting stored series is high blast radius and belongs in Settings → Data behind a confirmation. DONE 2026-10-17: createItem defaults habits to daily, explicit rules win, no migration; verified PASS (337 tests, preview stores daily rule, rule-less habit untouched). Commit pending.
 
 ### IMP-016 — Fix "This occurrence" edits leaking to the whole series
 - **Status:** DONE

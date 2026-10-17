@@ -23,6 +23,11 @@ export function defaultDataFor(kind: ItemKind): Item['data'] {
   }
 }
 
+function defaultRecurrenceFor(kind: ItemKind): BaseItem['recurrence'] {
+  if (kind !== 'habit') return null;
+  return { freq: 'daily', interval: 1, weekStartsOn: 1, exceptions: [], overrides: {} };
+}
+
 export interface CreateItemOptions {
   kind: ItemKind;
   title?: string;
@@ -34,6 +39,7 @@ export interface CreateItemOptions {
   end?: string | null;
   allDay?: boolean;
   dueAt?: string | null;
+  recurrence?: BaseItem['recurrence'];
   listId?: string | null;
   parentId?: string | null;
   tags?: string[];
@@ -57,7 +63,7 @@ export function createItem(options: CreateItemOptions): Item {
     end: options.end ?? null,
     allDay: options.allDay ?? true,
     dueAt: options.dueAt ?? options.start ?? null,
-    recurrence: null,
+    recurrence: options.recurrence ?? defaultRecurrenceFor(options.kind),
     tags: options.tags ?? [],
     listId: options.listId ?? null,
     parentId: options.parentId ?? null,

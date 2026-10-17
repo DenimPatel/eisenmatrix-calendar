@@ -3,17 +3,18 @@
 ## State
 Session resumed 2026-10-17 on `improve/auto-20261017` from `main` @ `cc609a4`. Baseline and
 every item commit must pass typecheck, lint, tests (currently 32 files / 332 tests) and build.
-IMP-069 is committed; 34 backlog items are DONE and 43 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED).
+IMP-069 and IMP-070 are committed; 35 backlog items are DONE and 42 TODO (plus 4
+NEEDS-HUMAN, 1 BLOCKED).
 
 ## In flight
 None.
 
 ## Recommended next (top TODO by score)
-1. IMP-070 (15) — habits created outside quick add lack the daily default.
-2. IMP-054 (12) — quick-add data lost when kind changes.
-3. IMP-059 (12) — focus overlay in the mount commit, not a 20 ms timer.
-4. IMP-071 (12) — backfill `data` so rows without it cannot crash the editor.
-5. IMP-072 (12) — reject unrecognized import files.
+1. IMP-054 (12) — quick-add data lost when kind changes.
+2. IMP-059 (12) — focus overlay in the mount commit, not a 20 ms timer.
+3. IMP-071 (12) — backfill `data` so rows without it cannot crash the editor.
+4. IMP-072 (12) — reject unrecognized import files.
+5. IMP-073 (12) — consume every schedule token in quick add.
 
 ## Most neglected dimension
 Visual and UX/Interaction: recent commits concentrated on correctness. Interleave IMP-059,
