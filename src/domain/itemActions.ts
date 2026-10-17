@@ -190,22 +190,23 @@ export async function setStatus(
   occKey?: string | null,
 ): Promise<void> {
   const timestamp = Date.now();
+  // The caller's prop can be a render snapshot: apply the merge to the persisted row so a
+  // sibling occurrence written after that snapshot is not dropped by a whole-map write.
+  const stored = (await itemRepo.get(item.id)) ?? item;
   if (occKey) {
     // One occurrence's status lives in `item.occurrences` — the map `toggleDone` writes — so
     // the card checkbox, `resolveOccurrenceStatus` and the stored state always agree.
-    const occurrences = occurrenceStateFor(item, occKey, status, timestamp);
-    const rule = withoutOverrideStatus(item, occKey);
-    if (!occurrences && rule === item.recurrence) return;
-    const patch: ItemPatch = { occurrences: occurrences ?? item.occurrences };
-    if (rule !== item.recurrence) patch.recurrence = rule;
+    const occurrences = occurrenceStateFor(stored, occKey, status, timestamp);
+    const rule = withoutOverrideStatus(stored, occKey);
+    if (!occurrences && rule === stored.recurrence) return;
+    const patch: ItemPatch = { occurrences: occurrences ?? stored.occurrences };
+    if (rule !== stored.recurrence) patch.recurrence = rule;
     await patchItem(item.id, patch, { silent: true });
     return;
   }
-  const patch: ItemPatch = {
-    status,
-    completedAt: status === 'done' ? timestamp : null,
-  };
-  await patchItem(item.id, patch, { silent: true });
+  const completedAt = status === 'done' ? (stored.completedAt ?? timestamp) : null;
+  if (stored.status === status && stored.completedAt === completedAt) return;
+  await patchItem(item.id, { status, completedAt }, { silent: true });
 }
 
 export async function toggleDone(item: Item, occKey?: string | null): Promise<void> {

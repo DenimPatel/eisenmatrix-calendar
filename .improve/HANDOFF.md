@@ -2,19 +2,24 @@
 
 ## State
 Session resumed 2026-10-17 on `improve/auto-20261017` from `main` @ `cc609a4`. Baseline and
-every item commit must pass typecheck, lint, tests (currently 33 files / 373 tests) and build.
-IMP-069/070/054/059/071/072/073/074/075 are committed; 42 backlog items are DONE and 37 TODO
-(plus 4 NEEDS-HUMAN, 1 BLOCKED).
+every item commit must pass typecheck, lint, tests (currently 33 files / 375 tests) and build.
+All ten batch items are committed (IMP-069/070/054/059/071/072/073/074/075/076); 43 backlog
+items are DONE and 37 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED).
 
 ## In flight
-IMP-076 (setStatus occurrence-map merge) is the last item of this ten-item batch.
+None. Batch complete; nothing pushed.
 
 ## Recommended next (top TODO by score)
-1. IMP-076 (12) — merge setStatus into the persisted occurrence map.
-2. IMP-025 (10) — tests for the itemActions write path.
-3. IMP-026 (10) — unit tests for eisenhower.ts.
-4. IMP-027 (10) — accessible names for Sheet and Dialog.
-5. IMP-078 (10) — stop listing a daily habit twice on Today.
+1. IMP-025 (10) — tests for the itemActions write path.
+2. IMP-026 (10) — unit tests for eisenhower.ts.
+3. IMP-027 (10) — accessible names for Sheet and Dialog.
+4. IMP-029 (10) — pin the Node version.
+5. IMP-033 (10) — ARIA state/roles on toggles and sortable headers.
+
+## New discoveries
+IMP-087 (undo leaves pre-saved subtasks orphaned, 8), IMP-088 (view-level no-data crashes, 8),
+IMP-089 (concurrent occurrence writes lose a key, 6). IMP-089 needs a Dexie transaction or
+per-item serialization.
 
 ## New discoveries
 IMP-087 (undo leaves pre-saved subtasks orphaned) and IMP-088 (view-level no-data crashes)

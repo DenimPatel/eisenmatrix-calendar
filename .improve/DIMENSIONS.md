@@ -2,7 +2,7 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 12 | 29 | 1 | 2026-10-17 IMP-075 | view-level no-data crashes | IMP-076, IMP-025 |
+| Bugs/Correctness | 4 | 12 | 30 | 1 | 2026-10-17 IMP-076 | view-level no-data crashes | IMP-025, IMP-026 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-059, IMP-079 |
@@ -13,9 +13,9 @@
 | Docs/Onboarding | 3 | 3 | 0 | 1 | — | preview SW reset undocumented | IMP-065 |
 | Tests/Tooling | 4 | 4 | 8 | 0 | 2026-10-12 IMP-056 | write-path and eisenhower coverage | IMP-025, IMP-026 |
 
-**Bugs/Correctness (4):** 42 items done overall; IMP-074/075 fixed ICS UNTIL and multi-day DTEND
-with exact-line and timezone checks. IMP-088 covers residual view-level no-data reads. Remaining
-TODOs are narrow edge cases (occurrence maps, concurrency).
+**Bugs/Correctness (4):** 43 items done overall; IMP-074/075 fixed ICS export and IMP-076 made
+occurrence status writes merge into the persisted map. IMP-088 (view-level no-data reads) and
+IMP-089 (fully concurrent occurrence writes) are queued. Remaining TODOs are narrower.
 **Content (4):** the app has no editorial content dimension; the one open item is a license
 question for humans, and one label-level fix remains (IMP-046).
 **Visual (3):** no visual regressions in the last sweep; mobile nav was fixed, but no visual
@@ -33,5 +33,5 @@ commit and the first keystroke is captured; mobile nav remains fixed. Sheet/Dial
 accessible names and several toggles/sort headers lack ARIA state.
 **Docs/Onboarding (3):** AGENTS.md is accurate; the preview service-worker reset needed by
 browser verification is undocumented.
-**Tests/Tooling (4):** 373 tests across 33 files, suite green and deterministic across repeated
+**Tests/Tooling (4):** 375 tests across 33 files, suite green and deterministic across repeated
 runs; itemActions write paths and eisenhower logic still lack direct tests.

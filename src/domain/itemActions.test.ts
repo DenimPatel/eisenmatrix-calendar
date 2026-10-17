@@ -8,6 +8,7 @@ import {
   deleteItems,
   pruneItemReminders,
   saveItem,
+  setStatus,
   skipOccurrence,
   todayOccKey,
   toggleDone,
@@ -352,6 +353,46 @@ describe('toggleDone (habit)', () => {
       best: 2,
       lastAt: dayOffset(-1),
     });
+  });
+});
+
+describe('setStatus (occurrences)', () => {
+  const K1 = '2026-07-20';
+  const K2 = '2026-07-21';
+
+  it('merges into the persisted map so a stale snapshot cannot drop a sibling write', async () => {
+    await itemRepo.create(habit('h', K1));
+    const stale = await storedHabit('h');
+
+    await setStatus(stale, 'done', K1);
+    await setStatus(stale, 'done', K2);
+
+    const after = await storedHabit('h');
+    expect(after.occurrences[K1]?.status).toBe('done');
+    expect(after.occurrences[K2]?.status).toBe('done');
+    expect(useUiStore.getState().undoStack).toHaveLength(2);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    const firstUndo = await storedHabit('h');
+    expect(firstUndo.occurrences[K1]?.status).toBe('done');
+    expect(firstUndo.occurrences[K2]).toBeUndefined();
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    const restored = await storedHabit('h');
+    expect(restored.occurrences[K1]).toBeUndefined();
+    expect(restored.occurrences[K2]).toBeUndefined();
+  });
+
+  it('writes nothing and pushes no undo entry when the persisted status already matches', async () => {
+    await itemRepo.create(habit('h', K1));
+    await setStatus(await storedHabit('h'), 'done', K1);
+    const persisted = await storedHabit('h');
+    const undoDepth = useUiStore.getState().undoStack.length;
+
+    await setStatus({ ...persisted, occurrences: {} }, 'done', K1);
+
+    expect(useUiStore.getState().undoStack).toHaveLength(undoDepth);
+    expect(await storedHabit('h')).toEqual(persisted);
   });
 });
 

@@ -12,7 +12,8 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-072 · Wrong-file imports now fail loudly, and blank-title CSV rows are skipped instead of created · ad61d18 · files: `src/lib/backup.ts`, `src/lib/csv.ts`, `src/features/settings/SettingsView.tsx`
 - 2026-10-17 · IMP-073 · Quick add now consumes schedule tokens without eating ordinary words, and keeps times/relative dates after a weekday · ee267d6 · files: `src/domain/quickadd.ts`, `src/domain/quickadd.test.ts`
 - 2026-10-17 · IMP-074 · Timed ICS exports now emit a floating `UNTIL` matching the floating `DTSTART`, ending the UTC-day shift · 2acc3af · files: `src/lib/ics.ts`, `src/lib/ics.test.ts`
-- 2026-10-17 · IMP-075 · Multi-day all-day items now export an exclusive `DTEND`, so importers keep every day · SHA pending · files: `src/lib/ics.ts`, `src/lib/ics.test.ts`
+- 2026-10-17 · IMP-075 · Multi-day all-day items now export an exclusive `DTEND`, so importers keep every day · 5bc7bf1 · files: `src/lib/ics.ts`, `src/lib/ics.test.ts`
+- 2026-10-17 · IMP-076 · Occurrence status writes now merge into the persisted map, so one toggle cannot drop a sibling · SHA pending · files: `src/domain/itemActions.ts`, `src/domain/itemActions.test.ts`
 
 ## Accessibility
 
