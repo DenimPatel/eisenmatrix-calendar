@@ -992,7 +992,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 2). Occurrence seeds merge the resolved occurrence + override; occurrence saves keep the occurrence date; all-scope resets to series; non-recurring items skip seeding after attempt 1 truncated a multi-day all-day end. +5 tests (441). Verified PASS (typecheck/lint, build, browser). Reports: impl-IMP-077.md, verify-IMP-077.md. Source: `discovered-IMP-012.md` §1 and `discovered-IMP-016.md` §3 — the "editor draft is the series row" gap IMP-016's notes left open. `updateOccurrence` (`src/domain/itemActions.ts:236-241`) writes a caller-supplied `start` and carries the same hazard; IMP-040 already works in that function.
 
 ### IMP-078 — Stop listing a daily habit twice on Today
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / correctness
 - **Type:** improvement
 - **Area / files:** `src/features/today/TodayView.tsx:57-59` (Overdue already skips habits), `:162-176` (the agenda maps every occurrence), `:186-196` (the Habits panel)
@@ -1006,7 +1006,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-070
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-018.md` §4 (pre-existing for explicitly recurring habits, and logged as a verifier follow-up in IMP-018's notes). Which of the two sections keeps the habit is a UI call; either satisfies AC1.
+- **Notes:** DONE (attempt 1). Habits excluded from the Today agenda and its counts; they remain once in the Habits panel. +2 tests (443). Verified PASS (typecheck/lint, build, browser). Reports: impl-IMP-078.md, verify-IMP-078.md. Source: `discovered-IMP-018.md` §4 (pre-existing for explicitly recurring habits, and logged as a verifier follow-up in IMP-018's notes). Which of the two sections keeps the habit is a UI call; either satisfies AC1.
 
 ### IMP-079 — One Escape must close only the topmost overlay
 - **Status:** TODO
@@ -1478,9 +1478,25 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 6
 - **Notes:** Found by the IMP-039 verifier (2026-10-17).
 
+### IMP-093 — Keep pre-switch schedule edits when scope changes to future
+- **Status:** TODO
+- **Category:** UX / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`changeScope`), `src/features/item/ItemEditorSheet.test.tsx`
+- **Intent:** Switching the edit scope to "This and future" resets the schedule fields to the series values, silently discarding time/day edits the user made before switching. Only "All occurrences" should restore the series schedule.
+- **Acceptance criteria:**
+  1. Switching to `future` preserves the current schedule edits; switching to `all` restores series values (existing IMP-077 behavior).
+  2. A regression test covers edit → switch to future → save and asserts the edited schedule is applied from the occurrence onward.
+  3. Occurrence-scope behavior is unchanged.
+- **Verification method:** Extend the editor tests with the edit→future flow; run the four gates and a preview flow.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-077
+- **Priority score:** 6
+- **Notes:** Found by the IMP-077 verifier (2026-10-17); non-blocking but silently loses input.
+
 ---
 
-_End of backlog (88 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (89 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

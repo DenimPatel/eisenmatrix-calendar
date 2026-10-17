@@ -74,12 +74,14 @@ export function TodayView() {
 
   const billsThisWeek = weekAhead.filter(isBillUnpaid).slice(0, 6);
 
-  const nextUp = todays
+  const agenda = todays.filter((occ) => occ.item.kind !== 'habit');
+
+  const nextUp = agenda
     .filter((occ) => occ.status !== 'done')
     .sort((a, b) => (a.start ?? a.occKey).localeCompare(b.start ?? b.occKey))[0];
 
-  const completedToday = todays.filter((o) => o.status === 'done').length;
-  const todayProgress = todays.length ? Math.round((completedToday / todays.length) * 100) : 0;
+  const completedToday = agenda.filter((o) => o.status === 'done').length;
+  const todayProgress = agenda.length ? Math.round((completedToday / agenda.length) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -148,18 +150,18 @@ export function TodayView() {
 
           <Section
             title="Today's agenda"
-            count={todays.length}
+            count={agenda.length}
             action={
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">
-                  {completedToday}/{todays.length} done
+                  {completedToday}/{agenda.length} done
                 </span>
                 <ProgressRing value={todayProgress} size={28} strokeWidth={3} />
               </div>
             }
           >
             <div className="space-y-2">
-              {todays.map((occ) => (
+              {agenda.map((occ) => (
                 <ItemCard
                   key={`${occ.item.id}-${occ.occKey}`}
                   item={occ.item}
@@ -170,7 +172,7 @@ export function TodayView() {
                   onEdit={openEditor}
                 />
               ))}
-              {todays.length === 0 && (
+              {agenda.length === 0 && (
                 <EmptyState
                   icon={<CheckCircle2 size={20} />}
                   title="Nothing scheduled today"

@@ -49,3 +49,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-065 · Browser verification docs now include the preview SW reset and focus-trap event target · 72094b6 · files: `agents.md`
 - 2026-10-17 · IMP-062 · Pasted CRLF notes no longer store trailing carriage returns · 692dc5f · files: `src/domain/quickadd.ts`
 - 2026-10-17 · IMP-066 · Remaining data hooks have dep-aware tests and no per-render fallback serialization · d18883e · files: `src/hooks/useData.ts`, `src/hooks/useData.test.tsx`
+- 2026-10-17 · IMP-077 · Editing an occurrence shows and saves that occurrence date, without leaking into series edits · e9807ef · files: `src/features/item/ItemEditorSheet.tsx`
