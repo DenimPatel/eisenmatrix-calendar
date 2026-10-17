@@ -1026,7 +1026,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Shared overlay stack; Escape closes only the topmost layer and focus returns into the survivor; single-overlay and ⌘K behavior preserved. +2 tests (445). Verified PASS (typecheck/lint, build, format, browser; mutation-checked). Reports: impl-IMP-079.md, verify-IMP-079.md. Follow-up: scroll lock remains on the lower overlay (discovered-IMP-079.md). Source: `discovered-IMP-013.md` §1 and §4. Whether `⌘K` *should* be reachable while the editor is open is a product decision and is explicitly out of scope here (AC4 keeps it) — only the Escape semantics are fixed.
 
 ### IMP-080 — Catch a rejected `rerunMigration` in Settings
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** error handling
 - **Type:** bug-fix
 - **Area / files:** `src/features/settings/SettingsView.tsx:144-153` (`rerunMigration`, an `async` handler with no `try`/`catch`); the pattern to copy at `:118` and `:140`
@@ -1040,7 +1040,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-015
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-068.md` §1. Same class as IMP-039's boot-promise hardening but reachable by a single user click, so it is worth doing on its own. `discovered-IMP-015.md` §3 (a `pickFile` outside the `try`) is already resolved by IMP-015's implementation and needs nothing here.
+- **Notes:** DONE (attempt 1). rerunMigration now catches failures, restores the prior marker, shows an error toast and never reports success; +2 tests (447). Verified PASS (typecheck/lint, build, format, non-vacuous). Reports: impl-IMP-080.md, verify-IMP-080.md. Source: `discovered-IMP-068.md` §1. Same class as IMP-039's boot-promise hardening but reachable by a single user click, so it is worth doing on its own. `discovered-IMP-015.md` §3 (a `pickFile` outside the `try`) is already resolved by IMP-015's implementation and needs nothing here.
 
 ### IMP-081 — Pin GitHub Actions to full commit SHAs
 - **Status:** DONE
@@ -1494,9 +1494,25 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Priority score:** 6
 - **Notes:** Found by the IMP-077 verifier (2026-10-17); non-blocking but silently loses input.
 
+### IMP-094 — Keep body scroll locked while any modal layer remains
+- **Status:** TODO
+- **Category:** UX / accessibility
+- **Type:** bug-fix
+- **Area / files:** `src/components/ui/Dialog.tsx`, `src/components/ui/Sheet.tsx`, `src/store/useUiStore.ts`, `src/hooks/useOverlayLayer.ts`
+- **Intent:** Each modal sets and clears `document.body.style.overflow` in its own effect. With IMP-079's stack, closing the palette while the editor stays open unlocks body scroll behind the remaining modal; the sheet may also restore `''` when another modal had set `hidden`.
+- **Acceptance criteria:**
+  1. The scroll lock is reference-counted or derived from `overlayStack.length`, so closing one of two layers keeps the body locked.
+  2. Closing the last layer restores the prior body overflow value.
+  3. A test covers stacked open/close order and the final unlock.
+- **Verification method:** jsdom test for two stacked overlays asserting body overflow after each close; preview editor+palette Escape once with a scroll attempt. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-079
+- **Priority score:** 6
+- **Notes:** Found by the IMP-079 verifier (2026-10-17). Also normalize the initial/restored value instead of always writing `''`.
+
 ---
 
-_End of backlog (89 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+_End of backlog (90 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

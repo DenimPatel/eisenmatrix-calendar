@@ -143,14 +143,23 @@ export function SettingsView() {
   };
 
   const rerunMigration = async () => {
-    await settingsRepo.remove(LEGACY_MIGRATION_KEY);
-    const result = await runLegacyMigration();
-    pushToast({
-      message: result.migrated
-        ? `Migrated ${result.count} legacy items`
-        : 'No legacy data found (or already imported)',
-      tone: 'info',
-    });
+    let previousMarker: unknown = null;
+    try {
+      previousMarker = await settingsRepo.get(LEGACY_MIGRATION_KEY, null);
+      await settingsRepo.remove(LEGACY_MIGRATION_KEY);
+      const result = await runLegacyMigration();
+      pushToast({
+        message: result.migrated
+          ? `Migrated ${result.count} legacy items`
+          : 'No legacy data found (or already imported)',
+        tone: 'info',
+      });
+    } catch (error) {
+      if (previousMarker) {
+        await settingsRepo.set(LEGACY_MIGRATION_KEY, previousMarker).catch(() => undefined);
+      }
+      pushToast({ message: `Migration failed: ${describeError(error)}`, tone: 'error' });
+    }
   };
 
   const resetAll = async () => {

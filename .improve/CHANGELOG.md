@@ -52,3 +52,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-077 · Editing an occurrence shows and saves that occurrence date, without leaking into series edits · e9807ef · files: `src/features/item/ItemEditorSheet.tsx`
 - 2026-10-17 · IMP-078 · Today lists a daily habit once, in the Habits panel, with matching agenda counts · 628f42c · files: `src/features/today/TodayView.tsx`
 - 2026-10-17 · IMP-081 · Third-party GitHub Actions are pinned to reviewed commit SHAs · 0a185e4 · files: `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`
+- 2026-10-17 · IMP-079 · One Escape now closes only the topmost overlay and focus returns to the survivor · e9fc259 · files: `src/store/useUiStore.ts`, `src/hooks/useOverlayLayer.ts`, `src/components/ui/Dialog.tsx`, `src/components/ui/Sheet.tsx`

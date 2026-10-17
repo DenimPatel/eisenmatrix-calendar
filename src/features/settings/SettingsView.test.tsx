@@ -7,6 +7,7 @@ import { db } from '@/db/schema';
 import { itemRepo, settingsRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { DEFAULT_SETTINGS, type AppSettings } from '@/types';
+import { LEGACY_MIGRATION_KEY, LEGACY_MIGRATION_VERSION } from '@/db/migrations/legacyTasks';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -37,6 +38,24 @@ vi.mock('@/lib/backup', async (importOriginal) => {
     readTextFile: async (file: File) => {
       if (picked.readThrows) throw picked.readError;
       return actual.readTextFile(file);
+    },
+  };
+});
+
+const migration = vi.hoisted(() => ({
+  rejects: false,
+  error: undefined as unknown,
+  calls: 0,
+}));
+
+vi.mock('@/db/migrations/legacyTasks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/db/migrations/legacyTasks')>();
+  return {
+    ...actual,
+    runLegacyMigration: async () => {
+      migration.calls += 1;
+      if (migration.rejects) throw migration.error;
+      return { migrated: false, count: 0, backupCreated: false };
     },
   };
 });
@@ -106,6 +125,9 @@ beforeEach(async () => {
   picked.pickThrows = false;
   picked.pickError = undefined;
   picked.pickCalls = 0;
+  migration.rejects = false;
+  migration.error = undefined;
+  migration.calls = 0;
   useUiStore.setState({ theme: 'system', toasts: [], undoStack: [] });
 });
 
@@ -203,6 +225,65 @@ describe('SettingsView CSV import', () => {
 
     expect(messages()).toEqual([]);
     expect(await itemRepo.all()).toHaveLength(0);
+    await unmount(mounted);
+  });
+});
+
+describe('SettingsView legacy migration', () => {
+  function rerunButton(host: HTMLElement): HTMLButtonElement {
+    const button = Array.from(host.querySelectorAll('button')).find(
+      (el) => el.textContent?.trim() === 'Re-run legacy import',
+    );
+    expect(button).toBeDefined();
+    return button!;
+  }
+
+  it('shows an error toast, keeps the marker and reports no success when the migration rejects', async () => {
+    await db.settings.clear();
+    const marker = { version: LEGACY_MIGRATION_VERSION, completedAt: 123, count: 4 };
+    await settingsRepo.set(LEGACY_MIGRATION_KEY, marker);
+    migration.rejects = true;
+    migration.error = new Error('database is blocked');
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => unhandled.push(reason);
+    process.on('unhandledRejection', onUnhandled);
+
+    try {
+      const mounted = await mountSettings();
+      await drain();
+
+      await act(async () => {
+        rerunButton(mounted.host).click();
+      });
+      await vi.waitFor(() => expect(messages()).toEqual(['Migration failed: database is blocked']));
+      await drain();
+
+      expect(tones()).toEqual(['error']);
+      expect(messages()).not.toContain('No legacy data found (or already imported)');
+      expect(migration.calls).toBe(1);
+      expect(await settingsRepo.get(LEGACY_MIGRATION_KEY, null)).toEqual(marker);
+      expect(unhandled).toEqual([]);
+      await unmount(mounted);
+    } finally {
+      process.off('unhandledRejection', onUnhandled);
+    }
+  });
+
+  it('keeps the existing info toast when the migration succeeds', async () => {
+    await db.settings.clear();
+    const mounted = await mountSettings();
+    await drain();
+
+    await act(async () => {
+      rerunButton(mounted.host).click();
+    });
+    await vi.waitFor(() =>
+      expect(messages()).toEqual(['No legacy data found (or already imported)']),
+    );
+    await drain();
+
+    expect(tones()).toEqual(['info']);
+    expect(migration.calls).toBe(1);
     await unmount(mounted);
   });
 });
