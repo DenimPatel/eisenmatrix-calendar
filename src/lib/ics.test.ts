@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { foldLine, itemsToICS, recurrenceToRRule } from './ics';
 import { createItem } from '@/domain/itemFactory';
-import type { RecurrenceRule } from '@/types';
+import type { Item, RecurrenceRule } from '@/types';
 
 describe('ics', () => {
   it('serialises weekly byWeekday rules', () => {
@@ -46,6 +46,16 @@ describe('ics', () => {
     const ics = itemsToICS([task, note]);
     expect(ics).toContain('DTSTART;VALUE=DATE:20240505');
     expect(ics).not.toContain('Idea');
+  });
+
+  it('does not throw for an event whose data is missing', () => {
+    const item = {
+      ...createItem({ kind: 'event', title: 'No data', start: '2024-05-01' }),
+      data: undefined,
+    } as unknown as Item;
+
+    expect(() => itemsToICS([item])).not.toThrow();
+    expect(itemsToICS([item])).toContain('SUMMARY:No data');
   });
 
   const weeklyRule: RecurrenceRule = {

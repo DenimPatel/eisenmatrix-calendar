@@ -53,4 +53,10 @@ describe('csv', () => {
     expect(restored.legacy?.completionHistory).toEqual({ '2024-05': 'Done' });
     expect(restored.occurrences['2024-05-01']).toEqual({ status: 'done', completedAt: 42 });
   });
+
+  it('normalizes a row without a data column to the kind defaults', () => {
+    const [goal] = csvToItems('id,kind,title\r\ncsv-1,goal,Read more').map(normalizeItem);
+
+    expect(goal.data).toEqual({ metric: { type: 'binary' }, horizon: 'month' });
+  });
 });

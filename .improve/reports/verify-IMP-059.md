@@ -76,7 +76,7 @@ the workbox precache, reloaded with a cache-busting query.
    input and restores the opener on Escape; `n` opens the item editor with the title
    input focused; `?` focuses the "Keyboard shortcuts" heading. All inside `[role=dialog]`.
 6. **390 × 844.** Pressed `c`: dialog visible, input focused, typed `q` → value `"q"`.
-   Screenshot: `.improve/reports/verify-IMP-059-quickadd-390.png`.
+   Screenshot: `.improve/artifacts/IMP-059/verify-IMP-059-quickadd-390.png`.
 7. **Console.** All console levels across the whole session: **0 messages, 0 errors,
    0 warnings**.
 
@@ -96,7 +96,7 @@ the workbox precache, reloaded with a cache-busting query.
 ## Files produced
 
 - `.improve/reports/verify-IMP-059.md` (this file)
-- `.improve/reports/verify-IMP-059-quickadd-390.png` (390 px QuickAdd, focused input)
+- `.improve/artifacts/IMP-059/verify-IMP-059-quickadd-390.png` (390 px QuickAdd, focused input)
 
 ## Suggested health deltas
 

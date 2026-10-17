@@ -160,6 +160,22 @@ describe('ItemEditorSheet', () => {
     opener.remove();
   });
 
+  it('renders the details defaults for an item stored without data', async () => {
+    const raw = {
+      ...createItem({ kind: 'habit', title: 'Stretch' }),
+      data: undefined,
+    } as unknown as Item;
+    await itemRepo.create(raw);
+    useUiStore.getState().openEditor(raw);
+    const mounted = await mountEditor();
+
+    expect(mounted.host.textContent).toContain('Target count');
+    const target = mounted.host.querySelector('input[type="number"]') as HTMLInputElement;
+    expect(target.value).toBe('1');
+
+    await mounted.unmount();
+  });
+
   it('returns focus to the opener on close', async () => {
     const opener = document.createElement('button');
     opener.type = 'button';

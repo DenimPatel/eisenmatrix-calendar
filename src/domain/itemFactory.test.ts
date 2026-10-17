@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createItem, normalizeItem } from './itemFactory';
+import { createItem, defaultDataFor, normalizeItem } from './itemFactory';
 import { expandOccurrences } from './recurrence';
-import type { ItemKind, RecurrenceRule } from '@/types';
+import { ITEM_KINDS, type ItemKind, type RecurrenceRule } from '@/types';
 
 const DAILY: RecurrenceRule = {
   freq: 'daily',
@@ -51,5 +51,18 @@ describe('createItem recurrence defaults', () => {
   it('does not rewrite habits normalized without a rule', () => {
     const habit = normalizeItem({ kind: 'habit', title: 'Legacy', start: '2026-01-01' });
     expect(habit.recurrence).toBeNull();
+  });
+
+  it.each(ITEM_KINDS)('backfills missing or null data for %s', (kind) => {
+    const missing = normalizeItem({ kind, title: 'Legacy' });
+    const nulled = normalizeItem({ kind, title: 'Legacy', data: null as never });
+
+    expect(missing.data).toEqual(defaultDataFor(kind));
+    expect(nulled.data).toEqual(defaultDataFor(kind));
+  });
+
+  it('keeps a partial payload on top of the kind defaults', () => {
+    const goal = normalizeItem({ kind: 'goal', data: { why: 'Because' } as never });
+    expect(goal.data).toEqual({ ...defaultDataFor('goal'), why: 'Because' });
   });
 });

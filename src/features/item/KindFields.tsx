@@ -1,5 +1,6 @@
 import { Checkbox, Field, Select } from '@/components/ui/Form';
 import { HORIZON_LABELS } from '@/lib/labels';
+import { normalizeItem } from '@/domain/itemFactory';
 import type { Item } from '@/types';
 
 export interface KindFieldsProps {
@@ -8,7 +9,8 @@ export interface KindFieldsProps {
 }
 
 export function KindFields({ item, onData }: KindFieldsProps) {
-  switch (item.kind) {
+  const normalized = normalizeItem(item);
+  switch (normalized.kind) {
     case 'task':
       return (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -17,7 +19,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
               type="number"
               min={0}
               className="input"
-              value={item.data.estimateMinutes ?? ''}
+              value={normalized.data.estimateMinutes ?? ''}
               onChange={(e) =>
                 onData({ estimateMinutes: e.target.value ? Number(e.target.value) : undefined })
               }
@@ -25,7 +27,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           </Field>
           <Field label="Energy">
             <Select
-              value={item.data.energy ?? ''}
+              value={normalized.data.energy ?? ''}
               onChange={(e) => onData({ energy: e.target.value || undefined })}
               options={[
                 { value: '', label: 'Any' },
@@ -44,7 +46,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           <Field label="Location">
             <input
               className="input"
-              value={item.data.location ?? ''}
+              value={normalized.data.location ?? ''}
               onChange={(e) => onData({ location: e.target.value })}
               placeholder="Where?"
             />
@@ -54,7 +56,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
               type="number"
               min={0}
               className="input"
-              value={item.data.travelMinutes ?? ''}
+              value={normalized.data.travelMinutes ?? ''}
               onChange={(e) =>
                 onData({ travelMinutes: e.target.value ? Number(e.target.value) : undefined })
               }
@@ -63,7 +65,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           <Field label="Attendees" className="sm:col-span-2">
             <input
               className="input"
-              value={(item.data.attendees ?? []).join(', ')}
+              value={(normalized.data.attendees ?? []).join(', ')}
               onChange={(e) =>
                 onData({
                   attendees: e.target.value
@@ -86,18 +88,23 @@ export function KindFields({ item, onData }: KindFieldsProps) {
               type="number"
               min={1}
               className="input"
-              value={item.data.target.count}
+              value={normalized.data.target.count}
               onChange={(e) =>
                 onData({
-                  target: { ...item.data.target, count: Math.max(1, Number(e.target.value) || 1) },
+                  target: {
+                    ...normalized.data.target,
+                    count: Math.max(1, Number(e.target.value) || 1),
+                  },
                 })
               }
             />
           </Field>
           <Field label="Per">
             <Select
-              value={item.data.target.per}
-              onChange={(e) => onData({ target: { ...item.data.target, per: e.target.value } })}
+              value={normalized.data.target.per}
+              onChange={(e) =>
+                onData({ target: { ...normalized.data.target, per: e.target.value } })
+              }
               options={[
                 { value: 'day', label: 'Day' },
                 { value: 'week', label: 'Week' },
@@ -108,7 +115,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           <Field label="Unit">
             <input
               className="input"
-              value={item.data.unit ?? ''}
+              value={normalized.data.unit ?? ''}
               onChange={(e) => onData({ unit: e.target.value || undefined })}
               placeholder="e.g. glasses"
             />
@@ -121,8 +128,10 @@ export function KindFields({ item, onData }: KindFieldsProps) {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Metric">
             <Select
-              value={item.data.metric.type}
-              onChange={(e) => onData({ metric: { ...item.data.metric, type: e.target.value } })}
+              value={normalized.data.metric.type}
+              onChange={(e) =>
+                onData({ metric: { ...normalized.data.metric, type: e.target.value } })
+              }
               options={[
                 { value: 'binary', label: 'Done / not done' },
                 { value: 'numeric', label: 'Numeric' },
@@ -132,21 +141,21 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           </Field>
           <Field label="Horizon">
             <Select
-              value={item.data.horizon}
+              value={normalized.data.horizon}
               onChange={(e) => onData({ horizon: e.target.value })}
               options={Object.entries(HORIZON_LABELS).map(([v, l]) => ({ value: v, label: l }))}
             />
           </Field>
-          {item.data.metric.type === 'numeric' && (
+          {normalized.data.metric.type === 'numeric' && (
             <>
               <Field label="Current">
                 <input
                   type="number"
                   className="input"
-                  value={item.data.metric.current ?? 0}
+                  value={normalized.data.metric.current ?? 0}
                   onChange={(e) =>
                     onData({
-                      metric: { ...item.data.metric, current: Number(e.target.value) || 0 },
+                      metric: { ...normalized.data.metric, current: Number(e.target.value) || 0 },
                     })
                   }
                 />
@@ -155,18 +164,20 @@ export function KindFields({ item, onData }: KindFieldsProps) {
                 <input
                   type="number"
                   className="input"
-                  value={item.data.metric.target ?? 0}
+                  value={normalized.data.metric.target ?? 0}
                   onChange={(e) =>
-                    onData({ metric: { ...item.data.metric, target: Number(e.target.value) || 0 } })
+                    onData({
+                      metric: { ...normalized.data.metric, target: Number(e.target.value) || 0 },
+                    })
                   }
                 />
               </Field>
               <Field label="Unit">
                 <input
                   className="input"
-                  value={item.data.metric.unit ?? ''}
+                  value={normalized.data.metric.unit ?? ''}
                   onChange={(e) =>
-                    onData({ metric: { ...item.data.metric, unit: e.target.value } })
+                    onData({ metric: { ...normalized.data.metric, unit: e.target.value } })
                   }
                 />
               </Field>
@@ -175,7 +186,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           <Field label="Why (motivation)" className="sm:col-span-2">
             <textarea
               className="input min-h-[72px]"
-              value={item.data.why ?? ''}
+              value={normalized.data.why ?? ''}
               onChange={(e) => onData({ why: e.target.value })}
             />
           </Field>
@@ -191,13 +202,13 @@ export function KindFields({ item, onData }: KindFieldsProps) {
               min={0}
               step="0.01"
               className="input"
-              value={item.data.amount}
+              value={normalized.data.amount}
               onChange={(e) => onData({ amount: Number(e.target.value) || 0 })}
             />
           </Field>
           <Field label="Currency">
             <Select
-              value={item.data.currency}
+              value={normalized.data.currency}
               onChange={(e) => onData({ currency: e.target.value })}
               options={[
                 { value: 'USD', label: 'USD' },
@@ -212,20 +223,20 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           <Field label="Payee">
             <input
               className="input"
-              value={item.data.payee}
+              value={normalized.data.payee}
               onChange={(e) => onData({ payee: e.target.value })}
             />
           </Field>
           <Field label="Account">
             <input
               className="input"
-              value={item.data.account ?? ''}
+              value={normalized.data.account ?? ''}
               onChange={(e) => onData({ account: e.target.value || undefined })}
             />
           </Field>
           <label className="flex items-center gap-2 text-sm text-fg">
             <Checkbox
-              checked={item.data.autopay}
+              checked={normalized.data.autopay}
               onChange={(e) => onData({ autopay: e.target.checked })}
             />
             Autopay enabled
@@ -242,21 +253,21 @@ export function KindFields({ item, onData }: KindFieldsProps) {
               min={0}
               step="0.01"
               className="input"
-              value={item.data.quantity}
+              value={normalized.data.quantity}
               onChange={(e) => onData({ quantity: Number(e.target.value) || 0 })}
             />
           </Field>
           <Field label="Unit">
             <input
               className="input"
-              value={item.data.unit ?? ''}
+              value={normalized.data.unit ?? ''}
               onChange={(e) => onData({ unit: e.target.value || undefined })}
             />
           </Field>
           <Field label="Aisle">
             <input
               className="input"
-              value={item.data.aisle ?? ''}
+              value={normalized.data.aisle ?? ''}
               onChange={(e) => onData({ aisle: e.target.value || undefined })}
             />
           </Field>
@@ -266,7 +277,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
               min={0}
               step="0.01"
               className="input"
-              value={item.data.estPrice ?? ''}
+              value={normalized.data.estPrice ?? ''}
               onChange={(e) =>
                 onData({ estPrice: e.target.value ? Number(e.target.value) : undefined })
               }
@@ -274,7 +285,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
           </Field>
           <label className="flex items-center gap-2 text-sm text-fg">
             <Checkbox
-              checked={item.data.purchased}
+              checked={normalized.data.purchased}
               onChange={(e) => onData({ purchased: e.target.checked })}
             />
             Purchased
@@ -286,7 +297,7 @@ export function KindFields({ item, onData }: KindFieldsProps) {
       return (
         <label className="flex items-center gap-2 text-sm text-fg">
           <Checkbox
-            checked={item.data.pinned}
+            checked={normalized.data.pinned}
             onChange={(e) => onData({ pinned: e.target.checked })}
           />
           Pin this note

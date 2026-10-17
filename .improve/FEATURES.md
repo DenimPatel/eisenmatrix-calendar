@@ -610,7 +610,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-009.md` D3. Risk is med only because existing tests assert the 20 ms timing; confidence 4 because the right primitive (layout effect vs. `requestAnimationFrame`) is a small design choice. DONE 2026-10-17: useLayoutEffect focuses in the mount commit; timer and cleanup removed; Tab loop/restore verified. Verified PASS (343 tests, preview `c` focuses immediately, 390px, zero console errors). Commit pending.
 
 ### IMP-071 — Backfill `data` so a row without it cannot crash the editor
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / robustness
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/KindFields.tsx:20` (`item.data.estimateMinutes` and ~30 sibling unguarded reads); `src/domain/itemFactory.ts:120` (`normalizeItem`'s `data: { ...base.data, ... }`); `src/lib/ics.ts:100` (`item.data.location`)
@@ -623,7 +623,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-012.md` §2. Overlaps IMP-038's import validator — if that lands first it may already close the import path, but the reported repro was a hand-written row that never passes through an import, so both the `normalizeItem` backfill and the defensive reads are needed.
+- **Notes:** Source: `discovered-IMP-012.md` §2. Overlaps IMP-038's import validator — if that lands first it may already close the import path, but the reported repro was a hand-written row that never passes through an import, so both the `normalizeItem` backfill and the defensive reads are needed. DONE 2026-10-17: normalizeItem merges kind defaults over missing/null/partial data, KindFields normalizes its input, ICS guards location; verified PASS (355 tests, seeded no-data row opens editor, zero console errors). Follow-up IMP-088 covers residual view-level crashes. Commit pending.
 
 ### IMP-072 — Refuse an unrecognized import file instead of reporting success
 - **Status:** TODO
@@ -1395,7 +1395,26 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 
 ---
 
-_End of backlog (83 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
+### IMP-088 — Normalize items on read so a malformed row cannot blank a view
+- **Status:** TODO
+- **Category:** correctness / robustness
+- **Type:** bug-fix
+- **Area / files:** `src/db/repository.ts` (itemRepo read methods), `src/hooks/useData.ts`, `src/domain/itemFactory.ts` (`normalizeItem`), `src/domain/stats.ts`, `src/features/habits/HabitsView.tsx`, `src/features/goals/GoalsView.tsx`, `src/features/bills/BillsView.tsx`
+- **Intent:** IMP-071 made the editor and ICS safe, but Habits/Goals/Bills/Shopping/Notes and `stats.ts` still read `item.data.X` unguarded. A stored habit with no `data` crashes `#/habits` into a blank screen before the user can open the editor that would repair it.
+- **Acceptance criteria:**
+  1. Reading items through the repository/hook seam yields normalized `data` (or the views guard it), so a no-`data` habit renders `#/habits` instead of throwing.
+  2. Habits, goals, bills, shopping, notes and stats render a no-`data` row with kind defaults.
+  3. Normalization is read-only: the stored row is not rewritten unless the user saves it.
+  4. A test seeds a no-`data` row for every kind and asserts each view/stat function renders/returns without throwing.
+- **Verification method:** Vitest with fake-indexeddb for the read seam plus view mounts; Playwright preview: seed a raw no-`data` habit, reload, open `#/habits`, assert a rendered habit and zero console errors.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-071
+- **Priority score:** 8
+- **Notes:** Found by the IMP-071 verifier (2026-10-17). Prefer one normalization seam over per-component guards; verify `stats.ts` cannot divide by missing target fields.
+
+---
+
+_End of backlog (84 items). Source findings not promoted to items (lower impact or duplicate): calendar `+N more` was promoted (IMP-053); still below the cut are command-palette active-row scroll, ListView selection-vs-filter, bills paid-state vs occurrence-status coupling, goals checklist child-kind filtering, goals inline progress editing, keyboard drag path, loading skeleton before `useLiveQuery` resolves, overdue-window cap in TodayView, shopping `window.prompt`/row delete, `defaultView` dead setting, migration atomicity/re-run overwrite, body-scroll-lock refcount, `useFocusTrap` hidden-element filter, `Tabs` keyboard/`type=button`, `timestampedName` UTC day, notification-action no-op when no window, reminder-editor absolute-reminder display, `until`/`count` exception semantics, undo-stack cap and toast-timer leaks, and pure dead-code removal. Each remains a valid future follow-up._
 
 _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as IMP-057…IMP-067): overlay initial focus for the remaining dialogs, `HabitsView` week start, `useFocusTrap`'s 20 ms focus delay, the per-component duplicate `toArray()` subscription, the empty-selection undo clobber, CRLF quick-add lines, CI concurrency/duplicate runs, Prettier enforcement, the preview SW reset procedure, the remaining `useData` hook tests, and required branch protection. Left below the cut from the same reports: the per-selection descendant walk in bulk delete (N indexed queries, not worth it while selections are hand-picked), the "Delete N items" copy not counting cascaded rows, `goalProgress` appending `unit` to checklist labels and its differently shaped non-goal result (both label-only, and pinned by existing tests), the `binary`-metric `current` path that can report 100% while `status` is `todo` (unreachable — the editor never writes `current` for binary), the missing `maxLength` on the editor title field versus the 80-char quick-add cap (fixing it is a product decision — cap vs. truncate cards), SHA-pinning of GitHub Actions (promoted in the third pass as IMP-081, since both former owners are resolved), and the `pushToast` `setTimeout` left live under test (already noted in IMP-025's helper)._
 

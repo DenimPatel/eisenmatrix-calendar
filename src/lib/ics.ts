@@ -126,7 +126,7 @@ export function itemsToICS(items: Item[]): string {
     lines.push(`DTSTAMP:${stamp(new Date(item.updatedAt || Date.now()))}`);
     lines.push(`SUMMARY:${escapeText(item.title || 'Untitled')}`);
     if (item.notes) lines.push(`DESCRIPTION:${escapeText(item.notes)}`);
-    if (item.kind === 'event' && item.data.location) {
+    if (item.kind === 'event' && item.data?.location) {
       lines.push(`LOCATION:${escapeText(item.data.location)}`);
     }
     if (timed) {

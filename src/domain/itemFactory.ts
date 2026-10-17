@@ -123,6 +123,6 @@ export function normalizeItem(partial: Partial<Item>): Item {
     archivedAt: partial.archivedAt ?? null,
     history: partial.history ?? [],
     occurrences: partial.occurrences ?? {},
-    data: { ...base.data, ...(partial.data ?? {}) },
+    data: { ...(defaultDataFor(kind) as object), ...(partial.data ?? {}) },
   } as Item;
 }

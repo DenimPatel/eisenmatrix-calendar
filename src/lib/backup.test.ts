@@ -31,6 +31,22 @@ describe('backup', () => {
     expect(parsed.items[0].title).toBe('Legacy');
   });
 
+  it('normalizes a parsed item stored without data to its kind defaults', () => {
+    const parsed = parseBackup(
+      JSON.stringify({
+        app: 'eisenmatrix',
+        version: 2,
+        items: [{ id: 'no-data', kind: 'habit', title: 'Stretch' }],
+      }),
+    );
+    const [habit] = parsed.items.map(normalizeItem);
+
+    expect(habit.data).toEqual({
+      target: { count: 1, per: 'day' },
+      streak: { current: 0, best: 0, lastAt: null },
+    });
+  });
+
   describe('payload identity and version', () => {
     it('rejects a payload produced by another app', () => {
       const json = JSON.stringify({ app: 'other-app', version: 2, items: [item('a', 'Alpha')] });
@@ -92,7 +108,11 @@ describe('backup', () => {
     const child = { ...item('c', 'Child'), parentId: 'p' };
 
     it('repoints a duplicated child at the duplicated parent', () => {
-      const { toPut, duplicated } = mergeImportedItems([parent, child], [parent, child], 'duplicate');
+      const { toPut, duplicated } = mergeImportedItems(
+        [parent, child],
+        [parent, child],
+        'duplicate',
+      );
       expect(duplicated).toBe(2);
 
       const dupParent = toPut.find((i) => i.title === 'Parent');

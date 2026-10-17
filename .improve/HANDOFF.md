@@ -3,18 +3,22 @@
 ## State
 Session resumed 2026-10-17 on `improve/auto-20261017` from `main` @ `cc609a4`. Baseline and
 every item commit must pass typecheck, lint, tests (currently 32 files / 332 tests) and build.
-IMP-069, IMP-070, IMP-054 and IMP-059 are committed; 37 backlog items are DONE and 40 TODO
-(plus 4 NEEDS-HUMAN, 1 BLOCKED).
+IMP-069, IMP-070, IMP-054, IMP-059 and IMP-071 are committed; 38 backlog items are DONE and
+41 TODO (plus 4 NEEDS-HUMAN, 1 BLOCKED).
 
 ## In flight
 None.
 
 ## Recommended next (top TODO by score)
-1. IMP-071 (12) — backfill `data` so rows without it cannot crash the editor.
-2. IMP-072 (12) — reject unrecognized import files.
-3. IMP-073 (12) — consume every schedule token in quick add.
-4. IMP-074 (12) — emit a floating UNTIL to match floating DTSTART.
-5. IMP-075 (12) — exclusive DTEND for multi-day all-day export.
+1. IMP-072 (12) — reject unrecognized import files.
+2. IMP-073 (12) — consume every schedule token in quick add.
+3. IMP-074 (12) — emit a floating UNTIL to match floating DTSTART.
+4. IMP-075 (12) — exclusive DTEND for multi-day all-day export.
+5. IMP-076 (12) — merge setStatus into the persisted occurrence map.
+
+## New discoveries
+IMP-087 (undo leaves pre-saved subtasks orphaned) and IMP-088 (view-level no-data crashes)
+were added from verifier findings.
 
 ## Most neglected dimension
 Visual and UX/Interaction: recent commits concentrated on correctness. Interleave IMP-059,
