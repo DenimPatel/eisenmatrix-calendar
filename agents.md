@@ -46,6 +46,29 @@ npm run test:watch   # vitest
 Always run `npm run typecheck`, `npm run lint` and `npm run test` before finishing a change.
 The build is only considered healthy if all three pass.
 
+### Browser verification against a preview build
+
+`npm run preview` serves the built `dist/`. After a rebuild, an already-visited origin keeps
+executing the previous bundle from the service-worker precache
+(`workbox-precache-v2-http://localhost:4173/eisenmatrix-calendar/`) and may show the "A new
+version is available" toast. A `page.goto` to the same `#/…` URL only changes the hash, so it
+does not reload the document and the stale bundle survives. Reset the origin before any browser
+check of a rebuilt bundle:
+
+```js
+await Promise.all((await navigator.serviceWorker.getRegistrations()).map((r) => r.unregister()));
+await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
+```
+
+Run that in the page (DevTools console or Playwright `page.evaluate`), then navigate to
+`about:blank` and back to http://localhost:4173/eisenmatrix-calendar/ to force a real document
+load. vite-plugin-pwa's `devOptions` shortcut applies only to `npm run dev`; `preview` always
+uses the generated `dist/sw.js` precache.
+
+For focus-trap checks, dispatch a synthetic `keydown` on `document.activeElement` (inside the
+open overlay), not on `document`: the trap listens on its container, and an event dispatched on
+`document` does not propagate down to it.
+
 ---
 
 ## Architecture

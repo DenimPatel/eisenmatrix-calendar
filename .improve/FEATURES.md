@@ -924,7 +924,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Added format:check + required CI step; formatted the five drifted tracked files (formatting-only); .prettierignore excludes generated trees. npx prettier --check . exits 0. Verified PASS (typecheck/lint, 425 tests, build). Reports: impl-IMP-064.md, verify-IMP-064.md. Source: `discovered-IMP-004.md` §4. `eslint-config-prettier` is already installed, so no lint conflict is expected. Do not reformat `.improve/` reports by hand.
 
 ### IMP-065 — Document the preview-build service-worker reset for Playwright verification
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** docs / verification process
 - **Type:** docs
 - **Area / files:** `AGENTS.md` (verification section); `.improve/REPO_PROFILE.md` (§4 "How to verify a change"); `src/pwa/register.ts`; `src/pwa/sw.ts`
@@ -938,7 +938,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-007.md` §1 and `discovered-IMP-009.md` D1 (the same trap, twice). This is a process note, not a product defect — the PWA caching is correct and must not be "fixed". IMP-046 may rename `agents.md` to `AGENTS.md`; keep the section findable by heading.
+- **Notes:** DONE (attempt 1). Documented in `agents.md` (the tracked canonical guide) with reset snippet, about:blank round-trip, devOptions scope and activeElement keydown note; executed the procedure against preview. Verified PASS (prettier/lint). Reports: impl-IMP-065.md, verify-IMP-065.md. Source: `discovered-IMP-007.md` §1 and `discovered-IMP-009.md` D1. This is a process note, not a product defect — the PWA caching is correct and must not be "fixed". IMP-046 may rename `agents.md` to `AGENTS.md`; keep the section findable by heading.
 
 ### IMP-066 — Cover the remaining `useData` hooks and drop the unreachable guards
 - **Status:** TODO
