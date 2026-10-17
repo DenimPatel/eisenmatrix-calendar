@@ -11,10 +11,18 @@ interface LiveQueryCall {
   deps: unknown[] | undefined;
 }
 
+interface LiveQueryObserver {
+  next?: (value: unknown) => void;
+  error?: (error: unknown) => void;
+}
+
 const { liveQuery } = vi.hoisted(() => ({
   liveQuery: {
     result: undefined as unknown,
     calls: [] as LiveQueryCall[],
+    queries: [] as Array<() => unknown>,
+    observers: new Set<LiveQueryObserver>(),
+    executions: 0,
   },
 }));
 
@@ -24,6 +32,33 @@ vi.mock('dexie-react-hooks', () => ({
     return liveQuery.result === undefined ? defaultResult : liveQuery.result;
   },
 }));
+
+vi.mock('dexie', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('dexie')>();
+  return {
+    ...actual,
+    liveQuery: (querier: () => unknown) => {
+      liveQuery.queries.push(querier);
+      return {
+        subscribe(observer: LiveQueryObserver) {
+          let closed = false;
+          liveQuery.observers.add(observer);
+          liveQuery.executions += 1;
+          observer.next?.(liveQuery.result);
+          return {
+            get closed() {
+              return closed;
+            },
+            unsubscribe() {
+              closed = true;
+              liveQuery.observers.delete(observer);
+            },
+          };
+        },
+      };
+    },
+  };
+});
 
 function item(id: string, title: string, archived = false): Item {
   return {
@@ -142,53 +177,69 @@ function lastCall(): LiveQueryCall {
   return call;
 }
 
+function latest<T>(values: T[]): T {
+  const value = values.at(-1);
+  if (value === undefined) throw new Error('probe did not render');
+  return value;
+}
+
+async function emitItems(next: Item[]): Promise<void> {
+  liveQuery.result = next;
+  await act(async () => {
+    liveQuery.executions += 1;
+    for (const observer of liveQuery.observers) observer.next?.(next);
+  });
+}
+
 beforeEach(() => {
   liveQuery.result = [ALPHA, ARCHIVED, BETA];
   liveQuery.calls = [];
+  liveQuery.queries = [];
+  liveQuery.executions = 0;
 });
 
 describe('useItems identity', () => {
   it('returns the same array reference across re-renders when the data is unchanged', async () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
-    const first = run.items[0];
+    const first = latest(run.items);
     await run.rerender({ includeArchived: false, tick: 1 });
     await run.rerender({ includeArchived: false, tick: 2 });
 
-    expect(run.items).toHaveLength(3);
-    expect(run.items[1]).toBe(first);
-    expect(run.items[2]).toBe(first);
+    expect(latest(run.items)).toBe(first);
     await run.unmount();
   });
 
   it('keeps the archived-inclusive result stable too', async () => {
     const run = await renderProbe({ includeArchived: true, tick: 0 });
+    const first = latest(run.items);
     await run.rerender({ includeArchived: true, tick: 1 });
 
-    expect(run.items[1]).toBe(run.items[0]);
-    expect(run.items[0]).toBe(liveQuery.result);
+    expect(latest(run.items)).toBe(first);
+    expect(latest(run.items)).toBe(liveQuery.result);
     await run.unmount();
   });
 
   it('produces a new array when the live-query data changes', async () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
-    const first = run.items[0];
-    liveQuery.result = [item('4', 'Gamma')];
+    const first = latest(run.items);
+    const next = [item('4', 'Gamma')];
+    await emitItems(next);
     await run.rerender({ includeArchived: false, tick: 1 });
 
-    expect(run.items[1]).not.toBe(first);
-    expect(run.items[1].map((entry) => entry.title)).toEqual(['Gamma']);
+    expect(latest(run.items)).not.toBe(first);
+    expect(latest(run.items).map((entry) => entry.title)).toEqual(['Gamma']);
     await run.unmount();
   });
 
   it('produces a new array when includeArchived flips, then is stable again', async () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
-    const withoutArchived = run.items[0];
+    const withoutArchived = latest(run.items);
     await run.rerender({ includeArchived: true, tick: 1 });
-    const withArchived = run.items[1];
+    const withArchived = latest(run.items);
     await run.rerender({ includeArchived: true, tick: 2 });
 
     expect(withArchived).not.toBe(withoutArchived);
-    expect(run.items[2]).toBe(withArchived);
+    expect(latest(run.items)).toBe(withArchived);
     await run.unmount();
   });
 });
@@ -196,12 +247,11 @@ describe('useItems identity', () => {
 describe('useArchivedItems identity', () => {
   it('returns the same array reference across re-renders when the data is unchanged', async () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
-    const first = run.archived[0];
+    const first = latest(run.archived);
     await run.rerender({ includeArchived: false, tick: 1 });
     await run.rerender({ includeArchived: true, tick: 2 });
 
-    expect(run.archived[1]).toBe(first);
-    expect(run.archived[2]).toBe(first);
+    expect(latest(run.archived)).toBe(first);
     await run.unmount();
   });
 });
@@ -209,16 +259,20 @@ describe('useArchivedItems identity', () => {
 describe('archived filtering behavior', () => {
   it('excludes archived items by default and includes them on request', async () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
-    expect(run.items[0].map((entry) => entry.title)).toEqual(['Alpha', 'Beta']);
+    expect(latest(run.items).map((entry) => entry.title)).toEqual(['Alpha', 'Beta']);
 
     await run.rerender({ includeArchived: true, tick: 1 });
-    expect(run.items[1].map((entry) => entry.title)).toEqual(['Alpha', 'Archived one', 'Beta']);
+    expect(latest(run.items).map((entry) => entry.title)).toEqual([
+      'Alpha',
+      'Archived one',
+      'Beta',
+    ]);
     await run.unmount();
   });
 
   it('returns only archived items from useArchivedItems', async () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
-    expect(run.archived[0].map((entry) => entry.title)).toEqual(['Archived one']);
+    expect(latest(run.archived).map((entry) => entry.title)).toEqual(['Archived one']);
     await run.unmount();
   });
 
@@ -227,10 +281,68 @@ describe('archived filtering behavior', () => {
     const run = await renderProbe({ includeArchived: false, tick: 0 });
     await run.rerender({ includeArchived: true, tick: 1 });
 
-    expect(run.items[0]).toEqual([]);
-    expect(run.items[1]).toEqual([]);
-    expect(run.archived[0]).toEqual([]);
+    expect(latest(run.items)).toEqual([]);
+    expect(latest(run.archived)).toEqual([]);
     await run.unmount();
+  });
+});
+
+describe('shared items query', () => {
+  it('backs multiple consumers with one query and shares array instances', async () => {
+    const withoutArchived = await renderValueProbe(() => useItems());
+    const sameFilter = await renderValueProbe(() => useItems());
+    const all = await renderValueProbe(() => useItems(true));
+    const archived = await renderValueProbe(() => useArchivedItems());
+
+    expect(liveQuery.queries).toHaveLength(1);
+    expect(liveQuery.observers.size).toBe(1);
+    expect(liveQuery.executions).toBe(1);
+
+    expect(latest(withoutArchived.values)).toBe(latest(sameFilter.values));
+    expect(latest(withoutArchived.values).map((entry) => entry.title)).toEqual(['Alpha', 'Beta']);
+    expect(latest(all.values)).toBe(liveQuery.result);
+    expect(latest(archived.values).map((entry) => entry.title)).toEqual(['Archived one']);
+
+    await withoutArchived.unmount();
+    await sameFilter.unmount();
+    await all.unmount();
+    await archived.unmount();
+  });
+
+  it('runs one query per change and updates every consumer', async () => {
+    const first = await renderValueProbe(() => useItems());
+    const second = await renderValueProbe(() => useItems());
+    const archived = await renderValueProbe(() => useArchivedItems());
+    expect(liveQuery.executions).toBe(1);
+
+    await emitItems([item('4', 'Gamma'), item('5', 'Delta', true)]);
+
+    expect(liveQuery.queries).toHaveLength(1);
+    expect(liveQuery.executions).toBe(2);
+    expect(latest(first.values)).toBe(latest(second.values));
+    expect(latest(first.values).map((entry) => entry.title)).toEqual(['Gamma']);
+    expect(latest(archived.values).map((entry) => entry.title)).toEqual(['Delta']);
+
+    await first.unmount();
+    await second.unmount();
+    await archived.unmount();
+  });
+
+  it('drops the query when the last consumer unmounts and restarts it on demand', async () => {
+    const first = await renderValueProbe(() => useItems());
+    const second = await renderValueProbe(() => useItems());
+    expect(liveQuery.observers.size).toBe(1);
+
+    await first.unmount();
+    expect(liveQuery.observers.size).toBe(1);
+    await second.unmount();
+    expect(liveQuery.observers.size).toBe(0);
+
+    const remounted = await renderValueProbe(() => useItems());
+    expect(liveQuery.observers.size).toBe(1);
+    expect(liveQuery.queries).toHaveLength(2);
+    expect(latest(remounted.values).map((entry) => entry.title)).toEqual(['Alpha', 'Beta']);
+    await remounted.unmount();
   });
 });
 

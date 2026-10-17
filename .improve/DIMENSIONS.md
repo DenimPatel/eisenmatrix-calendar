@@ -8,7 +8,7 @@
 | UX/Interaction | 5 | 3 | 5 | 0 | 2026-10-17 IMP-079 | scope-switch reset, scroll lock | IMP-093 |
 | Format/Structure | 4 | 1 | 1 | 0 | 2026-10-17 IMP-064 | agent guide naming | IMP-046 |
 | Delivery | 5 | 2 | 5 | 1 | 2026-10-17 IMP-081 | branch protection, workflow breadth | IMP-067 (human) |
-| Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
+| Performance | 4 | 0 | 1 | 0 | 2026-10-17 IMP-060 | no remaining perf items | — |
 | Accessibility | 4 | 2 | 5 | 0 | 2026-10-17 IMP-033 | mobile header semantics | IMP-091 |
 | Docs/Onboarding | 4 | 2 | 1 | 1 | 2026-10-17 IMP-065 | agent guide naming | IMP-046 |
 | Tests/Tooling | 4 | 1 | 11 | 0 | 2026-10-17 IMP-066 | boot smoke reliability | IMP-083 |

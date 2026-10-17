@@ -1258,7 +1258,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-051.md` D1. Low severity — it needs a mixed colliding/fresh import — but the fix widens an existing map lookup. D2 (two same-id incoming rows collapse to one) is left alone because the choice of winner is an import-semantics policy, and D3 (a dangling `parentId` is unvalidated) rides with IMP-038.
 
 ### IMP-060 — Share one items live query instead of one per component
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** performance / data flow
 - **Type:** improvement
 - **Area / files:** `src/hooks/useData.ts` (`useItems` `:8-14`, `useArchivedItems` `:16-19`); 12 call sites under `src/features/{bills,calendar,command,goals,habits,list,matrix,notes,settings,shopping,today}/` and `src/pwa/ReminderRuntime.tsx`
@@ -1272,7 +1272,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** med
 - **Depends on:** IMP-008
 - **Priority score:** 7.5
-- **Notes:** Source: `discovered-IMP-008.md` §4 — explicitly out of scope for IMP-008 because it restructures data flow across 12 files. 12 production call sites counted (not the 13 reported, which included the hook and its test). `useItems` is deliberately the only hook refactored; `useItem`/`useChildren` keep their per-site queries.
+- **Notes:** DONE (attempt 1). One ref-counted liveQuery backs useItems/useArchivedItems via useSyncExternalStore; all consumers share per-flag array instances; last unmount unsubscribes. +3 tests (453). Verified PASS (typecheck/lint, build, format, browser 10 routes). Reports: impl-IMP-060.md, verify-IMP-060.md. Source: `discovered-IMP-008.md` §4 — explicitly out of scope for IMP-008 because it restructures data flow across 12 files. 12 production call sites counted (not the 13 reported, which included the hook and its test). `useItems` is deliberately the only hook refactored; `useItem`/`useChildren` keep their per-site queries.
 
 ### IMP-085 — Render the occurrence-level `title` override
 - **Status:** TODO
