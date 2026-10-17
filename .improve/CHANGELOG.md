@@ -35,3 +35,4 @@ this file is appended per dimension from the resumed session onward.
 
 ## Content
 - 2026-10-17 · IMP-025 · itemActions write paths now have direct create/edit/undo/occurrence tests · f27dff6 · files: `src/domain/itemActions.test.ts`
+- 2026-10-17 · IMP-027 · Sheet and Dialog now announce a real accessible name and description · aeea3e3 · files: `src/components/ui/Sheet.tsx`, `src/components/ui/Dialog.tsx`

@@ -794,7 +794,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Align the value with IMP-005's setup-node.
 
 ### IMP-031 — Fix CSV parsing of a quote appearing mid-field
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/lib/csv.ts` (`parseCSV`, `:54-58`)

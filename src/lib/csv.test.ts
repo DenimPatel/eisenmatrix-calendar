@@ -20,6 +20,14 @@ describe('csv', () => {
     expect(text).toContain('"say ""hi"""');
   });
 
+  it('keeps a mid-field quote literal and round-trips it', () => {
+    expect(parseCSV('abc"def,2\r\nplain "quote",3')).toEqual([
+      ['abc"def', '2'],
+      ['plain "quote"', '3'],
+    ]);
+    expect(parseCSV(toCSV([{ name: 'abc"def' }]))).toEqual([['name'], ['abc"def']]);
+  });
+
   it('round-trips an item including history and legacy completion data', () => {
     const item = normalizeItem(
       createItem({

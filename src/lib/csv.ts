@@ -51,7 +51,7 @@ export function parseCSV(text: string): string[][] {
       i++;
       continue;
     }
-    if (char === '"') {
+    if (char === '"' && field === '') {
       inQuotes = true;
       i++;
       continue;
