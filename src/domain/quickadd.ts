@@ -52,6 +52,18 @@ function collapse(text: string): string {
   return text.replace(/\s+/g, ' ').trim();
 }
 
+const TAIL_SCHEDULE_RE = new RegExp(
+  `\\b(?:today|tomorrow|tmr|tonight|next\\s+week|next\\s+month|in\\s+\\d+\\s+(?:days?|weeks?|months?))\\b` +
+    `|\\b\\d{4}-\\d{2}-\\d{2}\\b` +
+    `|\\b(?:at\\s+)?\\d{1,2}(?::\\d{2})?\\s*(?:am|pm)\\b` +
+    `|\\b(?:at\\s+)?(?:[01]?\\d|2[0-3]):[0-5]\\d\\b`,
+  'gi',
+);
+
+function isScheduleTail(text: string): boolean {
+  return text.replace(TAIL_SCHEDULE_RE, ' ').replace(/[\s.!?,;:…–—-]+/g, '') === '';
+}
+
 function nextWeekday(from: Date, weekday: number): Date {
   const d = startOfDay(from);
   const diff = (weekday - d.getDay() + 7) % 7 || 7;
@@ -171,6 +183,8 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
     working = working.replace(/^\s*buy\s+/i, ' ');
   }
 
+  const preRecurrence = working;
+
   // Recurrence
   let recurrence: RecurrenceRule | null = null;
   const intervalMatch = /\bevery\s+(\d+)\s+(day|days|week|weeks|month|months|year|years)\b/i.exec(
@@ -205,30 +219,60 @@ export function parseQuickAdd(input: string, now = new Date()): QuickAddResult {
   // Weekday lists: mon/wed/fri, mon, wed and fri
   const weekdayListRe = new RegExp(
     `\\b((?:${WEEKDAY_PATTERN})(?:\\s*(?:\\/|,|and)\\s*(?:${WEEKDAY_PATTERN}))*)\\b`,
-    'i',
+    'gi',
   );
-  const weekdayListMatch = weekdayListRe.exec(working);
-  let weekdays: number[] = [];
+  const everyWeekdayMatch = new RegExp(
+    `\\bevery\\s+(?:\\d+\\s+)?weeks?\\s+(?:on\\s+)?(${WEEKDAY_PATTERN})\\b`,
+    'i',
+  ).exec(preRecurrence);
+  const everyWeekday = everyWeekdayMatch
+    ? WEEKDAYS[everyWeekdayMatch[1].toLowerCase().slice(0, 3)]
+    : null;
+  const weekdayGroups = [...working.matchAll(weekdayListRe)];
+  const consumed: Array<{ start: number; end: number }> = [];
+  const weekdays: number[] = [];
   let loneWeekday: number | null = null;
-  if (weekdayListMatch) {
-    const parts = weekdayListMatch[1].toLowerCase().split(/\s*(?:\/|,|and)\s*/);
-    weekdays = parts
+  for (const group of weekdayGroups) {
+    const text = group[0];
+    const start = group.index ?? 0;
+    const end = start + text.length;
+    const before = working.slice(0, start);
+    const after = working.slice(end);
+    const parts = text.toLowerCase().split(/\s*(?:\/|,|and)\s*/);
+    const groupWeekdays = parts
       .map((p) => WEEKDAYS[p.slice(0, 3)])
       .filter((d): d is number => d !== undefined);
-    const before = working.slice(0, weekdayListMatch.index);
-    if (weekdays.length > 1 || /every/i.test(input)) {
-      working = working.replace(weekdayListMatch[0], ' ');
-    } else if (weekdays.length === 1 && !/\bnext\s*$/i.test(before)) {
-      loneWeekday = weekdays[0];
-      weekdays = [];
-      working = working.replace(weekdayListMatch[0], ' ');
-    } else {
-      weekdays = [];
+    if (!groupWeekdays.length) continue;
+    if (groupWeekdays.length > 1) {
+      weekdays.push(...groupWeekdays);
+      consumed.push({ start, end });
+      continue;
     }
+    if (/\bnext\s*$/i.test(before)) continue;
+    const followsEvery = /\bevery\s*$/i.test(before);
+    const weeklyEvery =
+      everyWeekday !== null && recurrence?.freq === 'weekly' && groupWeekdays[0] === everyWeekday;
+    const isHint =
+      followsEvery ||
+      weeklyEvery ||
+      /\b(on|at|start)\s*$/i.test(before) ||
+      after.trim() === '' ||
+      isScheduleTail(after);
+    if (!isHint) continue;
+    if (followsEvery || weeklyEvery) {
+      weekdays.push(groupWeekdays[0]);
+    } else {
+      loneWeekday ??= groupWeekdays[0];
+    }
+    consumed.push({ start, end });
+  }
+  for (const range of consumed.sort((a, b) => b.start - a.start)) {
+    working = `${working.slice(0, range.start)} ${working.slice(range.end)}`;
   }
   if (weekdays.length) {
     recurrence = recurrence ?? baseRule('weekly');
     recurrence.byWeekday = [...new Set(weekdays)].sort((a, b) => a - b);
+    working = working.replace(/\bevery\b/i, ' ');
   }
 
   // Month day: "on the 5th" — a byMonthDay rule when monthly, else the next such date

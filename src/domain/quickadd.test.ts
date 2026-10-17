@@ -122,6 +122,131 @@ describe('parseQuickAdd', () => {
     expect(explicit.start).toBe('2024-06-14');
     expect(explicit.recurrence).toBeNull();
   });
+
+  it('consumes a bare "every" once a weekday recurrence is established', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('gym every fri', now);
+    expect(result.title).toBe('Gym');
+    expect(result.recurrence?.freq).toBe('weekly');
+    expect(result.recurrence?.byWeekday).toEqual([5]);
+  });
+
+  it('consumes a second weekday group while retaining a non-hint lone weekday', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('sun the tomatoes fri', now);
+    expect(result.title).toBe('Sun the tomatoes');
+    expect(result.title).not.toMatch(/\bfri\b/i);
+    expect(result.start).toBe('2024-06-14');
+    expect(result.recurrence).toBeNull();
+  });
+
+  it('leaves a lone weekday in the title and date when it is not a hint', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const sun = parseQuickAdd('sun the tomatoes', now);
+    expect(sun.title).toBe('Sun the tomatoes');
+    expect(sun.start).toBe('2024-06-10');
+    expect(sun.recurrence).toBeNull();
+
+    const sat = parseQuickAdd('sat the interview', now);
+    expect(sat.title).toBe('Sat the interview');
+    expect(sat.start).toBe('2024-06-10');
+
+    const wed = parseQuickAdd('we wed in June', now);
+    expect(wed.title).toBe('We wed in June');
+    expect(wed.start).toBe('2024-06-10');
+  });
+
+  it('consumes a lone weekday hint when it ends the input or follows a trigger', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    for (const input of ['call on fri', 'call at fri', 'call start fri']) {
+      const result = parseQuickAdd(input, now);
+      expect(result.title).not.toMatch(/\bfri\b/i);
+      expect(result.start).toBe('2024-06-14');
+      expect(result.recurrence).toBeNull();
+    }
+  });
+
+  it('consumes a lone weekday hint before a trailing time or relative date', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    expect(parseQuickAdd('gym fri 7am', now)).toMatchObject({
+      title: 'Gym',
+      start: '2024-06-14T07:00',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('gym fri at 7am', now)).toMatchObject({
+      start: '2024-06-14T07:00',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('gym fri tomorrow', now)).toMatchObject({
+      title: 'Gym',
+      start: '2024-06-14',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('gym fri next week', now)).toMatchObject({
+      title: 'Gym',
+      start: '2024-06-14',
+      recurrence: null,
+    });
+  });
+
+  it('consumes a lone weekday hint before trailing punctuation', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    for (const input of ['gym fri!', 'gym fri.', 'gym fri,']) {
+      const result = parseQuickAdd(input, now);
+      expect(result.title).not.toMatch(/\bfri\b/i);
+      expect(result.start).toBe('2024-06-14');
+      expect(result.recurrence).toBeNull();
+    }
+  });
+
+  it('attaches a tagged weekday to an "every week" rule', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    const result = parseQuickAdd('gym every week #fitness fri', now);
+    expect(result.title).toBe('Gym');
+    expect(result.tags).toContain('fitness');
+    expect(result.start).toBe('2024-06-10');
+    expect(result.recurrence?.freq).toBe('weekly');
+    expect(result.recurrence?.byWeekday).toEqual([5]);
+
+    const timed = parseQuickAdd('gym every week #fitness fri 7am', now);
+    expect(timed.title).toBe('Gym');
+    expect(timed.start).toBe('2024-06-10T07:00');
+    expect(timed.recurrence?.byWeekday).toEqual([5]);
+  });
+
+  it('keeps the verified IMP-010 and IMP-011 corpus unchanged', () => {
+    const now = new Date('2024-06-10T12:00:00');
+    expect(parseQuickAdd('gym fri', now)).toMatchObject({
+      title: 'Gym',
+      start: '2024-06-14',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('call mon', now)).toMatchObject({
+      title: 'Call',
+      start: '2024-06-17',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('mon/wed/fri', now)).toMatchObject({
+      title: '',
+      start: '2024-06-10',
+      recurrence: { freq: 'weekly', byWeekday: [1, 3, 5] },
+    });
+    expect(parseQuickAdd('next fri', now)).toMatchObject({
+      title: '',
+      start: '2024-06-14',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('party on the 5th', now)).toMatchObject({
+      title: 'Party',
+      start: '2024-07-05',
+      recurrence: null,
+    });
+    expect(parseQuickAdd('pay rent every month on the 5th', now)).toMatchObject({
+      title: 'Pay rent',
+      start: '2024-06-10',
+      recurrence: { freq: 'monthly', byMonthDay: [5] },
+    });
+  });
 });
 
 describe('quickAddToItem', () => {

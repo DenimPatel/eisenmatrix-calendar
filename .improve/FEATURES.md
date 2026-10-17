@@ -643,7 +643,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-015.md` §1–2 and `discovered-IMP-020.md` §1. Complements IMP-020's identity/version guards, which cannot see a payload with no identity field at all. `parseBackup`'s unvalidated `lists` cast (`:60,62`) rides with IMP-038 rather than here. DONE 2026-10-17: header/identity validation before any write, blank-title rows skipped and counted, round-trips intact; verified PASS (360 tests, junk CSV/JSON show Import failed with unchanged count, zero console errors). Commit pending.
 
 ### IMP-073 — Consume every schedule token in quick add; stop eating ordinary words
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / input parsing
 - **Type:** bug-fix
 - **Area / files:** `src/domain/quickadd.ts:175-179` (the recurrence lexer only knows `every <n> <unit>` / `every <unit>`), `:210-229` (a single `weekdayListRe.exec`; a bare `every` is never consumed)
@@ -657,7 +657,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** med
 - **Depends on:** IMP-010, IMP-011
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-010.md` §1 and §3. Deliberately **not** the IMP-017 approach: nothing here trims a preposition or a trailing particle from a title — it only decides whether a matched schedule token is consumed. AC4 is the regression guard IMP-017 lacked.
+- **Notes:** Source: `discovered-IMP-010.md` §1 and §3. Deliberately **not** the IMP-017 approach: nothing here trims a preposition or a trailing particle from a title — it only decides whether a matched schedule token is consumed. AC4 is the regression guard IMP-017 lacked. DONE 2026-10-17: loops weekday groups, consumes bare `every`, gates lone weekdays by position; attempt 2 restored time/relative-date tails (`gym fri 7am`) and tagged `every week #tag fri`. AC2's "no weekday token" wording is subordinate to AC3 for a leading non-hint weekday (`sun the tomatoes` keeps `Sun`). Verified PASS (368 tests, preview, 80+ input differential vs HEAD, zero console errors). Commit pending.
 
 ### IMP-074 — Emit a floating `UNTIL` to match a floating `DTSTART` in ICS
 - **Status:** TODO
