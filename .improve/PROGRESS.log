@@ -68,3 +68,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T18:00Z | IMP-064 | done | 5feff5d | Prettier enforced in CI; 5 files formatted
 2026-10-17T18:08Z | IMP-065 | done | 72094b6 | preview SW reset documented; procedure executed
 2026-10-17T18:15Z | IMP-062 | done | 692dc5f | CRLF quick-add normalization; +2 tests (427)
+2026-10-17T18:22Z | IMP-066 | done | d18883e | useData hook coverage; +9 tests (436)

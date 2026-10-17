@@ -73,6 +73,24 @@ function allDaySeries(): Item {
   return item;
 }
 
+function dailyTimedSeries(): Item {
+  const item = createItem({
+    kind: 'task',
+    title: 'Review',
+    start: '2026-09-28T09:00',
+    end: '2026-09-28T10:00',
+    allDay: false,
+  });
+  item.recurrence = {
+    freq: 'daily',
+    interval: 1,
+    weekStartsOn: 1,
+    exceptions: [],
+    overrides: {},
+  };
+  return item;
+}
+
 async function editInput(el: Element, value: string) {
   const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
   await act(async () => {
@@ -213,6 +231,109 @@ describe('ItemEditorSheet', () => {
     expect(saved.recurrence?.overrides).toEqual({
       '2026-07-20': { title: 'Standup (retro)' },
     });
+
+    await mounted.unmount();
+  });
+
+  it('seeds the schedule from the resolved occurrence, override included', async () => {
+    const item = dailyTimedSeries();
+    item.recurrence!.overrides['2026-10-04'] = { start: '2026-10-05T14:45' };
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-10-04');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    const date = mounted.host.querySelector('input[type="date"]') as HTMLInputElement;
+    const time = mounted.host.querySelector('input[type="time"]') as HTMLInputElement;
+    expect(date.value).toBe('2026-10-05');
+    expect(time.value).toBe('14:45');
+
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.start).toBe('2026-09-28T09:00');
+    expect(saved.recurrence?.overrides['2026-10-04']).toEqual({ start: '2026-10-05T14:45' });
+    expect(useUiStore.getState().toasts.map((t) => t.message)).toEqual([
+      'Nothing to update for this occurrence',
+    ]);
+
+    await mounted.unmount();
+  });
+
+  it('writes a changed occurrence time on the occurrence date and not the series date', async () => {
+    const item = dailyTimedSeries();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-10-04');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    await editInput(mounted.host.querySelector('input[type="time"]')!, '14:45');
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.recurrence?.overrides['2026-10-04']).toEqual({ start: '2026-10-04T14:45' });
+    expect(saved.start).toBe('2026-09-28T09:00');
+    const day = new Date('2026-10-04T00:00:00');
+    expect(expandOccurrences(saved, day, day)[0]).toMatchObject({
+      start: '2026-10-04T14:45',
+    });
+
+    await mounted.unmount();
+  });
+
+  it('does not leak the seeded occurrence range into an all-occurrences save', async () => {
+    const item = dailyTimedSeries();
+    item.recurrence!.overrides['2026-10-04'] = { start: '2026-10-05T14:45' };
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-10-04');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'All occurrences');
+    await clickButton(mounted.host, 'Schedule');
+    const date = mounted.host.querySelector('input[type="date"]') as HTMLInputElement;
+    expect(date.value).toBe('2026-09-28');
+
+    await clickButton(mounted.host, 'Details');
+    await editInput(mounted.host.querySelector('input.input')!, 'Review (weekly)');
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.title).toBe('Review (weekly)');
+    expect(saved.start).toBe('2026-09-28T09:00');
+    expect(saved.end).toBe('2026-09-28T10:00');
+    expect(saved.recurrence?.overrides['2026-10-04']).toEqual({ start: '2026-10-05T14:45' });
+
+    await mounted.unmount();
+  });
+
+  it('keeps a non-recurring multi-day range when opened with an occurrence key', async () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Trip',
+      start: '2026-10-20',
+      end: '2026-10-22T00:00',
+      allDay: true,
+    });
+    expect(item.recurrence).toBeNull();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-10-20');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    const date = mounted.host.querySelector('input[type="date"]') as HTMLInputElement;
+    const end = mounted.host.querySelectorAll(
+      'input[type="datetime-local"]',
+    )[1] as HTMLInputElement;
+    expect(date.value).toBe('2026-10-20');
+    expect(end.value).toBe('2026-10-22T00:00');
+
+    await clickButton(mounted.host, 'Save');
+
+    const saved = (await itemRepo.get(item.id))!;
+    expect(saved.start).toBe('2026-10-20');
+    expect(saved.end).toBe('2026-10-22T00:00');
+    expect(saved.allDay).toBe(true);
+    expect(saved.history).toEqual([]);
 
     await mounted.unmount();
   });

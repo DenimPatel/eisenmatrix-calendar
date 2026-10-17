@@ -669,6 +669,18 @@ describe('updateRecurring (scope: occurrence)', () => {
     expect(useUiStore.getState().undoStack).toHaveLength(0);
   });
 
+  it('keeps the occurrence date when an occurrence-scope patch changes only the time', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+
+    await updateRecurring(before, 'occurrence', OCC, { start: '2026-07-20T14:45' });
+
+    const after = (await itemRepo.get('s'))!;
+    expect(after.recurrence?.overrides[OCC]).toEqual({ start: '2026-07-20T14:45' });
+    expect(after.start).toBe('2026-07-13T09:00');
+    expect(occurrenceAt(after, OCC).start).toBe('2026-07-20T14:45');
+  });
+
   it('restores the series on undo', async () => {
     await itemRepo.create(weeklyTask('s'));
     const before = (await itemRepo.get('s'))!;

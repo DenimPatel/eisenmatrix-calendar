@@ -45,6 +45,19 @@ const SERIES_ONLY_FIELDS = new Set([
 
 const SERIES_ONLY_HINT = 'Applies to the whole series';
 
+function seedDraft(item: Item, occKey: string | null): Item {
+  const draft = structuredClone(item);
+  if (!item.recurrence || !occKey) return draft;
+  const day = parseLocalDate(occKey);
+  if (!day) return draft;
+  const occurrence = expandOccurrences(item, day, day).find((occ) => occ.occKey === occKey);
+  if (!occurrence) return draft;
+  draft.start = occurrence.start;
+  draft.end = occurrence.end;
+  draft.allDay = occurrence.allDay;
+  return draft;
+}
+
 /** Every field an edit re-applies to the whole series. */
 function seriesPatch(draft: Item): ItemPatch {
   return {
@@ -106,6 +119,7 @@ export function ItemEditorSheet() {
   const lists = useLists();
   const settings = useSetting<AppSettings>('app', DEFAULT_SETTINGS);
   const [draft, setDraft] = useState<Item | null>(null);
+  const [seed, setSeed] = useState<Item | null>(null);
   const [tab, setTab] = useState<Tab>('details');
   const [tagInput, setTagInput] = useState('');
   const [scope, setScope] = useState<'occurrence' | 'future' | 'all'>('all');
@@ -115,12 +129,15 @@ export function ItemEditorSheet() {
 
   useEffect(() => {
     if (editor.open && editor.item) {
-      setDraft(structuredClone(editor.item));
+      const seeded = seedDraft(editor.item, editor.occurrenceKey);
+      setDraft(seeded);
+      setSeed(structuredClone(seeded));
       setTab('details');
       setScope(editor.item.recurrence && editor.occurrenceKey ? 'occurrence' : 'all');
       setConfirmDelete(false);
     } else {
       setDraft(null);
+      setSeed(null);
     }
   }, [editor.open, editor.item, editor.occurrenceKey]);
 
@@ -149,8 +166,15 @@ export function ItemEditorSheet() {
   const deleteUnavailable = scopedToOccurrence && scope === 'future';
 
   const changeScope = (next: 'occurrence' | 'future' | 'all') => {
-    setScope(next);
     setConfirmDelete(false);
+    if (next === scope) return;
+    setScope(next);
+    if (!editor.item || !seed) return;
+    const range =
+      next === 'occurrence'
+        ? { start: seed.start, end: seed.end, allDay: seed.allDay }
+        : { start: editor.item.start, end: editor.item.end, allDay: editor.item.allDay };
+    setDraft((prev) => (prev ? { ...prev, ...range } : prev));
   };
 
   const update = (patch: Partial<Item>) =>
@@ -186,7 +210,9 @@ export function ItemEditorSheet() {
         draft,
         scope,
         occKey,
-        scope === 'occurrence' ? occurrencePatch(draft, editor.item ?? draft) : seriesPatch(draft),
+        scope === 'occurrence'
+          ? occurrencePatch(draft, seed ?? editor.item ?? draft)
+          : seriesPatch(draft),
       );
       if (scope === 'future') {
         pushToast({ message: 'Series split', tone: 'success' });

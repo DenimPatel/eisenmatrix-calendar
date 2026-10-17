@@ -975,7 +975,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** NEEDS-HUMAN: branch-protection rules are not versioned — only the repo administrator can apply them, and the acceptance criteria cannot be checked in-repo. Scored 10 rather than higher precisely because it is unverifiable here. Already flagged as a follow-up in IMP-005's notes.
 
 ### IMP-077 — Seed the editor's schedule fields from the resolved occurrence
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / scheduling
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx:118` (`setDraft(structuredClone(editor.item))`), `:84-95` (`occurrencePatch`), `:175-192` (`handleSave`); `src/domain/itemActions.ts:281-283` (the override `start` write)
@@ -989,7 +989,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** med
 - **Depends on:** IMP-016
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-012.md` §1 and `discovered-IMP-016.md` §3 — the "editor draft is the series row" gap IMP-016's notes left open. `updateOccurrence` (`src/domain/itemActions.ts:236-241`) writes a caller-supplied `start` and carries the same hazard; IMP-040 already works in that function.
+- **Notes:** DONE (attempt 2). Occurrence seeds merge the resolved occurrence + override; occurrence saves keep the occurrence date; all-scope resets to series; non-recurring items skip seeding after attempt 1 truncated a multi-day all-day end. +5 tests (441). Verified PASS (typecheck/lint, build, browser). Reports: impl-IMP-077.md, verify-IMP-077.md. Source: `discovered-IMP-012.md` §1 and `discovered-IMP-016.md` §3 — the "editor draft is the series row" gap IMP-016's notes left open. `updateOccurrence` (`src/domain/itemActions.ts:236-241`) writes a caller-supplied `start` and carries the same hazard; IMP-040 already works in that function.
 
 ### IMP-078 — Stop listing a daily habit twice on Today
 - **Status:** TODO
