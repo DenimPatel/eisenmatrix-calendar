@@ -13,8 +13,7 @@ function habit(title: string, status: ItemStatus = 'todo'): Item {
   const key = todayKey();
   return {
     ...createItem({ kind: 'habit', title, start: key }),
-    occurrences:
-      status === 'done' ? { [key]: { status: 'done', completedAt: Date.now() } } : {},
+    occurrences: status === 'done' ? { [key]: { status: 'done', completedAt: Date.now() } } : {},
   };
 }
 
