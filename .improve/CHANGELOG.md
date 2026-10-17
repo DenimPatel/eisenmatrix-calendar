@@ -51,3 +51,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-066 · Remaining data hooks have dep-aware tests and no per-render fallback serialization · d18883e · files: `src/hooks/useData.ts`, `src/hooks/useData.test.tsx`
 - 2026-10-17 · IMP-077 · Editing an occurrence shows and saves that occurrence date, without leaking into series edits · e9807ef · files: `src/features/item/ItemEditorSheet.tsx`
 - 2026-10-17 · IMP-078 · Today lists a daily habit once, in the Habits panel, with matching agenda counts · 628f42c · files: `src/features/today/TodayView.tsx`
+- 2026-10-17 · IMP-081 · Third-party GitHub Actions are pinned to reviewed commit SHAs · 0a185e4 · files: `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`

@@ -71,3 +71,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T18:22Z | IMP-066 | done | d18883e | useData hook coverage; +9 tests (436)
 2026-10-17T18:35Z | IMP-077 | done | e9807ef | occurrence-seeded editor dates; +5 tests (441), attempt 2
 2026-10-17T18:45Z | IMP-078 | done | 628f42c | habits no longer duplicated on Today; +2 tests (443)
+2026-10-17T18:58Z | IMP-081 | done | 0a185e4 | actions pinned to SHAs

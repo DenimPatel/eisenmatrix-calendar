@@ -1009,7 +1009,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Habits excluded from the Today agenda and its counts; they remain once in the Habits panel. +2 tests (443). Verified PASS (typecheck/lint, build, browser). Reports: impl-IMP-078.md, verify-IMP-078.md. Source: `discovered-IMP-018.md` §4 (pre-existing for explicitly recurring habits, and logged as a verifier follow-up in IMP-018's notes). Which of the two sections keeps the habit is a UI call; either satisfies AC1.
 
 ### IMP-079 — One Escape must close only the topmost overlay
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / accessibility
 - **Type:** bug-fix
 - **Area / files:** `src/components/ui/Dialog.tsx:40-51` (per-instance `document` keydown listener); `src/hooks/useKeyboardShortcuts.ts:26-30` (the `⌘K` branch runs before the `isOverlayOpen` guard); `src/store/useUiStore.ts` (overlay state is a set of independent booleans)
@@ -1023,7 +1023,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-013.md` §1 and §4. Whether `⌘K` *should* be reachable while the editor is open is a product decision and is explicitly out of scope here (AC4 keeps it) — only the Escape semantics are fixed.
+- **Notes:** DONE (attempt 1). Shared overlay stack; Escape closes only the topmost layer and focus returns into the survivor; single-overlay and ⌘K behavior preserved. +2 tests (445). Verified PASS (typecheck/lint, build, format, browser; mutation-checked). Reports: impl-IMP-079.md, verify-IMP-079.md. Follow-up: scroll lock remains on the lower overlay (discovered-IMP-079.md). Source: `discovered-IMP-013.md` §1 and §4. Whether `⌘K` *should* be reachable while the editor is open is a product decision and is explicitly out of scope here (AC4 keeps it) — only the Escape semantics are fixed.
 
 ### IMP-080 — Catch a rejected `rerunMigration` in Settings
 - **Status:** TODO

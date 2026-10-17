@@ -5,7 +5,7 @@
 | Bugs/Correctness | 4 | 6 | 37 | 1 | 2026-10-17 IMP-077 | concurrency, nested payloads | IMP-089, IMP-090 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
-| UX/Interaction | 4 | 4 | 4 | 0 | 2026-10-17 IMP-078 | Escape stacking, scope-switch reset | IMP-079, IMP-093 |
+| UX/Interaction | 5 | 3 | 5 | 0 | 2026-10-17 IMP-079 | scope-switch reset, scroll lock | IMP-093 |
 | Format/Structure | 4 | 1 | 1 | 0 | 2026-10-17 IMP-064 | agent guide naming | IMP-046 |
 | Delivery | 5 | 2 | 5 | 1 | 2026-10-17 IMP-081 | branch protection, workflow breadth | IMP-067 (human) |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |

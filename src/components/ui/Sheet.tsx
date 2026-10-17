@@ -2,6 +2,7 @@ import React, { useEffect, useId, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useOverlayLayer } from '@/hooks/useOverlayLayer';
 import { Button } from './Button';
 
 export interface SheetProps {
@@ -30,13 +31,14 @@ export function Sheet({
   initialFocusRef,
 }: SheetProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(open, initialFocusRef);
+  const isTopOverlay = useOverlayLayer(open);
   const titleId = useId();
   const subtitleId = useId();
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && isTopOverlay()) onClose();
     };
     document.addEventListener('keydown', onKey);
     document.body.style.overflow = 'hidden';
@@ -44,7 +46,7 @@ export function Sheet({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+  }, [open, onClose, isTopOverlay]);
 
   if (!open) return null;
 

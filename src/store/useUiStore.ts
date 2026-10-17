@@ -46,6 +46,7 @@ interface UiState {
   quickAddOpen: boolean;
   shortcutsOpen: boolean;
   editor: EditorState;
+  overlayStack: string[];
   filters: Filters;
   toasts: Toast[];
   undoStack: UndoEntry[];
@@ -55,6 +56,9 @@ interface UiState {
   setCommandOpen: (open: boolean) => void;
   setQuickAddOpen: (open: boolean) => void;
   setShortcutsOpen: (open: boolean) => void;
+  registerOverlay: (id: string) => void;
+  unregisterOverlay: (id: string) => void;
+  isTopOverlay: (id: string) => boolean;
 
   openEditor: (
     item: Item,
@@ -93,6 +97,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   quickAddOpen: false,
   shortcutsOpen: false,
   editor: { open: false, item: null, occurrenceKey: null, splitMode: 'all' },
+  overlayStack: [],
   filters: { ...DEFAULT_FILTERS },
   toasts: [],
   undoStack: [],
@@ -102,6 +107,17 @@ export const useUiStore = create<UiState>((set, get) => ({
   setCommandOpen: (commandOpen) => set({ commandOpen }),
   setQuickAddOpen: (quickAddOpen) => set({ quickAddOpen }),
   setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
+
+  registerOverlay: (id) =>
+    set((s) => ({
+      overlayStack: s.overlayStack.includes(id) ? s.overlayStack : [...s.overlayStack, id],
+    })),
+  unregisterOverlay: (id) =>
+    set((s) => ({ overlayStack: s.overlayStack.filter((entry) => entry !== id) })),
+  isTopOverlay: (id) => {
+    const stack = get().overlayStack;
+    return stack.length > 0 && stack[stack.length - 1] === id;
+  },
 
   openEditor: (item, occurrenceKey = null, splitMode = 'all') =>
     set({ editor: { open: true, item, occurrenceKey, splitMode } }),

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
-import { act, useRef } from 'react';
+import { act, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Dialog, ConfirmDialog } from './Dialog';
+import { Sheet } from './Sheet';
+import { useUiStore } from '@/store/useUiStore';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -50,9 +52,28 @@ function activeText(): string {
   return document.activeElement?.textContent?.trim() ?? '';
 }
 
+async function pressEscape() {
+  await act(async () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  });
+}
+
+function dialogTitles(host: HTMLElement): string[] {
+  return Array.from(host.querySelectorAll<HTMLElement>('[role="dialog"]')).map(
+    (dialog) =>
+      document.getElementById(dialog.getAttribute('aria-labelledby') ?? '')?.textContent ?? '',
+  );
+}
+
 afterEach(() => {
   document.body.innerHTML = '';
   document.body.style.overflow = '';
+  useUiStore.setState({
+    overlayStack: [],
+    commandOpen: false,
+    quickAddOpen: false,
+    shortcutsOpen: false,
+  });
 });
 
 function HeadingDialog({ open = true }: { open?: boolean }) {
@@ -69,6 +90,70 @@ function HeadingDialog({ open = true }: { open?: boolean }) {
     >
       <p>Body</p>
     </Dialog>
+  );
+}
+
+function LayerDialog({
+  title,
+  open,
+  onClose,
+}: {
+  title: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={title}
+      size="sm"
+      titleRef={headingRef}
+      initialFocusRef={headingRef}
+    >
+      <p>{title} body</p>
+    </Dialog>
+  );
+}
+
+function StackedStoreDialogs() {
+  const quickAddOpen = useUiStore((s) => s.quickAddOpen);
+  const commandOpen = useUiStore((s) => s.commandOpen);
+  return (
+    <>
+      <LayerDialog
+        title="Quick add"
+        open={quickAddOpen}
+        onClose={() => useUiStore.getState().setQuickAddOpen(false)}
+      />
+      <LayerDialog
+        title="Command palette"
+        open={commandOpen}
+        onClose={() => useUiStore.getState().setCommandOpen(false)}
+      />
+    </>
+  );
+}
+
+function SheetAndDialogStack() {
+  const [sheetOpen, setSheetOpen] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(true);
+  const sheetHeadingRef = useRef<HTMLHeadingElement>(null);
+  return (
+    <>
+      <Sheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        title="Editor"
+        initialFocusRef={sheetHeadingRef}
+      >
+        <h2 ref={sheetHeadingRef} tabIndex={-1} className="outline-none">
+          Editor body
+        </h2>
+      </Sheet>
+      <LayerDialog title="Command palette" open={dialogOpen} onClose={() => setDialogOpen(false)} />
+    </>
   );
 }
 
@@ -178,6 +263,42 @@ describe('Dialog', () => {
 
     await mounted.unmount();
     opener.remove();
+  });
+
+  it('closes only the topmost stacked dialog on Escape, one layer per press', async () => {
+    useUiStore.setState({ quickAddOpen: true, commandOpen: true });
+    const mounted = await mount(<StackedStoreDialogs />);
+
+    expect(dialogTitles(mounted.host)).toEqual(['Quick add', 'Command palette']);
+    expect(activeText()).toBe('Command palette');
+
+    await pressEscape();
+    expect(dialogTitles(mounted.host)).toEqual(['Quick add']);
+    expect(activeText()).toBe('Quick add');
+    expect(useUiStore.getState().quickAddOpen).toBe(true);
+    expect(useUiStore.getState().commandOpen).toBe(false);
+
+    await pressEscape();
+    expect(dialogTitles(mounted.host)).toEqual([]);
+    expect(useUiStore.getState().quickAddOpen).toBe(false);
+
+    await mounted.unmount();
+  });
+
+  it('treats a Dialog over a Sheet as the top layer and returns focus into the Sheet', async () => {
+    const mounted = await mount(<SheetAndDialogStack />);
+
+    expect(dialogTitles(mounted.host)).toEqual(['Editor', 'Command palette']);
+    expect(activeText()).toBe('Command palette');
+
+    await pressEscape();
+    expect(dialogTitles(mounted.host)).toEqual(['Editor']);
+    expect(activeText()).toBe('Editor body');
+
+    await pressEscape();
+    expect(dialogTitles(mounted.host)).toEqual([]);
+
+    await mounted.unmount();
   });
 });
 
