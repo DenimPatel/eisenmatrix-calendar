@@ -62,3 +62,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T16:58Z | IMP-033 | done | 8a164e1 | aria-pressed + table/aria-sort semantics; +5 tests (402), attempt 2
 2026-10-17T17:10Z | IMP-032 | done | c52c7b8 | Paid sums recorded payments; +2 tests (404)
 2026-10-17T17:18Z | IMP-026 | done | 3afe7fb | eisenhower tests; +15 (419)
+2026-10-17T17:24Z | IMP-061 | done | ce661e3 | empty bulk delete no-op; +1 test (420)

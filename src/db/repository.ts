@@ -4,6 +4,10 @@ import { getDb, type BackupEntry } from './schema';
 
 export type ItemPatch = Partial<Omit<BaseItem, 'id' | 'kind'>> & { data?: ItemData };
 
+export async function ensureDbOpen(): Promise<void> {
+  await getDb().open();
+}
+
 function readItem(item: Item): Item {
   return normalizeItem(item);
 }

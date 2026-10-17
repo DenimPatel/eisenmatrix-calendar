@@ -1,5 +1,6 @@
 import { registerSW } from 'virtual:pwa-register';
 import { useUiStore } from '@/store/useUiStore';
+import { reportBootFailure, OFFLINE_UNAVAILABLE_MESSAGE } from '@/lib/bootFailure';
 
 /** Register the service worker and surface update/offline readiness via toasts. */
 export function setupPWA(): void {
@@ -21,6 +22,9 @@ export function setupPWA(): void {
         message: 'Ready to work offline',
         tone: 'success',
       });
+    },
+    onRegisterError(error) {
+      reportBootFailure(OFFLINE_UNAVAILABLE_MESSAGE, error);
     },
   });
 }

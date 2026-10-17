@@ -21,20 +21,33 @@ import { useTheme } from '@/hooks/useTheme';
 import { setupPWA } from '@/pwa/register';
 import { runLegacyMigration } from '@/db/migrations/legacyTasks';
 import { runNotificationGateMigration } from '@/db/migrations/notificationGate';
+import { ensureDbOpen } from '@/db/repository';
+import {
+  OFFLINE_UNAVAILABLE_MESSAGE,
+  reportBootFailure,
+  STORAGE_UNAVAILABLE_MESSAGE,
+} from '@/lib/bootFailure';
 
 export default function App() {
   useTheme();
 
   useEffect(() => {
+    void ensureDbOpen().catch((error: unknown) => {
+      reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+    });
     // Import any v1 localStorage data (with a safety backup) on first boot.
     void runLegacyMigration().catch((error: unknown) => {
-      console.warn('Legacy v1 migration failed', error);
+      reportBootFailure('Data migration failed — some items may be missing.', error);
     });
     // Carry an existing browser notification grant over to the delivery gate.
     void runNotificationGateMigration().catch((error: unknown) => {
-      console.warn('Notification gate migration failed', error);
+      reportBootFailure('Notification settings could not be restored.', error);
     });
-    setupPWA();
+    try {
+      setupPWA();
+    } catch (error) {
+      reportBootFailure(OFFLINE_UNAVAILABLE_MESSAGE, error);
+    }
   }, []);
 
   return (

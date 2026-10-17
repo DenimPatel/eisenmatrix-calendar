@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { settingsRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { DEFAULT_SETTINGS, type AppSettings } from '@/types';
+import { reportBootFailure, STORAGE_UNAVAILABLE_MESSAGE } from '@/lib/bootFailure';
 
 export function useTheme() {
   const theme = useUiStore((s) => s.theme);
@@ -9,10 +10,15 @@ export function useTheme() {
   const loaded = useRef(false);
 
   useEffect(() => {
-    void settingsRepo.get<AppSettings>('app', DEFAULT_SETTINGS).then((settings) => {
-      loaded.current = true;
-      setTheme(settings.theme ?? 'system');
-    });
+    void settingsRepo
+      .get<AppSettings>('app', DEFAULT_SETTINGS)
+      .then((settings) => {
+        loaded.current = true;
+        setTheme(settings.theme ?? 'system');
+      })
+      .catch((error: unknown) => {
+        reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+      });
   }, [setTheme]);
 
   useEffect(() => {
@@ -31,6 +37,9 @@ export function useTheme() {
     if (!loaded.current) return;
     void settingsRepo
       .get<AppSettings>('app', DEFAULT_SETTINGS)
-      .then((settings) => settingsRepo.set('app', { ...settings, theme }));
+      .then((settings) => settingsRepo.set('app', { ...settings, theme }))
+      .catch((error: unknown) => {
+        reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+      });
   }, [theme]);
 }

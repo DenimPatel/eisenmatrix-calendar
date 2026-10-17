@@ -2,10 +2,10 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 9 | 34 | 1 | 2026-10-17 IMP-061 | concurrency, nested payloads | IMP-089, IMP-090 |
+| Bugs/Correctness | 4 | 8 | 35 | 1 | 2026-10-17 IMP-039 | concurrency, nested payloads | IMP-089, IMP-090 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
-| UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-079 |
+| UX/Interaction | 4 | 5 | 3 | 0 | 2026-10-17 IMP-039 | Escape stacking, habit duplicate | IMP-079, IMP-078 |
 | Format/Structure | 3 | 2 | 0 | 0 | — | Prettier drift, agent guide naming | IMP-064, IMP-046 |
 | Delivery | 4 | 4 | 3 | 1 | 2026-10-17 IMP-029 | CI duplicate gate, unpinned actions | IMP-063, IMP-081 |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |

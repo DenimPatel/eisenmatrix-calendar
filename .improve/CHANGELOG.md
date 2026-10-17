@@ -42,3 +42,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-033 · Toggles announce pressed state and List headers expose sort direction; mobile header row still hidden · 8a164e1 · files: `src/features/list/ListView.tsx`, `src/features/settings/SettingsView.tsx`, `src/features/notes/NotesView.tsx`, `src/features/bills/BillsView.tsx`, `src/features/habits/HabitsView.tsx`
 - 2026-10-17 · IMP-032 · Editing a bill amount no longer retroactively changes the monthly Paid total · c52c7b8 · files: `src/domain/bills.ts`, `src/features/bills/BillsView.tsx`
 - 2026-10-17 · IMP-026 · Eisenhower quadrant mapping and priority scoring now have direct tests · 3afe7fb · files: `src/domain/eisenhower.test.ts`
+- 2026-10-17 · IMP-061 · Empty bulk deletes no longer replace the previous undo step or report a phantom deletion · ce661e3 · files: `src/domain/itemActions.ts`

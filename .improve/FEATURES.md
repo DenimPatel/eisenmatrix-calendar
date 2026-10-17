@@ -1127,7 +1127,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Keep validation pure and in `domain`/`lib`, not in the UI.
 
 ### IMP-039 — Add a top-level error boundary and handle boot failures
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** error handling
 - **Type:** improvement
 - **Area / files:** `src/main.tsx`, `src/App.tsx` (`:27-31`)
@@ -1140,7 +1140,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 8
-- **Notes:** Keep the fallback token-styled and offer a reload.
+- **Notes:** DONE (attempt 1). Root ErrorBoundary with Reload/Try again and fixed secret-free copy; Dexie open/upgrade, migration, settings and PWA failures surface one persistent toast. +5 tests (425). Verified PASS (typecheck/lint, build, preview normal boot 0 errors, simulated storage failure recoverable). Reports: impl-IMP-039.md, verify-IMP-039.md. Non-blocking follow-up: ReminderRuntime prune rejection on blocked storage.
 
 ### IMP-040 — Apply all supported fields in `updateOccurrence` for non-recurring items
 - **Status:** TODO
