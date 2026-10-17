@@ -2,14 +2,14 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 17 | 23 | 1 | 2026-10-17 IMP-054 | recurrence/reminder edge cases | IMP-059, IMP-071 |
+| Bugs/Correctness | 4 | 16 | 24 | 1 | 2026-10-17 IMP-054 | recurrence/reminder edge cases | IMP-071, IMP-072 |
 | Content | 4 | 1 | 0 | 1 | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 3 | 6 | 2 | 0 | 2026-10-05 IMP-053 | overlay focus and Escape behavior | IMP-059, IMP-079 |
 | Format/Structure | 3 | 2 | 0 | 0 | — | Prettier drift, agent guide naming | IMP-064, IMP-046 |
 | Delivery | 4 | 5 | 2 | 1 | 2026-10-05 IMP-022 | CI duplicate gate, unpinned actions | IMP-063, IMP-081 |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
-| Accessibility | 3 | 4 | 2 | 0 | 2026-10-05 IMP-024 | dialog names, ARIA toggles | IMP-027, IMP-033 |
+| Accessibility | 3 | 4 | 3 | 0 | 2026-10-17 IMP-059 | dialog names, ARIA toggles | IMP-027, IMP-033 |
 | Docs/Onboarding | 3 | 3 | 0 | 1 | — | preview SW reset undocumented | IMP-065 |
 | Tests/Tooling | 4 | 4 | 8 | 0 | 2026-10-12 IMP-056 | write-path and eisenhower coverage | IMP-025, IMP-026 |
 
@@ -28,8 +28,9 @@ duplicate `agents.md`/`AGENTS.md` naming issue remains.
 main and workflow actions use floating tags rather than SHAs.
 **Performance (3):** 12 components each open their own items live query; no user-visible
 regression measured yet.
-**Accessibility (3):** focus traps and mobile nav improved; Sheet/Dialog lack accessible names
-and several toggles/sort headers lack ARIA state.
+**Accessibility (3):** IMP-059 removed the 20 ms focus delay, so overlays focus in the mount
+commit and the first keystroke is captured; mobile nav remains fixed. Sheet/Dialog still lack
+accessible names and several toggles/sort headers lack ARIA state.
 **Docs/Onboarding (3):** AGENTS.md is accurate; the preview service-worker reset needed by
 browser verification is undocumented.
 **Tests/Tooling (4):** 342 tests across 33 files, suite green and deterministic across repeated

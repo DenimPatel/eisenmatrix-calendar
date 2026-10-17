@@ -594,7 +594,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Run the prune alongside the existing `reminderLogRepo.pruneBefore` boot effect in `ReminderRuntime`. DONE (commit to follow). 3 implement→verify cycles: attempt 1 ranked the soonest absolute above a `now - LOOKBACK_MS` cutoff, which let an already-delivered snooze delete a pending one (data loss); attempt 2 shipped the correct classification but introduced a duplicate-delivery regression (the prune's `items` write rebuilt the tick effect mid-flight). Final: `pruneExpiredAbsolute` deletes only rows strictly outside the delivery window (`absolute <= now - lookbackMs`), `withSnooze` replaces instead of appends, and a boot tick-gate keeps the prune off the boot tick's trigger path so delivery stays exactly-once. Files: `src/domain/reminders.ts`, `src/domain/itemActions.ts`, `src/pwa/ReminderRuntime.tsx`, plus `src/pwa/ReminderRuntime.delivery.test.tsx`. Verified PASS by an independent reviewer (32 files / 329 tests, 6 consecutive green runs; gate-removal mutation fails 12/12; browser cold-reload exactly-once 3/3). Left open and picked up as items: IMP-036 (atomic dedupe) unchanged. Discoveries D1–D5 in `reports/discovered-IMP-056.md`.
 
 ### IMP-059 — Focus overlays in the mount commit, not 20 ms later
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility / robustness
 - **Type:** improvement
 - **Area / files:** `src/hooks/useFocusTrap.ts` (`:17-24` `focusInitial`, `:24` `window.setTimeout(focusInitial, 20)`, `:45` cleanup)
@@ -607,7 +607,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** med
 - **Depends on:** IMP-009
 - **Priority score:** 12
-- **Notes:** Source: `discovered-IMP-009.md` D3. Risk is med only because existing tests assert the 20 ms timing; confidence 4 because the right primitive (layout effect vs. `requestAnimationFrame`) is a small design choice.
+- **Notes:** Source: `discovered-IMP-009.md` D3. Risk is med only because existing tests assert the 20 ms timing; confidence 4 because the right primitive (layout effect vs. `requestAnimationFrame`) is a small design choice. DONE 2026-10-17: useLayoutEffect focuses in the mount commit; timer and cleanup removed; Tab loop/restore verified. Verified PASS (343 tests, preview `c` focuses immediately, 390px, zero console errors). Commit pending.
 
 ### IMP-071 — Backfill `data` so a row without it cannot crash the editor
 - **Status:** TODO

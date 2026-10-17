@@ -11,6 +11,8 @@ this file is appended per dimension from the resumed session onward.
 
 ## Accessibility
 
+- 2026-10-17 · IMP-059 · Overlays focus their first control in the mount commit, so the first keystroke cannot land outside the dialog · SHA pending · files: `src/hooks/useFocusTrap.ts`, `src/hooks/useFocusTrap.test.tsx`
+
 ## UX/Interaction
 
 ## Visual

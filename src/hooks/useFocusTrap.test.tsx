@@ -100,6 +100,20 @@ describe('useFocusTrap', () => {
     await mounted.unmount();
   });
 
+  it('applies initial focus in the mount commit without a timer', async () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    await act(async () => {
+      root.render(<Trap primary />);
+    });
+    expect(activeLabel()).toBe('Primary');
+    await act(async () => {
+      root.unmount();
+    });
+    host.remove();
+  });
+
   it('keeps Tab trapped inside the container', async () => {
     const mounted = await mount(<Trap primary />);
     const footer = mounted.host.querySelector<HTMLButtonElement>('[aria-label="Footer"]')!;
