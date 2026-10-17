@@ -1,4 +1,4 @@
-import React, { useEffect, type RefObject } from 'react';
+import React, { useEffect, useId, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -9,6 +9,8 @@ export interface SheetProps {
   onClose: () => void;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
+  /** Accessible name used when `title` is empty; ignored otherwise. */
+  ariaLabel?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   width?: 'md' | 'lg';
@@ -21,12 +23,15 @@ export function Sheet({
   onClose,
   title,
   subtitle,
+  ariaLabel,
   children,
   footer,
   width = 'md',
   initialFocusRef,
 }: SheetProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(open, initialFocusRef);
+  const titleId = useId();
+  const subtitleId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -54,6 +59,9 @@ export function Sheet({
         ref={trapRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : ariaLabel || 'Panel'}
+        aria-describedby={subtitle ? subtitleId : undefined}
         className={cn(
           'flex h-full w-full flex-col border-border bg-surface shadow-2xl animate-slide-up',
           'sm:animate-slide-in-right sm:border-l',
@@ -62,8 +70,14 @@ export function Sheet({
       >
         <div className="flex items-start justify-between gap-4 border-b border-border p-4">
           <div className="min-w-0">
-            <h2 className="truncate text-lg font-semibold text-fg">{title}</h2>
-            {subtitle && <div className="mt-0.5 text-xs text-muted">{subtitle}</div>}
+            <h2 id={titleId} className="truncate text-lg font-semibold text-fg">
+              {title}
+            </h2>
+            {subtitle && (
+              <div id={subtitleId} className="mt-0.5 text-xs text-muted">
+                {subtitle}
+              </div>
+            )}
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close panel">
             <X size={18} />

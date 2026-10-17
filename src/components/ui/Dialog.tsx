@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, type RefObject } from 'react';
+import React, { useEffect, useId, useRef, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
@@ -9,6 +9,8 @@ export interface DialogProps {
   onClose: () => void;
   title?: string;
   description?: string;
+  /** Accessible name used when `title` is empty; ignored otherwise. */
+  ariaLabel?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
@@ -31,6 +33,7 @@ export function Dialog({
   onClose,
   title,
   description,
+  ariaLabel,
   children,
   footer,
   className,
@@ -39,6 +42,8 @@ export function Dialog({
   titleRef,
 }: DialogProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(open, initialFocusRef);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -66,7 +71,9 @@ export function Dialog({
         ref={trapRef}
         role="dialog"
         aria-modal="true"
-        aria-label={title}
+        aria-labelledby={title ? titleId : undefined}
+        aria-label={title ? undefined : ariaLabel || 'Dialog'}
+        aria-describedby={description ? descriptionId : undefined}
         className={cn(
           'flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-surface shadow-2xl animate-slide-up sm:rounded-2xl',
           sizes[size],
@@ -79,13 +86,18 @@ export function Dialog({
               {title && (
                 <h2
                   ref={titleRef}
+                  id={titleId}
                   tabIndex={-1}
                   className="text-lg font-semibold text-fg outline-none"
                 >
                   {title}
                 </h2>
               )}
-              {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+              {description && (
+                <p id={descriptionId} className="mt-0.5 text-sm text-muted">
+                  {description}
+                </p>
+              )}
             </div>
             <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close dialog">
               <X size={18} />

@@ -762,7 +762,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:**
 
 ### IMP-027 — Give Sheet and Dialog an accessible name
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/components/ui/Sheet.tsx` (`:50-59`), `src/components/ui/Dialog.tsx` (`:63`)
@@ -775,7 +775,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:**
+- **Notes:** DONE (attempt 1). Sheet/Dialog use aria-labelledby with a non-empty aria-label fallback and wire aria-describedby; +3 jsdom tests, browser snapshot confirms names, no visual diff. Verified PASS (typecheck/lint, 34 files / 385 tests, build). Reports: impl-IMP-027.md, verify-IMP-027.md.
 
 ### IMP-029 — Pin the Node version (engines + .nvmrc)
 - **Status:** TODO

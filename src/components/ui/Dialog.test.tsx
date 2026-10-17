@@ -73,6 +73,64 @@ function HeadingDialog({ open = true }: { open?: boolean }) {
 }
 
 describe('Dialog', () => {
+  function accessibleName(host: HTMLElement): string {
+    const dialog = host.querySelector<HTMLElement>('[role="dialog"]');
+    const labelledBy = dialog?.getAttribute('aria-labelledby');
+    if (labelledBy) return document.getElementById(labelledBy)?.textContent?.trim() ?? '';
+    return dialog?.getAttribute('aria-label') ?? '';
+  }
+
+  function accessibleDescription(host: HTMLElement): string {
+    const dialog = host.querySelector<HTMLElement>('[role="dialog"]');
+    const describedBy = dialog?.getAttribute('aria-describedby');
+    return describedBy ? (document.getElementById(describedBy)?.textContent?.trim() ?? '') : '';
+  }
+
+  it('uses the visible title as its accessible name and description text as its description', async () => {
+    const mounted = await mount(
+      <Dialog
+        open
+        onClose={() => undefined}
+        title="Keyboard shortcuts"
+        description="Press a key to run a command."
+        size="sm"
+      >
+        <p>Body</p>
+      </Dialog>,
+    );
+    const dialog = mounted.host.querySelector<HTMLElement>('[role="dialog"]');
+    expect(accessibleName(mounted.host)).toBe('Keyboard shortcuts');
+    expect(accessibleDescription(mounted.host)).toBe('Press a key to run a command.');
+    expect(dialog?.hasAttribute('aria-label')).toBe(false);
+    await mounted.unmount();
+  });
+
+  it('falls back to a non-empty aria-label when no title is given', async () => {
+    const mounted = await mount(
+      <Dialog open onClose={() => undefined} description="This deletes everything." size="sm">
+        <p>Body</p>
+      </Dialog>,
+    );
+    const dialog = mounted.host.querySelector<HTMLElement>('[role="dialog"]');
+    expect(accessibleName(mounted.host)).toBe('Dialog');
+    expect(dialog?.hasAttribute('aria-labelledby')).toBe(false);
+    expect(accessibleDescription(mounted.host)).toBe('This deletes everything.');
+    await mounted.unmount();
+  });
+
+  it('accepts a custom aria-label fallback when no title is given', async () => {
+    const mounted = await mount(
+      <Dialog open onClose={() => undefined} ariaLabel="Pick a date" size="sm">
+        <p>Body</p>
+      </Dialog>,
+    );
+    expect(accessibleName(mounted.host)).toBe('Pick a date');
+    expect(
+      mounted.host.querySelector<HTMLElement>('[role="dialog"]')?.hasAttribute('aria-describedby'),
+    ).toBe(false);
+    await mounted.unmount();
+  });
+
   it('focuses the title heading instead of the Close button', async () => {
     const mounted = await mount(<HeadingDialog />);
     const heading = mounted.host.querySelector('h2');

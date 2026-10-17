@@ -3,9 +3,9 @@
 - **Phase:** 4 — Improvement loop (resumed 2026-10-17)
 - **Work branch:** improve/auto-20261017 (from `main` @ `cc609a4`)
 - **Start SHA:** cc609a4
-- **Last commit:** (pending IMP-025 commit)
+- **Last commit:** f27dff6 (IMP-025)
 - **Current item:** (none — batch in progress)
-- **Counters:** session commits=11 (incl. prior 10) | done=44 | blocked=1 | needs-human=4 | attempts_current=0
+- **Counters:** session commits=12 (incl. prior 10) | done=45 | blocked=1 | needs-human=4 | attempts_current=0
 - **Backlog:** `.improve/FEATURES.md` (legacy layout, 85 items: 37 TODO, 4 NEEDS-HUMAN, 1 BLOCKED)
 - **Baseline:** typecheck/lint clean; 33 files / 375 tests; build OK; CI + Pages deploy green.
 - **Push:** disabled by `.git/hooks/pre-push`; nothing pushed this session.

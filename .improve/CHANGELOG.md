@@ -34,3 +34,4 @@ this file is appended per dimension from the resumed session onward.
 ## Tests/Tooling
 
 ## Content
+- 2026-10-17 · IMP-025 · itemActions write paths now have direct create/edit/undo/occurrence tests · f27dff6 · files: `src/domain/itemActions.test.ts`
