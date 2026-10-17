@@ -727,7 +727,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 3; attempts 1-2 were rejected by verification). Replaced the 564px horizontal scroller with a `grid-cols-5` two-row layout so all 10 destinations are visible and tappable at 390px and 320px with no swipe, no clipping and no page scroll; the active cell is a solid `bg-accent` pill that highlights on first paint including deep links, targets are 73x44, and the 1280px rail is byte-identical. Attempt 1 kept the scroller and added a gradient cue (verifier: cue broke WCAG 1.4.3 contrast 6.96:1 -> 1.00:1 over the Bills/Lists labels and created a mis-tap); attempt 2's taller bar then let the toast `Undo` button overlap nav row 1 (destructive mis-tap) and lacked a safe-area inset. Final fix derives the toast and `main` offsets from the measured nav height via a published CSS variable plus a live `env(safe-area-inset-bottom)` term. 302 tests green (31 files); a 9,945-point hit test found 0 foreign elements over the bar and the item stayed deleted after every tap; clearance held at 15px across a 98->152px height change; 8 mutations caught. Residual nit: `publishMobileNavHeight` in src/lib/layout.ts does not guard a non-finite height (unreachable today).
 
 ### IMP-025 — Add tests for the `itemActions` write path
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** test coverage
 - **Type:** test
 - **Area / files:** new `src/domain/itemActions.test.ts`; target `src/domain/itemActions.ts`
@@ -742,7 +742,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** M    **Risk:** low
 - **Depends on:** IMP-002, IMP-003
 - **Priority score:** 10
-- **Notes:** Undo closures require draining `useUiStore`; add a small test helper. IMP-050 may extend this file.
+- **Notes:** DONE (attempt 1). Extended `src/domain/itemActions.test.ts` with saveItem create/edit history + undo, plain and occurrence toggleDone, and confirmed existing descendant/updateRecurring coverage. Verified PASS (typecheck/lint, 33 files / 378 tests). Reports: `.improve/reports/impl-IMP-025.md`, `verify-IMP-025.md`.
 
 ### IMP-026 — Add unit tests for `eisenhower.ts`
 - **Status:** TODO

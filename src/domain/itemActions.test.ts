@@ -148,9 +148,36 @@ describe('saveItem', () => {
     const item = createItem({ kind: 'task', title: 'Existing' });
     await itemRepo.create(item);
     await saveItem({ ...item, title: 'Renamed' });
-    expect(useUiStore.getState().undoStack.map((entry) => entry.label)).toEqual([
-      'Edit “Renamed”',
+    expect(useUiStore.getState().undoStack.map((entry) => entry.label)).toEqual(['Edit “Renamed”']);
+  });
+
+  it('accumulates one history entry per changed edit and undoes them newest-first', async () => {
+    const created = createItem({ kind: 'task', title: 'Draft', notes: 'base' });
+    await saveItem(created);
+
+    const first = { ...created, title: 'First', notes: 'one' };
+    await saveItem(first);
+    await saveItem({ ...first, title: 'Second' });
+
+    const edited = (await itemRepo.get(created.id))!;
+    expect(edited.history.map((entry) => [entry.field, entry.oldValue, entry.newValue])).toEqual([
+      ['Title', 'Draft', 'First'],
+      ['Notes', 'base', 'one'],
+      ['Title', 'First', 'Second'],
     ]);
+    expect(useUiStore.getState().undoStack).toHaveLength(3);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await itemRepo.get(created.id))!.title).toBe('First');
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    const restored = (await itemRepo.get(created.id))!;
+    expect(restored.title).toBe('Draft');
+    expect(restored.notes).toBe('base');
+    expect(restored.history).toEqual([]);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect(await itemRepo.get(created.id)).toBeUndefined();
   });
 });
 
@@ -298,6 +325,59 @@ describe('skipOccurrence', () => {
     expect(await itemRepo.get('s')).toEqual(afterFirst);
     expect(await itemRepo.get('p')).toBeUndefined();
     expect(useUiStore.getState().undoStack).toHaveLength(1);
+  });
+});
+
+describe('toggleDone (plain item)', () => {
+  it('marks a task done and back, recording status history, with each undo restoring the prior row', async () => {
+    const item = createItem({ kind: 'task', title: 'Plain task' });
+    await itemRepo.create(item);
+    const before = (await itemRepo.get(item.id))!;
+
+    await toggleDone(before);
+
+    const done = (await itemRepo.get(item.id))!;
+    expect(done.status).toBe('done');
+    expect(done.completedAt).toBeGreaterThan(0);
+    expect(done.history.map((entry) => entry.field)).toEqual(['Status', 'Completed At']);
+    expect(useUiStore.getState().undoStack).toHaveLength(1);
+
+    await toggleDone(done);
+
+    const todo = (await itemRepo.get(item.id))!;
+    expect(todo.status).toBe('todo');
+    expect(todo.completedAt).toBeNull();
+    expect(todo.history).toHaveLength(4);
+    expect(useUiStore.getState().undoStack).toHaveLength(2);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await itemRepo.get(item.id))!.status).toBe('done');
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect(await itemRepo.get(item.id)).toEqual(before);
+  });
+});
+
+describe('toggleDone (occurrence)', () => {
+  const OCC = '2026-07-20';
+  const OTHER = '2026-07-27';
+
+  it('toggles only the targeted occurrence and restores it on undo', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+
+    await toggleDone(before, OCC);
+
+    const after = (await itemRepo.get('s'))!;
+    expect(after.occurrences[OCC]).toMatchObject({ status: 'done' });
+    expect(after.occurrences[OCC].completedAt).toBeGreaterThan(0);
+    expect(after.occurrences[OTHER]).toBeUndefined();
+    expect(after.status).toBe('todo');
+    expect(displayed(occurrenceAt(after, OCC))).toMatchObject({ status: 'done' });
+    expect(displayed(occurrenceAt(after, OTHER))).toEqual(displayed(occurrenceAt(before, OTHER)));
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect(await itemRepo.get('s')).toEqual(before);
   });
 });
 
