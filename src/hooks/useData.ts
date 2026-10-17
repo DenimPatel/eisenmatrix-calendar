@@ -23,24 +23,22 @@ export function useItem(id: string | null | undefined): Item | undefined {
 }
 
 export function useLists(): List[] {
-  const lists = useLiveQuery(() => listRepo.all(), [], [] as List[]);
-  return lists ?? [];
+  return useLiveQuery(() => listRepo.all(), [], [] as List[]);
 }
 
 export function useChildren(parentId: string | null | undefined): Item[] {
-  const items = useLiveQuery(
+  return useLiveQuery(
     () => (parentId ? itemRepo.children(parentId) : Promise.resolve([] as Item[])),
     [parentId],
     [] as Item[],
   );
-  return items ?? [];
 }
 
 export function useSetting<T>(key: string, fallback: T): T {
-  const value = useLiveQuery(
+  const serializedFallback = useMemo(() => JSON.stringify(fallback), [fallback]);
+  return useLiveQuery(
     () => settingsRepo.get<T>(key, fallback),
-    [key, JSON.stringify(fallback)],
+    [key, serializedFallback],
     fallback,
   );
-  return (value ?? fallback) as T;
 }

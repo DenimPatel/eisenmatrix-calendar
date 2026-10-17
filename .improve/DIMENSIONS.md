@@ -11,7 +11,7 @@
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
 | Accessibility | 4 | 2 | 5 | 0 | 2026-10-17 IMP-033 | mobile header semantics | IMP-091 |
 | Docs/Onboarding | 4 | 2 | 1 | 1 | 2026-10-17 IMP-065 | agent guide naming | IMP-046 |
-| Tests/Tooling | 4 | 2 | 10 | 0 | 2026-10-17 IMP-026 | hook coverage | IMP-066 |
+| Tests/Tooling | 4 | 1 | 11 | 0 | 2026-10-17 IMP-066 | boot smoke reliability | IMP-083 |
 
 **Bugs/Correctness (4):** 43 items done overall; IMP-074/075 fixed ICS export and IMP-076 made
 occurrence status writes merge into the persisted map. IMP-088 (view-level no-data reads) and

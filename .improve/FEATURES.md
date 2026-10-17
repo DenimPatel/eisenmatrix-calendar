@@ -941,7 +941,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Documented in `agents.md` (the tracked canonical guide) with reset snippet, about:blank round-trip, devOptions scope and activeElement keydown note; executed the procedure against preview. Verified PASS (prettier/lint). Reports: impl-IMP-065.md, verify-IMP-065.md. Source: `discovered-IMP-007.md` §1 and `discovered-IMP-009.md` D1. This is a process note, not a product defect — the PWA caching is correct and must not be "fixed". IMP-046 may rename `agents.md` to `AGENTS.md`; keep the section findable by heading.
 
 ### IMP-066 — Cover the remaining `useData` hooks and drop the unreachable guards
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** test coverage / cleanup
 - **Type:** test
 - **Area / files:** `src/hooks/useData.ts` (`useLists` `:25-28`, `useChildren` `:30-37`, `useSetting` `:39-46`, `EMPTY_ITEMS` `:6`); `src/hooks/useData.test.tsx`
@@ -956,7 +956,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-008
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-008.md` §1, §2, §5. `EMPTY_ITEMS` (`:6`) is one array shared by every caller on an empty DB — nothing mutates it today, so it is a latent aliasing hazard only; if this work touches it, prefer a getter over a module constant. IMP-043 (`no-explicit-any`) will reject a reintroduced cast.
+- **Notes:** DONE (attempt 1). Mock now captures deps; 9 tests cover useItem/useLists/useChildren/useSetting; useSetting dep is memo-stabilized; unreachable guards and cast removed. +9 tests (436). Verified PASS (typecheck/lint, build, mutation-checked). Reports: impl-IMP-066.md, verify-IMP-066.md. Source: `discovered-IMP-008.md` §1, §2, §5. `EMPTY_ITEMS` (`:6`) is one array shared by every caller on an empty DB — nothing mutates it today, so it is a latent aliasing hazard only; if this work touches it, prefer a getter over a module constant. IMP-043 (`no-explicit-any`) will reject a reintroduced cast.
 
 ### IMP-067 — Make the CI gate a required status check on `main` (NEEDS-HUMAN)
 - **Status:** NEEDS-HUMAN
