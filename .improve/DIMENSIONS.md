@@ -7,7 +7,7 @@
 | Visual | 3 | 1 | 0 | 0 | — | no recent visual audit | IMP-078 |
 | UX/Interaction | 4 | 4 | 4 | 0 | 2026-10-17 IMP-078 | Escape stacking, scope-switch reset | IMP-079, IMP-093 |
 | Format/Structure | 4 | 1 | 1 | 0 | 2026-10-17 IMP-064 | agent guide naming | IMP-046 |
-| Delivery | 4 | 3 | 4 | 1 | 2026-10-17 IMP-063 | unpinned actions | IMP-081 |
+| Delivery | 5 | 2 | 5 | 1 | 2026-10-17 IMP-081 | branch protection, workflow breadth | IMP-067 (human) |
 | Performance | 3 | 1 | 0 | 0 | — | per-component live queries | IMP-060 |
 | Accessibility | 4 | 2 | 5 | 0 | 2026-10-17 IMP-033 | mobile header semantics | IMP-091 |
 | Docs/Onboarding | 4 | 2 | 1 | 1 | 2026-10-17 IMP-065 | agent guide naming | IMP-046 |

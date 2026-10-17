@@ -1043,7 +1043,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-068.md` §1. Same class as IMP-039's boot-promise hardening but reachable by a single user click, so it is worth doing on its own. `discovered-IMP-015.md` §3 (a `pickFile` outside the `try`) is already resolved by IMP-015's implementation and needs nothing here.
 
 ### IMP-081 — Pin GitHub Actions to full commit SHAs
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** security / CI automation
 - **Type:** tooling
 - **Area / files:** `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` (every `uses:` entry: `actions/checkout@v4`, `actions/setup-node@v4`, `actions/upload-pages-artifact@v3`, `actions/deploy-pages@v4`); `.github/dependabot.yml` (added by IMP-022)
@@ -1057,7 +1057,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-022
 - **Priority score:** 10
-- **Notes:** Source: `discovered-IMP-005.md` §3 and `discovered-IMP-022.md` §1. Scored 10: cheap and standard supply-chain hardening, but no product impact for a single-user static site.
+- **Notes:** DONE (attempt 1). All six third-party uses: entries pinned to 40-hex SHAs with version comments; SHAs independently re-resolved against upstream tags. Verified PASS (workflow Prettier/lint; dependabot and deploy gate intact). Reports: impl-IMP-081.md, verify-IMP-081.md. Source: `discovered-IMP-005.md` §3 and `discovered-IMP-022.md` §1. Scored 10: cheap and standard supply-chain hardening, but no product impact for a single-user static site.
 
 ### IMP-035 — Fix settings read-modify-write races between theme and Settings
 - **Status:** TODO
