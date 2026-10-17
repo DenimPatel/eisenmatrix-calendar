@@ -56,3 +56,4 @@ Format: timestamp | item ID | result | commit SHA | note
 2026-10-17T04:27Z | SWEEP-50 | CLEAN | - | 375 tests; 40/40 route checks; 0 console errors; light+dark, 1280/390
 2026-10-17T16:12Z | IMP-025 | done | f27dff6 | itemActions write-path tests; +3 tests (378)
 2026-10-17T16:20Z | IMP-027 | done | aeea3e3 | Sheet/Dialog accessible names + descriptions; +3 tests (385)
+2026-10-17T16:28Z | IMP-031 | done | 2e455ce | mid-field CSV quotes literal; +1 test (386)

@@ -778,7 +778,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Sheet/Dialog use aria-labelledby with a non-empty aria-label fallback and wire aria-describedby; +3 jsdom tests, browser snapshot confirms names, no visual diff. Verified PASS (typecheck/lint, 34 files / 385 tests, build). Reports: impl-IMP-027.md, verify-IMP-027.md.
 
 ### IMP-029 — Pin the Node version (engines + .nvmrc)
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** configuration / packaging
 - **Type:** tooling
 - **Area / files:** `package.json`, new `.nvmrc`
@@ -791,7 +791,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:** Align the value with IMP-005's setup-node.
+- **Notes:** DONE (attempt 1). `engines.node: ">=20"` and `.nvmrc` pin 20, matching both workflows and the README; lockfile untouched. Verified PASS (typecheck/lint, 386 tests, build). Reports: impl-IMP-029.md, verify-IMP-029.md.
 
 ### IMP-031 — Fix CSV parsing of a quote appearing mid-field
 - **Status:** DONE
@@ -807,7 +807,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 10
-- **Notes:**
+- **Notes:** DONE (attempt 1). Quotes open only at field start; mid-field quotes are literal; RFC-4180 round-trips intact; +1 test (386). Verified PASS (typecheck/lint, build). Reports: impl-IMP-031.md, verify-IMP-031.md.
 
 ### IMP-032 — Sum recorded bill payments for the "Paid" total
 - **Status:** TODO
