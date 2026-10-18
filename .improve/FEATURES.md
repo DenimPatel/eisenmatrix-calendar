@@ -1275,7 +1275,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). One ref-counted liveQuery backs useItems/useArchivedItems via useSyncExternalStore; all consumers share per-flag array instances; last unmount unsubscribes. +3 tests (453). Verified PASS (typecheck/lint, build, format, browser 10 routes). Reports: impl-IMP-060.md, verify-IMP-060.md. Source: `discovered-IMP-008.md` §4 — explicitly out of scope for IMP-008 because it restructures data flow across 12 files. 12 production call sites counted (not the 13 reported, which included the hook and its test). `useItems` is deliberately the only hook refactored; `useItem`/`useChildren` keep their per-site queries.
 
 ### IMP-085 — Render the occurrence-level `title` override
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / scheduling UI
 - **Type:** bug-fix
 - **Area / files:** `src/types/item.ts:136-149` (`Occurrence` has no resolved title); `src/domain/recurrence.ts:205-224` (`buildOccurrence`); `src/features/item/ItemCard.tsx:111` (renders `item.title`)

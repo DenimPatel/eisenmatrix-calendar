@@ -67,3 +67,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-082 · 'This and future' no longer creates a phantom zero-occurrence series or inverted range
 - 2026-10-18 · IMP-093 · Schedule edits survive switching edit scope to 'This and future'
 - 2026-10-18 · IMP-084 · Duplicate-import children with fresh ids attach to the duplicated parent
+- 2026-10-18 · IMP-085 · A 'This occurrence' retitle now shows on that occurrence in cards, Today and Calendar

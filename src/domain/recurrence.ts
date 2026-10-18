@@ -202,6 +202,11 @@ export function resolveOccurrenceStatus(item: Item, occKey: string): ResolvedOcc
   return { status: 'todo', completedAt: null, isOverride };
 }
 
+/** Effective title of one occurrence: its retitle override when present, else the series title. */
+export function resolveOccurrenceTitle(item: Item, occKey: string): string {
+  return item.recurrence?.overrides[occKey]?.title ?? item.title;
+}
+
 function buildOccurrence(item: Item, date: Date): Occurrence {
   const rule = item.recurrence;
   const occKey = toOccKey(date);
@@ -214,6 +219,7 @@ function buildOccurrence(item: Item, date: Date): Occurrence {
     item,
     occKey,
     date: startOfDay(date),
+    title: resolveOccurrenceTitle(item, occKey),
     start,
     end,
     allDay,

@@ -217,7 +217,7 @@ export function CalendarView() {
                         key={`${occ.item.id}-${occ.occKey}`}
                         type="button"
                         onClick={() => openEditor(occ.item, occ.occKey)}
-                        title={occ.item.title}
+                        title={occ.title}
                         className={cn(
                           'block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px]',
                           occ.status === 'done'
@@ -228,7 +228,7 @@ export function CalendarView() {
                         {formatTime(occ.start) && (
                           <span className="mr-1 font-medium">{formatTime(occ.start)}</span>
                         )}
-                        {occ.item.title}
+                        {occ.title}
                       </button>
                     ))}
                     {dayOccurrences.length > MONTH_CELL_LIMIT && (
@@ -354,7 +354,7 @@ function YearMonthCard({
             <span className="mr-1 font-mono text-[10px]">
               {parseLocalDate(occ.occKey)?.getDate()}
             </span>
-            {occ.item.title}
+            {occ.title}
           </button>
         ))}
         {occurrences.length === 0 && <p className="text-xs text-muted">No items</p>}

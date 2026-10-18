@@ -111,3 +111,32 @@ describe('ItemCard time label', () => {
     await unmount(mounted);
   });
 });
+
+describe('ItemCard occurrence title', () => {
+  it('renders a retitled occurrence and leaves its siblings on the series title', async () => {
+    const item = makeItem('2026-10-01T09:00', {
+      freq: 'weekly',
+      overrides: { '2026-10-08': { title: 'Renamed standup' } },
+    });
+
+    const retitled = await render(<ItemCard item={item} occurrenceKey="2026-10-08" />);
+    expect(retitled.host.textContent).toContain('Renamed standup');
+    await unmount(retitled);
+
+    const sibling = await render(<ItemCard item={item} occurrenceKey="2026-10-15" />);
+    expect(sibling.host.textContent).toContain('Standup');
+    expect(sibling.host.textContent).not.toContain('Renamed standup');
+    await unmount(sibling);
+  });
+
+  it('renders the series title when no occurrence is supplied', async () => {
+    const item = makeItem('2026-10-01T09:00', {
+      freq: 'weekly',
+      overrides: { '2026-10-08': { title: 'Renamed standup' } },
+    });
+    const mounted = await render(<ItemCard item={item} />);
+    expect(mounted.host.textContent).toContain('Standup');
+    expect(mounted.host.textContent).not.toContain('Renamed standup');
+    await unmount(mounted);
+  });
+});

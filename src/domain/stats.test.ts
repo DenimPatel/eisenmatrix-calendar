@@ -111,6 +111,7 @@ function occurrence(item: Item, key: string, status: OccurrenceStatus): Occurren
     item,
     occKey: key,
     date: parseLocalDate(key)!,
+    title: item.title,
     start: key,
     end: null,
     allDay: true,

@@ -139,6 +139,8 @@ export interface Occurrence {
   occKey: string;
   /** Local start-of-day for the occurrence. */
   date: Date;
+  /** Effective title after overrides. */
+  title: string;
   /** Effective start (`YYYY-MM-DD[THH:mm]`) after overrides. */
   start: string | null;
   end: string | null;

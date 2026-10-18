@@ -4,6 +4,7 @@ import {
   hasOccurrenceOnOrAfter,
   nextOccurrence,
   resolveOccurrenceStatus,
+  resolveOccurrenceTitle,
   splitSeries,
 } from './recurrence';
 import { createItem } from './itemFactory';
@@ -201,6 +202,34 @@ describe('occurrence status resolution', () => {
     });
     expect(resolveOccurrenceStatus(item, '2026-07-20').isOverride).toBe(true);
     expect(resolveOccurrenceStatus(item, '2026-07-21').isOverride).toBe(false);
+  });
+});
+
+describe('resolveOccurrenceTitle', () => {
+  it('uses a retitle override for that occurrence only', () => {
+    const item = makeItem('2026-07-13', {
+      freq: 'weekly',
+      overrides: { '2026-07-20': { title: 'Renamed' } },
+    });
+    expect(resolveOccurrenceTitle(item, '2026-07-20')).toBe('Renamed');
+    expect(resolveOccurrenceTitle(item, '2026-07-27')).toBe('Test');
+  });
+
+  it('falls back to the series title with no override or no recurrence', () => {
+    const recurring = makeItem('2026-07-13', { freq: 'weekly' });
+    expect(resolveOccurrenceTitle(recurring, '2026-07-20')).toBe('Test');
+
+    const single = makeItem('2026-07-13');
+    expect(resolveOccurrenceTitle(single, '2026-07-13')).toBe('Test');
+  });
+
+  it('is what buildOccurrence resolves onto each occurrence', () => {
+    const item = makeItem('2026-07-13', {
+      freq: 'weekly',
+      overrides: { '2026-07-20': { title: 'Renamed' } },
+    });
+    expect(only(item, '2026-07-20').title).toBe('Renamed');
+    expect(only(item, '2026-07-27').title).toBe('Test');
   });
 });
 

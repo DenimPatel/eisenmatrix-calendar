@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { KIND_META } from './kindMeta';
 import { ITEM_STATUS_LABELS } from '@/lib/labels';
 import { describeRecurrence } from '@/domain/quickadd';
-import { resolveOccurrenceStatus } from '@/domain/recurrence';
+import { resolveOccurrenceStatus, resolveOccurrenceTitle } from '@/domain/recurrence';
 import { resolveCardTime } from './cardTime';
 import { toggleDone } from '@/domain/itemActions';
 
@@ -50,6 +50,7 @@ export function ItemCard({
   const effectiveStatus =
     status ?? (occurrenceKey ? resolveOccurrenceStatus(item, occurrenceKey).status : item.status);
   const done = effectiveStatus === 'done';
+  const title = occurrenceKey ? resolveOccurrenceTitle(item, occurrenceKey) : item.title;
   const kind = KIND_META[item.kind];
   const time = resolveCardTime(start, item.start);
   const recurrenceLabel = describeRecurrence(item.recurrence);
@@ -108,7 +109,7 @@ export function ItemCard({
                 done && 'text-muted line-through',
               )}
             >
-              {item.title || 'Untitled'}
+              {title || 'Untitled'}
             </span>
           </div>
 

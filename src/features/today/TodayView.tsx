@@ -109,7 +109,7 @@ export function TodayView() {
           <span className="text-xs font-semibold uppercase tracking-wide text-accent">
             What's next
           </span>
-          <span className="truncate text-sm font-medium text-fg">{nextUp.item.title}</span>
+          <span className="truncate text-sm font-medium text-fg">{nextUp.title}</span>
           {nextUp.start?.includes('T') && (
             <span className="text-xs text-muted">{nextUp.start.slice(11, 16)}</span>
           )}
@@ -133,7 +133,7 @@ export function TodayView() {
                         className="truncate text-sm text-fg hover:text-accent"
                         onClick={() => openEditor(occ.item, occ.occKey)}
                       >
-                        {occ.item.title}
+                        {occ.title}
                       </button>
                       <span className="shrink-0 text-xs text-rose-600 dark:text-rose-300">
                         {parseLocalDate(occ.occKey)?.toLocaleDateString(undefined, {
@@ -231,7 +231,7 @@ export function TodayView() {
                   onClick={() => openEditor(occ.item, occ.occKey)}
                   className="flex w-full items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-left hover:bg-elevated"
                 >
-                  <span className="truncate text-sm text-fg">{occ.item.title}</span>
+                  <span className="truncate text-sm text-fg">{occ.title}</span>
                   <span className="shrink-0 text-xs text-muted">
                     {occ.item.data.currency} {occ.item.data.amount}
                   </span>
