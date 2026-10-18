@@ -1093,7 +1093,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Schema change requires bumping the Dexie version (high-blast-radius; include a migration).
 
 ### IMP-037 — Fix "This and future" editing past occurrences + add undo
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`updateRecurring` future branch, `:252-264`); `src/domain/recurrence.ts` (`splitSeries`)

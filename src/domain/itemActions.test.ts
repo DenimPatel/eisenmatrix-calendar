@@ -840,6 +840,96 @@ describe('updateRecurring (scope: future)', () => {
     expect(union).toEqual(occurrences(stored));
     expect(union).toHaveLength(10);
   });
+
+  it('leaves the head untouched and applies the patch only to the tail', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+    // The editor hands over the already-patched draft as `item`, not the persisted row.
+    const draft: Item = { ...before, title: 'Standup (retro)', notes: 'retro notes' };
+
+    await updateRecurring(draft, 'future', OCC, { title: draft.title, notes: draft.notes });
+
+    const head = (await itemRepo.get('s'))!;
+    expect(head.title).toBe('Standup');
+    expect(head.notes).toBe('base notes');
+    const tail = await tailOf();
+    expect(tail.title).toBe('Standup (retro)');
+    expect(tail.notes).toBe('retro notes');
+  });
+
+  it('leaves every occurrence before the split unchanged', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+    const pastKey = '2026-07-13';
+    const past = displayed(occurrenceAt(before, pastKey));
+    const draft: Item = { ...before, title: 'Standup (retro)' };
+
+    await updateRecurring(draft, 'future', OCC, { title: draft.title });
+
+    const head = (await itemRepo.get('s'))!;
+    expect(displayed(occurrenceAt(head, pastKey))).toEqual(past);
+  });
+
+  it('pushes one undo entry that restores the original and removes the created tail', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const before = (await itemRepo.get('s'))!;
+    const beforeAll = await itemRepo.all();
+    const draft: Item = { ...before, title: 'Standup (retro)' };
+
+    await updateRecurring(draft, 'future', OCC, { title: draft.title });
+    expect(useUiStore.getState().undoStack).toHaveLength(1);
+    expect(await itemRepo.all()).toHaveLength(2);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+
+    expect(await itemRepo.all()).toEqual(beforeAll);
+  });
+
+  it('patches the row instead of splitting when the stored row has no recurrence', async () => {
+    await itemRepo.create(
+      normalizeItem({
+        ...createItem({
+          kind: 'task',
+          title: 'Plain',
+          start: '2026-07-13T09:00',
+          end: '2026-07-13T10:00',
+        }),
+        id: 'p',
+      }),
+    );
+    const before = (await itemRepo.get('p'))!;
+    expect(before.recurrence).toBeNull();
+    // The editor shape: a draft carrying a newly added rule, plus a series patch that (like the
+    // editor's) does not repeat the rule.
+    const draft: Item = {
+      ...before,
+      title: 'Plain (weekly)',
+      recurrence: {
+        freq: 'weekly',
+        interval: 1,
+        weekStartsOn: 1,
+        exceptions: [],
+        overrides: {},
+      },
+    };
+
+    await updateRecurring(draft, 'future', '2026-07-13', { title: 'Plain (weekly)' });
+
+    const after = await itemRepo.all();
+    expect(after).toHaveLength(1);
+    expect(after[0].id).toBe('p');
+    expect(after[0].title).toBe('Plain (weekly)');
+    expect(after[0].recurrence?.freq).toBe('weekly');
+    expect(useUiStore.getState().undoStack).toHaveLength(1);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+
+    const undone = await itemRepo.all();
+    expect(undone).toHaveLength(1);
+    expect(undone[0].id).toBe('p');
+    expect(undone[0].title).toBe('Plain');
+    expect(undone[0].recurrence).toBeNull();
+  });
 });
 
 describe('updateRecurring (scope: occurrence) resolved ranges', () => {

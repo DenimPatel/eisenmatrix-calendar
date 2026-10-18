@@ -108,6 +108,15 @@ export const itemRepo = {
     await getDb().items.bulkDelete(ids);
   },
 
+  /** Put and delete rows in one transaction, so a two-row undo cannot half-apply. */
+  async putAndRemove(put: Item[], remove: string[]): Promise<void> {
+    const db = getDb();
+    await db.transaction('rw', db.items, async () => {
+      if (put.length) await db.items.bulkPut(put);
+      if (remove.length) await db.items.bulkDelete(remove);
+    });
+  },
+
   async collectDescendants(id: string): Promise<Item[]> {
     const ids = await collectDescendantIds(id);
     const descendants = await getDb().items.bulkGet(ids);

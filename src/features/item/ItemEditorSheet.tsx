@@ -214,9 +214,7 @@ export function ItemEditorSheet() {
           ? occurrencePatch(draft, seed ?? editor.item ?? draft)
           : seriesPatch(draft),
       );
-      if (scope === 'future') {
-        pushToast({ message: 'Series split', tone: 'success' });
-      } else {
+      if (scope === 'occurrence') {
         pushToast({
           message: written ? 'Occurrence updated' : 'Nothing to update for this occurrence',
           tone: 'success',

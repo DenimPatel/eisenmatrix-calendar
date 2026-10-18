@@ -353,12 +353,24 @@ export async function updateRecurring(
     return true;
   }
 
-  // future: split the series at occKey and apply the patch to the new tail
-  const { head, tail } = splitSeries(item, occKey, newId());
+  // future: split the series at occKey and apply the patch to the new tail. The head is the
+  // persisted series, never the edited draft: the draft already carries the patch, and building
+  // the head from it would rewrite every past occurrence with the new values.
+  const stored = (await itemRepo.get(item.id)) ?? item;
+  // The editor lets a plain row gain a recurrence and save "this and future". There is no
+  // persisted series to split, and `splitSeries` would return the same row as both head and
+  // tail — one id written twice, the draft's rule dropped, and an undo that deletes the item.
+  // Apply the draft's rule and patch to the row instead, exactly as scope "all" would.
+  if (!stored.recurrence) {
+    const recurrence = (patch.recurrence as Item['recurrence']) ?? item.recurrence;
+    await patchItem(item.id, { ...patch, ...(recurrence ? { recurrence } : {}) }, { silent: true });
+    toast('Series updated', 'success');
+    return true;
+  }
+  const { head, tail } = splitSeries(stored, occKey, newId());
   // `splitSeries` anchors the tail on the split day and hands it only the count the head
   // did not use, so a start/end/dueAt the editor left untouched must not drag the tail back
   // onto the range the head already covers.
-  const stored = (await itemRepo.get(item.id)) ?? item;
   const tailPatch: ItemPatch = { ...patch };
   for (const field of ['start', 'end', 'dueAt'] as const) {
     if (tailPatch[field] === stored[field]) delete tailPatch[field];
@@ -370,8 +382,12 @@ export async function updateRecurring(
     recurrence: (tailPatch.recurrence as Item['recurrence']) ?? tail.recurrence,
     updatedAt: Date.now(),
   } as Item;
-  await itemRepo.create(head);
-  await itemRepo.create(tailPatched);
+  await itemRepo.createMany([head, tailPatched]);
+  // One entry: undo restores the pre-split series row and removes the tail it created, in a
+  // single transaction so it cannot half-apply.
+  pushUndo(`Split “${stored.title}”`, async () => {
+    await itemRepo.putAndRemove([stored], [tailPatched.id]);
+  });
   toast('Series split', 'success');
   return true;
 }
