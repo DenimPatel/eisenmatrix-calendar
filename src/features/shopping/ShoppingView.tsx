@@ -121,6 +121,7 @@ export function ShoppingView() {
         <div className="flex items-center gap-2">
           <Select
             className="w-auto"
+            aria-label="Filter by list"
             value={activeListId}
             onChange={(e) => setActiveListId(e.target.value)}
             options={[
@@ -145,6 +146,7 @@ export function ShoppingView() {
       <div className="card flex gap-2 p-3">
         <input
           className="input"
+          aria-label="Add shopping item"
           placeholder="Add item and press Enter (e.g. milk 2L)"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

@@ -283,6 +283,7 @@ export function SettingsView() {
             <input
               type="time"
               className="input w-28"
+              aria-label="Daily digest time"
               value={settings.digestTime}
               onChange={(e) => void persist({ digestTime: e.target.value })}
             />

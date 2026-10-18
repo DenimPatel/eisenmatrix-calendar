@@ -57,6 +57,7 @@ export function ReminderEditor({ value, allDay, onChange }: ReminderEditorProps)
               <input
                 type="time"
                 className="input"
+                aria-label="Reminder time"
                 value={reminder.timeOfDay ?? '09:00'}
                 onChange={(e) =>
                   update(reminder.id, { timeOfDay: e.target.value, offsetMinutes: undefined })
@@ -66,6 +67,7 @@ export function ReminderEditor({ value, allDay, onChange }: ReminderEditorProps)
           ) : (
             <Field className="flex-1">
               <Select
+                aria-label="Reminder offset"
                 value={String(reminder.offsetMinutes ?? -10)}
                 onChange={(e) => update(reminder.id, { offsetMinutes: Number(e.target.value) })}
                 options={OFFSET_PRESETS}

@@ -116,6 +116,7 @@ export function QuickAdd() {
       <input
         ref={inputRef}
         className="input text-base"
+        aria-label="Quick add"
         placeholder={EXAMPLES[0]}
         value={input}
         onChange={(e) => setInput(e.target.value)}

@@ -53,6 +53,7 @@ export function NotesView() {
       <div className="card space-y-2 p-3">
         <textarea
           className="input min-h-[72px]"
+          aria-label="New note"
           placeholder="Jot something down… (first line becomes the title)"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}

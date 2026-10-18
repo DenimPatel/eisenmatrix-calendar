@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/lib/cn';
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -25,15 +25,40 @@ export interface FieldProps {
   htmlFor?: string;
 }
 
+/** Tags a plain element can carry a native `<label for>` association for. */
+const LABELABLE_TAGS = new Set(['input', 'select', 'textarea']);
+
+/**
+ * A single control can take the field's id. Custom controls (`Select`) forward their
+ * props to the element they render, so they qualify too; layout wrappers do not.
+ */
+function isLabelableChild(node: React.ReactNode): node is React.ReactElement<{ id?: string }> {
+  if (!React.isValidElement(node)) return false;
+  if (typeof node.type === 'string') return LABELABLE_TAGS.has(node.type);
+  return true;
+}
+
 export function Field({ label, hint, children, className, htmlFor }: FieldProps) {
+  const autoId = useId();
+  const controlId = htmlFor ?? autoId;
+  const labelable = isLabelableChild(children);
+  // Cloning the id onto the control turns the sibling label into its accessible name; a
+  // wrapper child (a group of inputs) keeps the label presentational and names its own
+  // controls, because one `for` cannot point at several inputs.
+  const control = labelable
+    ? React.cloneElement(children, { id: children.props.id ?? controlId })
+    : children;
   return (
     <div className={cn('space-y-1.5', className)}>
       {label && (
-        <label htmlFor={htmlFor} className="block text-xs font-medium text-muted">
+        <label
+          htmlFor={labelable ? controlId : htmlFor}
+          className="block text-xs font-medium text-muted"
+        >
           {label}
         </label>
       )}
-      {children}
+      {control}
       {hint && <p className="text-xs text-muted">{hint}</p>}
     </div>
   );

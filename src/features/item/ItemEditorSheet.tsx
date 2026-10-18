@@ -469,6 +469,7 @@ export function ItemEditorSheet() {
                   className="min-w-[6rem] flex-1 bg-transparent text-sm outline-none"
                   value={tagInput}
                   placeholder="Add tag…"
+                  aria-label="Add tag"
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ',') {
@@ -508,6 +509,7 @@ export function ItemEditorSheet() {
               ))}
               <input
                 className="input"
+                aria-label={draft.kind === 'goal' ? 'Add milestone' : 'Add subtask'}
                 placeholder={
                   draft.kind === 'goal'
                     ? 'Add a milestone and press Enter'
@@ -532,7 +534,11 @@ export function ItemEditorSheet() {
               </span>
               {draft.checklist.map((entry) => (
                 <div key={entry.id} className="flex items-center gap-2">
-                  <Checkbox checked={entry.done} onChange={() => toggleChecklist(entry.id)} />
+                  <Checkbox
+                    checked={entry.done}
+                    aria-label={entry.text}
+                    onChange={() => toggleChecklist(entry.id)}
+                  />
                   <span className={cn('flex-1 text-sm', entry.done && 'text-muted line-through')}>
                     {entry.text}
                   </span>
@@ -551,6 +557,7 @@ export function ItemEditorSheet() {
               <input
                 className="input"
                 placeholder="Add checklist item and press Enter"
+                aria-label="Add checklist item"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -597,6 +604,7 @@ export function ItemEditorSheet() {
                 <input
                   type="date"
                   className="input"
+                  aria-label="Start date"
                   value={startDate ? formatISODate(startDate) : ''}
                   onChange={(e) => {
                     const dateKey = e.target.value;
@@ -609,6 +617,7 @@ export function ItemEditorSheet() {
                   <input
                     type="time"
                     className="input w-28"
+                    aria-label="Start time"
                     value={draft.start ? formatTime(draft.start) : ''}
                     onChange={(e) => {
                       const dateKey = draft.start

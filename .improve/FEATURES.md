@@ -1934,7 +1934,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#11 + #12, S3). Merged into one test item per instruction.
 
 ### IMP-121 — Give every form control an accessible name
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** bug-fix
 - **Area / files:** `src/components/ui/Form.tsx` (`:28-40`), `src/features/item/ItemEditorSheet.tsx` (`:385-447`, `:467-478`, `:594-670`), `src/features/item/KindFields.tsx` (`:17-305`), `src/features/item/RecurrenceEditor.tsx` (`:54-165`), `src/features/item/ReminderEditor.tsx` (`:56-73`), `src/features/settings/SettingsView.tsx` (`:226-254`, `:283-288`, `:321-331`), `src/features/shopping/ShoppingView.tsx` (`:122-130`, `:146-152`), `src/features/list/ListView.tsx` (`:191-196`), `src/features/notes/NotesView.tsx` (`:54-62`), `src/features/quickadd/QuickAdd.tsx` (`:116-128`), `src/features/command/CommandPalette.tsx` (`:93-115`)
@@ -1949,7 +1949,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F1, S2, Impact 4/Reach 5/Confidence 5).
 
 ### IMP-122 — Expose progress semantics on `ProgressRing`
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** bug-fix
 - **Area / files:** `src/components/ui/ProgressRing.tsx` (`:32-59`); consumers `src/features/today/TodayView.tsx` (`:159`, `:202-208`, `:257`), `src/features/goals/GoalsView.tsx` (`:88`)

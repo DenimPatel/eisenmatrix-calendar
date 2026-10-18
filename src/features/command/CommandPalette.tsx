@@ -93,6 +93,7 @@ export function CommandPalette() {
       <input
         ref={queryRef}
         className="input mb-3 text-base"
+        aria-label="Search commands"
         placeholder="Search items, jump to a view, or run an action…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}

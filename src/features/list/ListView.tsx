@@ -187,6 +187,7 @@ export function ListView() {
           <input
             className="input h-8 text-xs"
             placeholder="New list…"
+            aria-label="New list name"
             value={newListName}
             onChange={(e) => setNewListName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void createList()}
@@ -209,12 +210,14 @@ export function ListView() {
             <input
               className="input pl-9"
               placeholder="Search items…"
+              aria-label="Search items"
               value={filters.search}
               onChange={(e) => setFilters({ search: e.target.value })}
             />
           </div>
           <Select
             className="w-auto"
+            aria-label="Filter by kind"
             value={filters.kinds.length === 1 ? filters.kinds[0] : 'all'}
             onChange={(e) =>
               setFilters({
@@ -228,6 +231,7 @@ export function ListView() {
           />
           <Select
             className="w-auto"
+            aria-label="Filter by status"
             value={filters.statuses.length === 1 ? filters.statuses[0] : 'all'}
             onChange={(e) =>
               setFilters({
@@ -262,6 +266,7 @@ export function ListView() {
             </Button>
             <Select
               className="ml-auto w-auto"
+              aria-label="Move selected to list"
               value=""
               onChange={(e) =>
                 e.target.value !== '' &&
