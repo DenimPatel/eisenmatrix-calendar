@@ -48,6 +48,7 @@ function flush(): Promise<void> {
 }
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
   removeServiceWorker();
 });
@@ -142,8 +143,13 @@ describe('showAppNotification', () => {
         throw new Error('registration failed');
       }),
     }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await expect(showAppNotification('Title')).resolves.toBe(false);
+    expect(warn).toHaveBeenCalledWith(
+      'A reminder notification could not be shown.',
+      expect.stringMatching(/^Error:/),
+    );
   });
 
   it('returns false, never throws, when the constructor rejects', async () => {
@@ -155,8 +161,13 @@ describe('showAppNotification', () => {
     const Ctor = throwing as unknown as { permission: NotificationPermission };
     Ctor.permission = 'granted';
     vi.stubGlobal('Notification', Ctor);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     await expect(showAppNotification('Title')).resolves.toBe(false);
+    expect(warn).toHaveBeenCalledWith(
+      'A reminder notification could not be shown.',
+      expect.stringMatching(/^Error:/),
+    );
   });
 });
 

@@ -25,6 +25,7 @@ import {
   OFFLINE_UNAVAILABLE_MESSAGE,
   reportBootFailure,
 } from '@/lib/bootFailure';
+import { reportFailure } from '@/lib/reportFailure';
 
 // Today stays eager: it is the landing route, so its first paint must not wait on a
 // chunk. Every other view is split so opening Today does not download them.
@@ -102,8 +103,9 @@ export default function App({ onBootEffects }: AppProps = {}) {
     void ensureDbOpen().catch((error: unknown) => {
       reportBootFailure(DATABASE_UNAVAILABLE_MESSAGE, error);
     });
-    // Import any v1 localStorage data (with a safety backup) on first boot.
-    const legacy = runLegacyMigration();
+    // Import any v1 localStorage data (with a safety backup) on first boot. The migration is
+    // headless, so the UI wires its own reporter to surface a swallowed parse failure.
+    const legacy = runLegacyMigration({ onFailure: reportFailure });
     void legacy.catch((error: unknown) => {
       reportBootFailure('Data migration failed — some items may be missing.', error);
     });

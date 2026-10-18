@@ -1,5 +1,6 @@
 import type { Item } from '@/types';
 import { newId } from './id';
+import { reportFailure } from './reportFailure';
 import { validateItem } from './itemValidation';
 
 /** RFC-4180 CSV serialiser. Handles quotes, commas and newlines. */
@@ -118,7 +119,8 @@ function safeJSON<T>(value: string, fallback: T): T {
   if (!value) return fallback;
   try {
     return JSON.parse(value) as T;
-  } catch {
+  } catch (error) {
+    reportFailure('Some imported fields could not be read and were reset.', error);
     return fallback;
   }
 }

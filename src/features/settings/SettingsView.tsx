@@ -42,6 +42,7 @@ import {
   runLegacyMigration,
 } from '@/db/migrations/legacyTasks';
 import { DEFAULT_SETTINGS, type AppSettings, type ThemePreference } from '@/types';
+import { traceFailure } from '@/lib/failureTrace';
 import { cn } from '@/lib/cn';
 
 function describeError(error: unknown): string {
@@ -175,7 +176,11 @@ export function SettingsView() {
       });
     } catch (error) {
       if (previousMarker) {
-        await settingsRepo.set(LEGACY_MIGRATION_KEY, previousMarker).catch(() => undefined);
+        await settingsRepo
+          .set(LEGACY_MIGRATION_KEY, previousMarker)
+          .catch((restoreError) =>
+            traceFailure('Legacy migration marker could not be restored.', restoreError, 'debug'),
+          );
       }
       pushToast({ message: `Migration failed: ${describeError(error)}`, tone: 'error' });
     }

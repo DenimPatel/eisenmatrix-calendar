@@ -1,8 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { csvToItems, itemsToCSV, parseCSV, toCSV } from './csv';
 import { createItem } from '@/domain/itemFactory';
 import { normalizeItem } from '@/domain/itemFactory';
 import { expandOccurrences } from '@/domain/recurrence';
+import { resetReportedFailures } from './reportFailure';
+import { useUiStore } from '@/store/useUiStore';
+
+beforeEach(() => {
+  resetReportedFailures();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('csv', () => {
   it('parses multi-line quoted fields without corrupting records', () => {
@@ -160,5 +170,20 @@ describe('csv', () => {
     const result = csvToItems(csv);
     expect(result.invalid).toBe(1);
     expect(result.items).toEqual([]);
+  });
+
+  it('warns and toasts, then falls back, for an unreadable JSON field', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    useUiStore.setState({ toasts: [] });
+    const csv = 'id,kind,title,tags\r\nbad-json-1,task,Malformed,"[1,2"';
+
+    const result = csvToItems(csv);
+
+    expect(warn).toHaveBeenCalledWith(
+      'Some imported fields could not be read and were reset.',
+      expect.stringMatching(/^SyntaxError:/),
+    );
+    expect(useUiStore.getState().toasts).toHaveLength(1);
+    expect(result.items[0].tags).toEqual([]);
   });
 });

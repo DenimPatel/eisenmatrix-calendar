@@ -1,3 +1,5 @@
+import { reportFailure } from '@/lib/reportFailure';
+
 export type NotificationPermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
 export function notificationPermission(): NotificationPermissionState {
@@ -46,7 +48,10 @@ export async function showAppNotification(
     }
     new Notification(title, { body: options.body, tag: options.tag, data: options.data });
     return true;
-  } catch {
+  } catch (error) {
+    // The caller falls back to an in-app toast (and records the failure), so this only
+    // needs a trace: a toast here would double up with the undelivered-reminder report.
+    reportFailure('A reminder notification could not be shown.', error, { toast: false });
     return false;
   }
 }

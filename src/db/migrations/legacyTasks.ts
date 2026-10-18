@@ -1,6 +1,7 @@
 import type { EisenMatrixDB } from '@/db/schema';
 import { getDb } from '@/db/schema';
 import { firstOccurrenceInRange } from '@/domain/recurrence';
+import { traceFailure, type FailureReporter } from '@/lib/failureTrace';
 import {
   endOfDay,
   endOfMonthDate,
@@ -52,6 +53,11 @@ export interface MigrationResult {
 interface MigrationDeps {
   storage: Pick<Storage, 'getItem' | 'setItem'>;
   db: EisenMatrixDB;
+  /**
+   * Sink for a swallowed failure. The UI layer injects `reportFailure` so the toast stays out
+   * of `db`; when omitted the migration only traces to the console.
+   */
+  onFailure?: FailureReporter;
 }
 
 const STATUS_MAP: Record<string, ItemStatus> = {
@@ -191,12 +197,16 @@ export function mapLegacyTask(task: LegacyTask, order: number): Item {
   return { ...base, occurrences };
 }
 
-export function parseLegacyTasks(raw: string): LegacyTask[] {
+export function parseLegacyTasks(
+  raw: string,
+  onFailure: FailureReporter = traceFailure,
+): LegacyTask[] {
   try {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as LegacyTask[];
-  } catch {
-    // fall through
+    onFailure('Legacy task data was not a list; nothing was imported.');
+  } catch (error) {
+    onFailure('Legacy task data could not be read; nothing was imported.', error);
   }
   return [];
 }
@@ -253,7 +263,7 @@ export async function runLegacyMigration(deps?: Partial<MigrationDeps>): Promise
       if (stale.length) db.backups.bulkDelete(stale.map((b) => b.id!).filter(Boolean));
     });
 
-  const tasks = parseLegacyTasks(raw);
+  const tasks = parseLegacyTasks(raw, deps?.onFailure);
   const items = tasks.map((task, index) => mapLegacyTask(task, index));
   if (items.length) await db.items.bulkPut(items);
 

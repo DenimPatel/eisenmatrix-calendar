@@ -3,6 +3,7 @@ import { useItems, useSetting } from '@/hooks/useData';
 import { itemRepo, reminderFailureRepo, reminderLogRepo } from '@/db/repository';
 import { patchItem, pruneItemReminders, toggleDone } from '@/domain/itemActions';
 import { newId } from '@/lib/id';
+import { reportFailure } from '@/lib/reportFailure';
 import { upcomingReminders, withSnooze } from '@/domain/reminders';
 import { useUiStore } from '@/store/useUiStore';
 import { DEFAULT_SETTINGS, type AppSettings, type Item, type Reminder } from '@/types';
@@ -38,7 +39,12 @@ function createTickGate(): TickGate {
  * rejection or a repeated toast.
  */
 function ignorePruneFailure(pass: () => Promise<unknown>): void {
-  void pass().catch(() => {});
+  void pass().catch((error) => {
+    reportFailure('Reminder maintenance pass failed (storage unavailable).', error, {
+      level: 'debug',
+      toast: false,
+    });
+  });
 }
 
 /**
@@ -83,9 +89,13 @@ export function ReminderRuntime() {
           tone: 'error',
           duration: 10000,
         });
-      } catch {
+      } catch (error) {
         // Storage unavailable: the boot already reported it once, and the count is retried on
         // the next visible tick, so this pass must not add an unhandled rejection or a toast.
+        reportFailure('Undelivered reminder count could not be read.', error, {
+          level: 'debug',
+          toast: false,
+        });
       } finally {
         reporting.current = false;
       }
@@ -136,10 +146,14 @@ export function ReminderRuntime() {
         // also surfaces any that already aged out of the retry window. Not awaited, so the
         // report cannot lengthen the tick and make an effect rebuild drop its own tick.
         if (undelivered || !document.hidden) void reportUndelivered();
-      } catch {
+      } catch (error) {
         // Storage unavailable: `deliver` awaits `wasFired`/`record`, so a blocked IndexedDB
         // rejects here. The boot already reported it once and the next tick retries, so this
         // must settle quietly rather than become an unhandled rejection.
+        reportFailure('Reminder delivery tick failed (storage unavailable).', error, {
+          level: 'debug',
+          toast: false,
+        });
       } finally {
         ticking.current = false;
       }
@@ -191,7 +205,12 @@ export function ReminderRuntime() {
         })
         // Storage unavailable: the click still focuses the tab, so a failed lookup must settle
         // quietly rather than escape as an unhandled rejection.
-        .catch(() => {});
+        .catch((error) => {
+          reportFailure('A reminder notification action could not be applied.', error, {
+            level: 'debug',
+            toast: false,
+          });
+        });
     };
     navigator.serviceWorker?.addEventListener('message', onWorkerMessage);
 

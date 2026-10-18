@@ -96,3 +96,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-118 · Coverage added for notification registration, reminder helpers and weekday labels
 - 2026-10-18 · IMP-135 · Removed a 1-in-5 flaky test caused by partial liveQuery renders
 - 2026-10-18 · IMP-040 · Editing a single non-recurring item's time/notes via occurrence path now persists
+- 2026-10-18 · IMP-042 · Silent data-loss failures during legacy import/JSON parse now toast once and trace to console

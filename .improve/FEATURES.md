@@ -1188,7 +1188,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 8
-- **Notes:** Keep messages short and PII-free.
+- **Notes:** Keep messages short and PII-free. DONE 2026-10-18: added `src/lib/failureTrace.ts` (`describeFailure` → `Name: message` only; `traceFailure` = console-only, no store) and `src/lib/reportFailure.ts` (`reportFailure` = `traceFailure` + one deduped toast via `useUiStore`). `showAppNotification` traces only (its caller already toasts the undelivered count); `safeJSON` traces and toasts, since malformed import fields silently lose data. `parseLegacyTasks` no longer imports the store: it takes an optional `onFailure` reporter (default `traceFailure`) and `runLegacyMigration` forwards `deps.onFailure`, which `App.tsx`'s mount effect wires to `reportFailure` — so the toast stays in the UI layer and `db` no longer depends on `useUiStore`. The intentionally-quiet blocked-storage catches in `ReminderRuntime` trace at `console.debug` with `toast: false` (IMP-092/117 preserved); `SettingsView.tsx`'s marker-restore catch now traces at debug. New/extended tests in `failureTrace.test.ts`, `reportFailure.test.ts`, `csv.test.ts`, `legacyTasks.test.ts`, `notifications.test.ts`, `layering.test.ts`; 707 tests green; typecheck/lint/format:check clean. See `impl-IMP-042.md`.
 
 ### IMP-043 — Re-enable the `no-explicit-any` lint rule
 - **Status:** DONE

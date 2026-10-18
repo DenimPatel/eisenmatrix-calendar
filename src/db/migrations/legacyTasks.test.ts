@@ -1,10 +1,14 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EisenMatrixDB } from '@/db/schema';
+import { resetReportedFailures } from '@/lib/reportFailure';
+import { reportFailure } from '@/lib/reportFailure';
+import { useUiStore } from '@/store/useUiStore';
 import {
   LEGACY_BACKUP_KEY,
   LEGACY_MIGRATION_KEY,
   LEGACY_STORAGE_KEY,
   mapLegacyTask,
+  parseLegacyTasks,
   runLegacyMigration,
   type LegacyTask,
 } from './legacyTasks';
@@ -120,7 +124,12 @@ function freshDb() {
 }
 
 const dbs: EisenMatrixDB[] = [];
+beforeEach(() => {
+  resetReportedFailures();
+  useUiStore.setState({ toasts: [] });
+});
 afterEach(async () => {
+  vi.restoreAllMocks();
   while (dbs.length) {
     const db = dbs.pop()!;
     await db.delete();
@@ -225,5 +234,55 @@ describe('legacy migration', () => {
     expect(result).toEqual({ migrated: false, count: 0, backupCreated: false });
     expect(await db.items.count()).toBe(0);
     expect(await db.settings.get(LEGACY_MIGRATION_KEY)).toBeUndefined();
+  });
+
+  it('traces, but does not toast, when the legacy payload is not valid JSON', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    useUiStore.setState({ toasts: [] });
+
+    expect(parseLegacyTasks('{not json')).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      'Legacy task data could not be read; nothing was imported.',
+      expect.stringMatching(/^SyntaxError:/),
+    );
+    expect(useUiStore.getState().toasts).toHaveLength(0);
+  });
+
+  it('traces, but does not toast, when the legacy payload parses to a non-list', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    useUiStore.setState({ toasts: [] });
+
+    expect(parseLegacyTasks('{"tasks":[]}')).toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      'Legacy task data was not a list; nothing was imported.',
+      undefined,
+    );
+    expect(useUiStore.getState().toasts).toHaveLength(0);
+  });
+
+  it('reports a parse failure through the injected reporter', async () => {
+    const db = freshDb();
+    dbs.push(db);
+    const storage = makeStorage({ [LEGACY_STORAGE_KEY]: '{not json' });
+    const onFailure = vi.fn();
+
+    await runLegacyMigration({ db, storage, onFailure });
+
+    expect(onFailure).toHaveBeenCalledWith(
+      'Legacy task data could not be read; nothing was imported.',
+      expect.any(Error),
+    );
+  });
+
+  it('surfaces a parse failure as a toast when the UI injects reportFailure', async () => {
+    const db = freshDb();
+    dbs.push(db);
+    const storage = makeStorage({ [LEGACY_STORAGE_KEY]: '{"tasks":[]}' });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await runLegacyMigration({ db, storage, onFailure: reportFailure });
+
+    const messages = useUiStore.getState().toasts.map((t) => t.message);
+    expect(messages).toContain('Legacy task data was not a list; nothing was imported.');
   });
 });
