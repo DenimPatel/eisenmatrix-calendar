@@ -1191,7 +1191,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Keep messages short and PII-free.
 
 ### IMP-043 — Re-enable the `no-explicit-any` lint rule
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** tooling / type safety
 - **Type:** tooling
 - **Area / files:** `eslint.config.js` (`:31`); `src/**/*.ts(x)`

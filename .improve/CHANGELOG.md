@@ -62,3 +62,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-038 · Imported JSON/CSV items are shape-validated and coerced; invalid entries counted instead of crashing
 - 2026-10-18 · IMP-036 · Reminder delivery log has unique [itemId+occKey] index with atomic record and tick guard, preventing duplicate notifications
 - 2026-10-18 · IMP-090 · Habits/goals with partial nested target/metric payloads now render and compute stats without throwing
+- 2026-10-18 · IMP-043 · no-explicit-any lint rule is enforced with a regression test
