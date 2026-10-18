@@ -1756,7 +1756,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V8, S3, Impact 2/Reach 5/Confidence 4).
 
 ### IMP-110 — Evaluate a reminder's fire time outside the occurrence's own day window
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / reminders
 - **Type:** bug-fix
 - **Area / files:** `src/domain/reminders.ts` (`:48-68`, esp. `:56`, `:61`), `src/pwa/ReminderRuntime.tsx` (`:101-105`)

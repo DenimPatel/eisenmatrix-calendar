@@ -42,6 +42,24 @@ export function fireTimesForOccurrence(occurrence: Occurrence): number[] {
 }
 
 /**
+ * The offset range a reminder set can shift a fire time by. `expandOccurrences` floors its
+ * window to whole days, so an occurrence is only visible from midnight of its own day; a
+ * negative offset that crosses midnight would otherwise never be computed. The occurrence
+ * window must therefore be widened by the same offsets before the fire times are filtered.
+ */
+function offsetBounds(reminders: Reminder[]): { min: number; max: number } {
+  let min: number | null = null;
+  let max: number | null = null;
+  for (const reminder of reminders) {
+    if (typeof reminder.offsetMinutes !== 'number') continue;
+    const ms = reminder.offsetMinutes * 60_000;
+    if (min === null || ms < min) min = ms;
+    if (max === null || ms > max) max = ms;
+  }
+  return { min: min ?? 0, max: max ?? 0 };
+}
+
+/**
  * Every reminder that should fire within `[from, to]` (inclusive), across all
  * non-archived items, sorted chronologically.
  */
@@ -53,7 +71,8 @@ export function upcomingReminders(items: Item[], from: Date, to: Date): Schedule
   for (const item of items) {
     if (item.archivedAt) continue;
     if (!item.reminders.length && !item.recurrence) continue;
-    const occurrences = expandOccurrences(item, from, to);
+    const { min, max } = offsetBounds(item.reminders);
+    const occurrences = expandOccurrences(item, new Date(fromMs - max), new Date(toMs - min));
     for (const occurrence of occurrences) {
       for (const reminder of item.reminders) {
         const fireAt = reminderFireTime(occurrence, reminder);

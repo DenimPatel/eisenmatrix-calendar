@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { LOOKBACK_MS } from '@/pwa/delivery';
 import { createItem } from './itemFactory';
 import {
   DEFAULT_LOOKBACK_MS,
@@ -69,6 +70,74 @@ describe('reminders', () => {
       new Date('2024-01-01T23:59:59'),
     );
     expect(result).toHaveLength(0);
+  });
+});
+
+describe('upcomingReminders fire-time window', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function tickWindow(now: Date): [Date, Date] {
+    return [new Date(now.getTime() - LOOKBACK_MS), new Date(now.getTime() + 30_000)];
+  }
+
+  it('evaluates a negative offset that fires on a day before the occurrence', () => {
+    vi.useFakeTimers();
+    const item = createItem({
+      kind: 'task',
+      title: 'Standup',
+      start: '2026-01-05T09:00',
+      allDay: false,
+    });
+    item.reminders = [{ id: 'r', offsetMinutes: -1440 }];
+
+    // The delivery tick at the fire time itself: the occurrence day (Jan 5) is
+    // outside the floored window, so it must still be expanded and matched.
+    vi.setSystemTime(new Date('2026-01-04T09:00:30'));
+    const [from, to] = tickWindow(new Date());
+    expect(upcomingReminders([item], from, to).map((r) => r.fireAt)).toEqual([
+      new Date('2026-01-04T09:00').getTime(),
+    ]);
+  });
+
+  it('evaluates a negative offset crossing midnight into the previous day', () => {
+    vi.useFakeTimers();
+    const item = createItem({
+      kind: 'task',
+      title: 'Standup',
+      start: '2026-01-05T09:00',
+      allDay: false,
+    });
+    item.reminders = [{ id: 'r', offsetMinutes: -600 }];
+
+    vi.setSystemTime(new Date('2026-01-04T23:00:30'));
+    const [from, to] = tickWindow(new Date());
+    expect(upcomingReminders([item], from, to).map((r) => r.fireAt)).toEqual([
+      new Date('2026-01-04T23:00').getTime(),
+    ]);
+  });
+
+  it('keeps same-day offsets and timeOfDay timing, sorted by fireAt', () => {
+    const before = createItem({
+      kind: 'task',
+      title: 'Before',
+      start: '2026-01-05T09:00',
+      allDay: false,
+    });
+    before.reminders = [{ id: 'b', offsetMinutes: -10 }];
+    const at = createItem({ kind: 'task', title: 'At', start: '2026-01-05', allDay: true });
+    at.reminders = [{ id: 't', timeOfDay: '09:00' }];
+
+    const result = upcomingReminders(
+      [before, at],
+      new Date('2026-01-04T00:00:00'),
+      new Date('2026-01-05T23:59:59'),
+    );
+    expect(result.map((r) => r.fireAt)).toEqual([
+      new Date('2026-01-05T08:50').getTime(),
+      new Date('2026-01-05T09:00').getTime(),
+    ]);
   });
 });
 
