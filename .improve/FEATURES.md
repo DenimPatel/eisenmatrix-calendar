@@ -1542,7 +1542,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Found by the IMP-089 verifier (2026-10-17); currently only reachable through rapid double activation.
 
 ### IMP-097 — Serialize the remaining occurrence edit writers
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / concurrency
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`updateRecurring`, `skipOccurrence`, `saveItem`, `patchItem`), `src/db/repository.ts`

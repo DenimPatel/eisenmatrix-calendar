@@ -78,18 +78,22 @@ export async function saveItem(item: Item, options?: { silent?: boolean }): Prom
   const existing = await itemRepo.get(item.id);
   const patch: ItemPatch = { ...item, updatedAt: Date.now() };
   if (existing) {
-    const history = [...existing.history, ...buildHistory(existing, patch)];
-    await itemRepo.update(item.id, { ...patch, history });
+    // The history and the undo snapshot are derived from the row the transaction reads, so a
+    // concurrent edit cannot make this save append history or restore a stale snapshot.
+    const result = await itemRepo.updateAtomic(item.id, (stored) => ({
+      ...patch,
+      history: [...stored.history, ...buildHistory(stored, patch)],
+    }));
+    if (result) {
+      pushUndo(`Edit “${item.title}”`, async () => {
+        await itemRepo.create(result.before);
+      });
+    }
   } else {
     const descendants = await itemRepo.collectDescendants(item.id);
     await itemRepo.create({ ...item, updatedAt: Date.now() });
     pushUndo(`Create “${item.title}”`, async () => {
       await itemRepo.removeMany([item.id, ...descendants.map((child) => child.id)]);
-    });
-  }
-  if (existing) {
-    pushUndo(`Edit “${item.title}”`, async () => {
-      await itemRepo.create(existing);
     });
   }
   if (!options?.silent) toast('Saved', 'success');
@@ -101,20 +105,23 @@ export async function patchItem(
   patch: ItemPatch,
   options?: { silent?: boolean; undoLabel?: string; trackHistory?: boolean; trackUndo?: boolean },
 ): Promise<Item | undefined> {
-  const existing = await itemRepo.get(id);
-  if (!existing) return undefined;
-  const next: ItemPatch = { ...patch };
-  if (options?.trackHistory !== false) {
-    next.history = [...existing.history, ...buildHistory(existing, patch)];
-  }
-  const updated = await itemRepo.update(id, next);
+  // The read, the history append, the merge and the write run in one transaction, so a concurrent
+  // write to the same row cannot be dropped or leave this patch's history based on a stale row.
+  const result = await itemRepo.updateAtomic(id, (existing) => {
+    const next: ItemPatch = { ...patch };
+    if (options?.trackHistory !== false) {
+      next.history = [...existing.history, ...buildHistory(existing, patch)];
+    }
+    return next;
+  });
+  if (!result) return undefined;
   if (options?.trackUndo !== false) {
-    pushUndo(options?.undoLabel ?? `Change “${existing.title}”`, async () => {
-      await itemRepo.create(existing);
+    pushUndo(options?.undoLabel ?? `Change “${result.before.title}”`, async () => {
+      await itemRepo.create(result.before);
     });
   }
   if (!options?.silent) toast('Updated', 'success');
-  return updated;
+  return result.after;
 }
 
 async function patchItemAtomic(
@@ -302,17 +309,20 @@ export async function updateOccurrence(
 
 /** Add `occKey` to the series exceptions so it no longer expands; the series row stays. */
 export async function skipOccurrence(item: Item, occKey: string): Promise<void> {
+  // The exceptions list is read and rewritten inside the transaction, so two skips of different
+  // occurrences serialize instead of each writing a list built from the same stale snapshot.
   // The persisted row is the base: the editor hands over a draft that can carry an unsaved
   // series-wide rule, and skipping one occurrence must not write that rule.
-  const stored = (await itemRepo.get(item.id)) ?? item;
-  const rule = stored.recurrence;
-  if (!rule || rule.exceptions.includes(occKey)) return;
-  await patchItem(
+  const result = await patchItemAtomic(
     item.id,
-    { recurrence: { ...rule, exceptions: [...rule.exceptions, occKey] } },
+    (stored) => {
+      const rule = stored.recurrence;
+      if (!rule || rule.exceptions.includes(occKey)) return null;
+      return { recurrence: { ...rule, exceptions: [...rule.exceptions, occKey] } };
+    },
     { silent: true },
   );
-  toast('Occurrence skipped', 'info');
+  if (result) toast('Occurrence skipped', 'info');
 }
 
 /**
@@ -328,37 +338,44 @@ export async function updateRecurring(
 ): Promise<boolean> {
   if (scope === 'occurrence') {
     // The persisted row is the base: a draft can carry a stale rule or a series-wide edit
-    // (e.g. the recurrence editor) that must not reach storage for a single occurrence.
-    const stored = (await itemRepo.get(item.id)) ?? item;
-    const rule = stored.recurrence;
-    if (!rule) return false;
-    // One occurrence owns only these fields; every other field belongs to the series,
-    // so applying the whole patch here would re-anchor every occurrence. `status` is
-    // deliberately absent: it is per-occurrence state, not an override.
-    const current = rule.overrides[occKey];
-    const override = {
-      ...current,
-      ...(patch.start ? { start: patch.start } : {}),
-      ...(patch.end !== undefined ? { end: patch.end } : {}),
-      ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
-      ...(patch.title !== undefined ? { title: patch.title } : {}),
-      ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
-    };
-    const occurrences =
-      patch.status !== undefined
-        ? occurrenceStateFor(stored, occKey, patch.status, Date.now())
-        : null;
-    // An override with nothing left in it (status now lives in `occurrences`) is not stored.
-    const overrides = { ...rule.overrides };
-    if (Object.keys(override).length === 0) delete overrides[occKey];
-    else overrides[occKey] = override;
-    const ruleChanged = JSON.stringify(overrides) !== JSON.stringify(rule.overrides);
-    if (!ruleChanged && !occurrences) return false;
-    const next: ItemPatch = {};
-    if (ruleChanged) next.recurrence = { ...rule, overrides };
-    if (occurrences) next.occurrences = occurrences;
-    await patchItem(item.id, next, { silent: true });
-    return true;
+    // (e.g. the recurrence editor) that must not reach storage for a single occurrence. The
+    // override map is read and rewritten inside the transaction, so two edits of different
+    // occurrences serialize instead of each writing a map built from the same stale snapshot.
+    const result = await patchItemAtomic(
+      item.id,
+      (stored) => {
+        const rule = stored.recurrence;
+        if (!rule) return null;
+        // One occurrence owns only these fields; every other field belongs to the series,
+        // so applying the whole patch here would re-anchor every occurrence. `status` is
+        // deliberately absent: it is per-occurrence state, not an override.
+        const current = rule.overrides[occKey];
+        const override = {
+          ...current,
+          ...(patch.start ? { start: patch.start } : {}),
+          ...(patch.end !== undefined ? { end: patch.end } : {}),
+          ...(patch.allDay !== undefined ? { allDay: patch.allDay } : {}),
+          ...(patch.title !== undefined ? { title: patch.title } : {}),
+          ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+        };
+        const occurrences =
+          patch.status !== undefined
+            ? occurrenceStateFor(stored, occKey, patch.status, Date.now())
+            : null;
+        // An override with nothing left in it (status now lives in `occurrences`) is not stored.
+        const overrides = { ...rule.overrides };
+        if (Object.keys(override).length === 0) delete overrides[occKey];
+        else overrides[occKey] = override;
+        const ruleChanged = JSON.stringify(overrides) !== JSON.stringify(rule.overrides);
+        if (!ruleChanged && !occurrences) return null;
+        const next: ItemPatch = {};
+        if (ruleChanged) next.recurrence = { ...rule, overrides };
+        if (occurrences) next.occurrences = occurrences;
+        return next;
+      },
+      { silent: true },
+    );
+    return result !== undefined;
   }
 
   if (scope === 'all') {

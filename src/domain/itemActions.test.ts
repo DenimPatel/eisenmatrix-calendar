@@ -365,6 +365,22 @@ describe('skipOccurrence', () => {
     expect(await itemRepo.get('p')).toBeUndefined();
     expect(useUiStore.getState().undoStack).toHaveLength(1);
   });
+
+  it('keeps both skipped keys when two skips run concurrently', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const stale = (await itemRepo.get('s'))!;
+
+    await Promise.all([skipOccurrence(stale, OCC), skipOccurrence(stale, OTHER)]);
+
+    const after = (await itemRepo.get('s'))!;
+    expect([...after.recurrence!.exceptions].sort()).toEqual([OCC, OTHER].sort());
+    expect(useUiStore.getState().undoStack).toHaveLength(2);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await itemRepo.get('s'))!.recurrence!.exceptions).toHaveLength(1);
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await itemRepo.get('s'))!.recurrence!.exceptions).toEqual([]);
+  });
 });
 
 describe('toggleDone (plain item)', () => {
@@ -774,6 +790,28 @@ describe('updateRecurring (scope: occurrence)', () => {
     await useUiStore.getState().undo();
 
     expect(await itemRepo.get('s')).toEqual(before);
+  });
+
+  it('keeps both overrides when two occurrence edits run concurrently', async () => {
+    await itemRepo.create(weeklyTask('s'));
+    const stale = (await itemRepo.get('s'))!;
+
+    await Promise.all([
+      updateRecurring(stale, 'occurrence', OCC, { title: 'Retro' }),
+      updateRecurring(stale, 'occurrence', OTHER, { title: 'Planning' }),
+    ]);
+
+    const after = (await itemRepo.get('s'))!;
+    expect(after.recurrence?.overrides).toEqual({
+      [OCC]: { title: 'Retro' },
+      [OTHER]: { title: 'Planning' },
+    });
+    expect(useUiStore.getState().undoStack).toHaveLength(2);
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await itemRepo.get('s'))!.recurrence?.overrides).toEqual({ [OCC]: { title: 'Retro' } });
+    expect(await useUiStore.getState().undo()).toBe(true);
+    expect((await itemRepo.get('s'))!.recurrence?.overrides).toEqual({});
   });
 
   it('still applies every field to the whole series for scope "all"', async () => {
