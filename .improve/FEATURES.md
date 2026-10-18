@@ -1292,7 +1292,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-016.md` §1. `notes` overrides are stored the same way but are not rendered on cards at all today, so `title` is the only user-visible half. Prefer engine-side resolution over teaching `ItemCard` about recurrence, since three call sites already carry an occurrence.
 
 ### IMP-086 — Never drop an undelivered reminder silently; stop rebuilding the digest every tick
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** reliability / reminders
 - **Type:** improvement
 - **Area / files:** `src/pwa/delivery.ts:78-92` (`deliver`), `:96-126` (`deliverDigest` re-expands every item before attempting delivery); `src/pwa/ReminderRuntime.tsx:37-51` and `:54-61` (both `deliver` return values ignored)

@@ -1,4 +1,4 @@
-import { reminderLogRepo } from '@/db/repository';
+import { reminderFailureRepo, reminderLogRepo } from '@/db/repository';
 import { expandOccurrences } from '@/domain/recurrence';
 import { addDays, endOfDay, formatISODate, startOfDay } from '@/lib/date';
 import { useUiStore, type Toast } from '@/store/useUiStore';
@@ -22,6 +22,12 @@ export interface DeliverOptions {
    * toast fallback is never gated by it.
    */
   notifyEnabled?: boolean;
+  /**
+   * Whether an undeliverable attempt is persisted as a failure row. On for reminders (so the
+   * loss is discoverable); off for the digest, which is not a timed reminder and would otherwise
+   * inflate the "undelivered reminders" count.
+   */
+  recordFailure?: boolean;
   /** Test seams; production uses the real notification API, store and document. */
   show?: (title: string, options: AppNotificationOptions) => Promise<boolean>;
   pushToast?: PushToast;
@@ -43,6 +49,10 @@ function documentIsVisible(): boolean {
  * `notifyEnabled === false` (the `notificationsEnabled` setting) skips the device
  * notification and falls through to the toast, which is why it does not count as
  * a failure: reminders still reach the user while the app is open.
+ *
+ * An attempt that reaches neither the user nor a visible toast is persisted as a
+ * `reminderFailureRepo` row (never the `reminderLog` key) so it stays discoverable
+ * once it ages out of the lookback, and a successful delivery clears any such row.
  */
 export async function deliver(
   title: string,
@@ -71,6 +81,7 @@ export async function deliver(
     pushToast = (toast) => void useUiStore.getState().pushToast(toast),
     isVisible = documentIsVisible,
     notifyEnabled = false,
+    recordFailure = true,
   } = options;
 
   // Dedupe per reminder (not per occurrence) so an item with several reminders
@@ -79,18 +90,36 @@ export async function deliver(
 
   if (notifyEnabled && (await show(title, notification))) {
     await reminderLogRepo.record(itemId, dedupeKey);
+    await reminderFailureRepo.clear(itemId, dedupeKey);
     return true;
   }
 
   // A toast nobody can see is not delivery, so it is not queued while hidden:
   // that is what keeps repeated retries from stacking duplicate, already stale
   // toasts for when the tab regains focus.
-  if (!isVisible()) return false;
+  if (!isVisible()) {
+    if (recordFailure) {
+      await reminderFailureRepo.record({ itemId, dedupeKey, occKey: occurrenceKey, title });
+    }
+    return false;
+  }
 
   pushToast({ message: `${toastTitle} — ${body}`, tone, duration: toastDuration });
   await reminderLogRepo.record(itemId, dedupeKey);
+  await reminderFailureRepo.clear(itemId, dedupeKey);
   return true;
 }
+
+/** Reminders whose last delivery attempt failed and has not yet succeeded. */
+export async function undeliveredCount(): Promise<number> {
+  return reminderFailureRepo.count();
+}
+
+/**
+ * The last undelivered digest build, keyed by the `items` reference and day so a
+ * tick that still cannot deliver reuses it instead of re-sweeping every item.
+ */
+let lastDigestBuild: { items: Item[]; dayKey: string; body: string } | null = null;
 
 /** Daily digest; same delivery rule as `deliver`, no per-occurrence actions. */
 export async function deliverDigest(
@@ -103,21 +132,45 @@ export async function deliverDigest(
   // re-expand every item twice per minute.
   if (await reminderLogRepo.wasFired(DIGEST_TAG, todayKey)) return false;
 
-  const todayOccurrences = items.flatMap((item) =>
-    expandOccurrences(item, startOfDay(now), endOfDay(now)),
-  );
-  const overdue = items
-    .flatMap((item) =>
-      expandOccurrences(item, addDays(startOfDay(now), -30), addDays(startOfDay(now), -1)),
-    )
-    .filter((occ) => occ.status !== 'done' && occ.item.kind !== 'habit').length;
-  const habitsLeft = items.filter((i) => i.kind === 'habit').length;
-  const body = `${todayOccurrences.length} scheduled today · ${overdue} overdue · ${habitsLeft} habits`;
+  // Reuse the previous attempt's build while it is still undelivered, so a tick
+  // that cannot deliver skips both `expandOccurrences` sweeps entirely.
+  const cached =
+    lastDigestBuild && lastDigestBuild.items === items && lastDigestBuild.dayKey === todayKey
+      ? lastDigestBuild
+      : null;
 
-  return deliver('Your day at a glance', body, DIGEST_TAG, todayKey, todayKey, 'info', {
-    toastDuration: 10000,
-    toastTitle: 'Daily digest',
-    notification: { body, tag: DIGEST_TAG, data: { itemId: '', occKey: todayKey } },
-    ...options,
-  });
+  let body: string;
+  if (cached) {
+    body = cached.body;
+  } else {
+    const todayOccurrences = items.flatMap((item) =>
+      expandOccurrences(item, startOfDay(now), endOfDay(now)),
+    );
+    const overdue = items
+      .flatMap((item) =>
+        expandOccurrences(item, addDays(startOfDay(now), -30), addDays(startOfDay(now), -1)),
+      )
+      .filter((occ) => occ.status !== 'done' && occ.item.kind !== 'habit').length;
+    const habitsLeft = items.filter((i) => i.kind === 'habit').length;
+    body = `${todayOccurrences.length} scheduled today · ${overdue} overdue · ${habitsLeft} habits`;
+    lastDigestBuild = { items, dayKey: todayKey, body };
+  }
+
+  const delivered = await deliver(
+    'Your day at a glance',
+    body,
+    DIGEST_TAG,
+    todayKey,
+    todayKey,
+    'info',
+    {
+      toastDuration: 10000,
+      toastTitle: 'Daily digest',
+      notification: { body, tag: DIGEST_TAG, data: { itemId: '', occKey: todayKey } },
+      ...options,
+      recordFailure: false,
+    },
+  );
+  if (delivered) lastDigestBuild = null;
+  return delivered;
 }

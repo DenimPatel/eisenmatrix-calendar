@@ -38,6 +38,7 @@ beforeEach(async () => {
   await db.items.clear();
   await db.settings.clear();
   await db.reminderLog.clear();
+  await db.reminderFailures.clear();
   useUiStore.setState({ toasts: [] });
   gate.checks = 0;
   gate.held = new Promise<void>((resolve) => {

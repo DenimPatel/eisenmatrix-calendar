@@ -1,10 +1,22 @@
 // @vitest-environment jsdom
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '@/db/schema';
-import { reminderLogRepo } from '@/db/repository';
+import { reminderFailureRepo, reminderLogRepo } from '@/db/repository';
 import { createItem, normalizeItem } from '@/domain/itemFactory';
+import { expandOccurrences } from '@/domain/recurrence';
 import type { Item } from '@/types';
-import { DIGEST_TAG, deliver, deliverDigest } from './delivery';
+import { DIGEST_TAG, deliver, deliverDigest, undeliveredCount } from './delivery';
+
+/** The real sweep, captured so the mock can be re-armed after `restoreAllMocks`. */
+const recurrence = vi.hoisted(() => ({ expand: undefined as unknown }));
+
+vi.mock('@/domain/recurrence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/recurrence')>();
+  recurrence.expand = actual.expandOccurrences;
+  return { ...actual, expandOccurrences: vi.fn(actual.expandOccurrences) };
+});
+
+const expandSpy = vi.mocked(expandOccurrences);
 
 const ITEM_ID = 'item-1';
 const DEDUPE_KEY = '2024-06-10::r1';
@@ -19,8 +31,11 @@ function item(id: string, kind: Item['kind'] = 'task'): Item {
 
 beforeEach(async () => {
   await db.reminderLog.clear();
+  await db.reminderFailures.clear();
   toasts.length = 0;
   vi.restoreAllMocks();
+  expandSpy.mockReset();
+  expandSpy.mockImplementation(recurrence.expand as typeof expandOccurrences);
 });
 
 afterAll(async () => {
@@ -92,6 +107,40 @@ describe('deliver', () => {
     expect(delivered).toBe(false);
     expect(await reminderLogRepo.wasFired(ITEM_ID, DEDUPE_KEY)).toBe(false);
     expect(toasts).toEqual([]);
+    expect(await undeliveredCount()).toBe(1);
+    expect(await reminderFailureRepo.all()).toEqual([
+      expect.objectContaining({
+        itemId: ITEM_ID,
+        dedupeKey: DEDUPE_KEY,
+        occKey: OCC_KEY,
+        title: 'Standup',
+      }),
+    ]);
+  });
+
+  it('appends one failure row across repeated undeliverable ticks and clears it on delivery', async () => {
+    const show = vi.fn(async () => false);
+    let hidden = true;
+    const options = {
+      show,
+      pushToast: record,
+      isVisible: () => !hidden,
+      notifyEnabled: true,
+    };
+
+    for (let tick = 0; tick < 500; tick += 1) {
+      await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', options);
+    }
+    // 500 undeliverable ticks must not append 500 rows for the same reminder.
+    expect(await reminderFailureRepo.all()).toHaveLength(1);
+    expect(await undeliveredCount()).toBe(1);
+
+    hidden = false;
+    await deliver('Standup', '09:00 · 2024-06-10', ITEM_ID, DEDUPE_KEY, OCC_KEY, 'info', options);
+
+    expect(await reminderLogRepo.wasFired(ITEM_ID, DEDUPE_KEY)).toBe(true);
+    expect(toasts).toHaveLength(1);
+    expect(await undeliveredCount()).toBe(0);
   });
 
   it('retries an undelivered reminder on the next tick instead of deduping it', async () => {
@@ -196,17 +245,25 @@ describe('deliverDigest', () => {
     expect(toasts).toEqual([]);
   });
 
-  it('retries an undelivered digest and toasts once when visible', async () => {
+  it('retries an undelivered digest, reusing its build instead of re-sweeping', async () => {
     const show = vi.fn(async () => false);
     let hidden = true;
     const options = { show, pushToast: record, isVisible: () => !hidden, notifyEnabled: true };
+    const items = [item('a')];
 
-    await deliverDigest([item('a')], today, options);
-    await deliverDigest([item('a')], today, options);
+    await deliverDigest(items, today, options);
+    const sweepsAfterFirst = expandSpy.mock.calls.length;
+    expect(sweepsAfterFirst).toBeGreaterThan(0);
+
+    await deliverDigest(items, today, options);
+    // The tick that cannot deliver must not re-expand every item.
+    expect(expandSpy.mock.calls.length).toBe(sweepsAfterFirst);
     expect(await reminderLogRepo.wasFired(DIGEST_TAG, todayKey)).toBe(false);
+    // The digest is not a timed reminder, so it never inflates the failure count.
+    expect(await undeliveredCount()).toBe(0);
 
     hidden = false;
-    await deliverDigest([item('a')], today, options);
+    await deliverDigest(items, today, options);
 
     expect(await reminderLogRepo.wasFired(DIGEST_TAG, todayKey)).toBe(true);
     expect(toasts).toEqual([
@@ -217,7 +274,7 @@ describe('deliverDigest', () => {
       },
     ]);
 
-    await deliverDigest([item('a')], today, options);
+    await deliverDigest(items, today, options);
     expect(show).toHaveBeenCalledTimes(3);
     expect(toasts).toHaveLength(1);
   });

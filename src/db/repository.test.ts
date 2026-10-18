@@ -1,7 +1,13 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Dexie, { type Table } from 'dexie';
 import { db, EisenMatrixDB, type ReminderLogEntry } from './schema';
-import { itemRepo, listRepo, reminderLogRepo, settingsRepo } from './repository';
+import {
+  itemRepo,
+  listRepo,
+  reminderFailureRepo,
+  reminderLogRepo,
+  settingsRepo,
+} from './repository';
 import { createItem, defaultDataFor, normalizeItem } from '@/domain/itemFactory';
 import {
   ITEM_KINDS,
@@ -28,6 +34,7 @@ beforeEach(async () => {
     db.lists.clear(),
     db.settings.clear(),
     db.reminderLog.clear(),
+    db.reminderFailures.clear(),
   ]);
 });
 
@@ -240,6 +247,65 @@ describe('reminderLogRepo', () => {
     await reminderLogRepo.record('b', 'k', Date.now());
     const deleted = await reminderLogRepo.pruneBefore(5000);
     expect(deleted).toBe(1);
+  });
+});
+
+describe('reminderFailureRepo', () => {
+  it('upserts one failure row per key instead of appending on retry', async () => {
+    await reminderFailureRepo.record({
+      itemId: 'item-1',
+      dedupeKey: '2024-01-01::r1',
+      occKey: '2024-01-01',
+      title: 'Standup',
+      attemptedAt: 1000,
+    });
+    await reminderFailureRepo.record({
+      itemId: 'item-1',
+      dedupeKey: '2024-01-01::r1',
+      occKey: '2024-01-01',
+      title: 'Standup',
+      attemptedAt: 2000,
+    });
+
+    const rows = await reminderFailureRepo.all();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].attemptedAt).toBe(2000);
+    expect(await reminderFailureRepo.count()).toBe(1);
+  });
+
+  it('keeps failures separate from the fired log and clears one on delivery', async () => {
+    await reminderFailureRepo.record({
+      itemId: 'item-1',
+      dedupeKey: '2024-01-01::r1',
+      occKey: '2024-01-01',
+      title: 'Standup',
+    });
+    await reminderLogRepo.record('item-1', '2024-01-01::r1');
+
+    expect(await reminderLogRepo.wasFired('item-1', '2024-01-01::r1')).toBe(true);
+    expect(await reminderFailureRepo.clear('item-1', '2024-01-01::r1')).toBe(1);
+    expect(await reminderFailureRepo.count()).toBe(0);
+    expect(await reminderLogRepo.wasFired('item-1', '2024-01-01::r1')).toBe(true);
+  });
+
+  it('prunes failures older than a cutoff', async () => {
+    await reminderFailureRepo.record({
+      itemId: 'a',
+      dedupeKey: 'k',
+      occKey: 'k',
+      title: 'A',
+      attemptedAt: 1000,
+    });
+    await reminderFailureRepo.record({
+      itemId: 'b',
+      dedupeKey: 'k',
+      occKey: 'k',
+      title: 'B',
+      attemptedAt: Date.now(),
+    });
+
+    expect(await reminderFailureRepo.pruneBefore(5000)).toBe(1);
+    expect(await reminderFailureRepo.count()).toBe(1);
   });
 });
 

@@ -13,6 +13,20 @@ export interface ReminderLogEntry {
   firedAt: number;
 }
 
+/**
+ * A failed delivery attempt, kept apart from the `reminderLog` "fired" key so an undelivered
+ * reminder stays discoverable after its `fireAt` has aged out of the delivery lookback. One row
+ * per `[itemId+dedupeKey]`: a retry updates `attemptedAt` instead of appending.
+ */
+export interface ReminderFailureEntry {
+  id?: number;
+  itemId: string;
+  dedupeKey: string;
+  occKey: string;
+  title: string;
+  attemptedAt: number;
+}
+
 export interface BackupEntry {
   id?: number;
   createdAt: number;
@@ -25,6 +39,7 @@ export class EisenMatrixDB extends Dexie {
   lists!: Table<List, string>;
   settings!: Table<SettingRow, string>;
   reminderLog!: Table<ReminderLogEntry, number>;
+  reminderFailures!: Table<ReminderFailureEntry, number>;
   backups!: Table<BackupEntry, number>;
 
   constructor(name = 'eisenmatrix') {
@@ -56,6 +71,10 @@ export class EisenMatrixDB extends Dexie {
 
     this.version(3).stores({
       reminderLog: '++id, &[itemId+occKey], firedAt',
+    });
+
+    this.version(4).stores({
+      reminderFailures: '++id, &[itemId+dedupeKey], attemptedAt',
     });
   }
 }

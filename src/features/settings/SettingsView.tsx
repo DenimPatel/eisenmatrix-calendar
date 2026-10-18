@@ -10,7 +10,14 @@ import {
 } from 'lucide-react';
 import { useItems, useLists, useSetting } from '@/hooks/useData';
 import { useUiStore } from '@/store/useUiStore';
-import { backupRepo, itemRepo, listRepo, reminderLogRepo, settingsRepo } from '@/db/repository';
+import {
+  backupRepo,
+  itemRepo,
+  listRepo,
+  reminderFailureRepo,
+  reminderLogRepo,
+  settingsRepo,
+} from '@/db/repository';
 import { Button } from '@/components/ui/Button';
 import { Dialog, ConfirmDialog } from '@/components/ui/Dialog';
 import { Field, Select, Toggle } from '@/components/ui/Form';
@@ -174,7 +181,12 @@ export function SettingsView() {
   };
 
   const resetAll = async () => {
-    await Promise.all([itemRepo.replaceAll([]), listRepo.replaceAll([]), reminderLogRepo.clear()]);
+    await Promise.all([
+      itemRepo.replaceAll([]),
+      listRepo.replaceAll([]),
+      reminderLogRepo.clear(),
+      reminderFailureRepo.clearAll(),
+    ]);
     setConfirmReset(false);
     pushToast({ message: 'All data cleared', tone: 'info' });
   };

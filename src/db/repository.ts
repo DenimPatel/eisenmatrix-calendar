@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { normalizeItem } from '@/domain/itemFactory';
 import type { BaseItem, Item, ItemData, ItemKind, List } from '@/types';
-import { getDb, type BackupEntry } from './schema';
+import { getDb, type BackupEntry, type ReminderFailureEntry } from './schema';
 
 export type ItemPatch = Partial<Omit<BaseItem, 'id' | 'kind'>> & { data?: ItemData };
 
@@ -246,6 +246,48 @@ export const reminderLogRepo = {
   },
   async pruneBefore(timestamp: number): Promise<number> {
     return getDb().reminderLog.where('firedAt').below(timestamp).delete();
+  },
+};
+
+export const reminderFailureRepo = {
+  /**
+   * Upsert the failure for one reminder: repeated undeliverable ticks refresh `attemptedAt`
+   * rather than appending a row, so the key stays unique and the pending count stays honest.
+   */
+  async record(
+    entry: Omit<ReminderFailureEntry, 'id' | 'attemptedAt'> & { attemptedAt?: number },
+  ): Promise<void> {
+    const db = getDb();
+    const attemptedAt = entry.attemptedAt ?? Date.now();
+    await db.transaction('rw', db.reminderFailures, async () => {
+      const existing = await db.reminderFailures
+        .where('[itemId+dedupeKey]')
+        .equals([entry.itemId, entry.dedupeKey])
+        .first();
+      if (existing?.id != null) {
+        await db.reminderFailures.update(existing.id, { attemptedAt });
+        return;
+      }
+      await db.reminderFailures.add({ ...entry, attemptedAt });
+    });
+  },
+  async clear(itemId: string, dedupeKey: string): Promise<number> {
+    return getDb()
+      .reminderFailures.where('[itemId+dedupeKey]')
+      .equals([itemId, dedupeKey])
+      .delete();
+  },
+  async count(): Promise<number> {
+    return getDb().reminderFailures.count();
+  },
+  async all(): Promise<ReminderFailureEntry[]> {
+    return getDb().reminderFailures.orderBy('attemptedAt').toArray();
+  },
+  async clearAll(): Promise<void> {
+    await getDb().reminderFailures.clear();
+  },
+  async pruneBefore(timestamp: number): Promise<number> {
+    return getDb().reminderFailures.where('attemptedAt').below(timestamp).delete();
   },
 };
 
