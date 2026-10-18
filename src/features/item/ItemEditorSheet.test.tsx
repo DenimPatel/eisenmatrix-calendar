@@ -338,6 +338,35 @@ describe('ItemEditorSheet', () => {
     await mounted.unmount();
   });
 
+  it('keeps a schedule edit made before switching to this-and-future', async () => {
+    const item = dailyTimedSeries();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item, '2026-10-04');
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    await editInput(mounted.host.querySelector('input[type="time"]')!, '14:45');
+    await clickButton(mounted.host, 'This and future');
+    // Switching scope must not reset the time the user just changed back to the series value.
+    expect((mounted.host.querySelector('input[type="time"]') as HTMLInputElement).value).toBe(
+      '14:45',
+    );
+    await clickButton(mounted.host, 'Save');
+
+    const tail = (await itemRepo.all()).find((row) => row.id !== item.id)!;
+    expect(tail.start).toBe('2026-10-04T14:45');
+    const splitDay = new Date('2026-10-04T00:00:00');
+    expect(expandOccurrences(tail, splitDay, splitDay)[0]).toMatchObject({
+      start: '2026-10-04T14:45',
+    });
+    // The head keeps the untouched series time for the occurrences before the split.
+    const head = (await itemRepo.get(item.id))!;
+    const before = new Date('2026-10-03T00:00:00');
+    expect(expandOccurrences(head, before, before)[0]).toMatchObject({ start: '2026-10-03T09:00' });
+
+    await mounted.unmount();
+  });
+
   it('still writes the series when the save is scoped to all occurrences', async () => {
     const item = recurringItem();
     await itemRepo.create(item);

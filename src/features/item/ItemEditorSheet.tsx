@@ -170,6 +170,10 @@ export function ItemEditorSheet() {
     if (next === scope) return;
     setScope(next);
     if (!editor.item || !seed) return;
+    // Only a series-wide switch restores the schedule: `occurrence` reseeds from the resolved
+    // occurrence and `all` from the series row. `future` keeps whatever the user has edited so
+    // far, otherwise a time/day change made before the switch is silently discarded.
+    if (next === 'future') return;
     const range =
       next === 'occurrence'
         ? { start: seed.start, end: seed.end, allDay: seed.allDay }

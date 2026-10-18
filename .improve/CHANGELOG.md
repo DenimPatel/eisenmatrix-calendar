@@ -65,3 +65,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-043 · no-explicit-any lint rule is enforced with a regression test
 - 2026-10-18 · IMP-037 · Editing 'This and future' leaves past occurrences untouched and the split is undoable in one step
 - 2026-10-18 · IMP-082 · 'This and future' no longer creates a phantom zero-occurrence series or inverted range
+- 2026-10-18 · IMP-093 · Schedule edits survive switching edit scope to 'This and future'

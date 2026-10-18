@@ -1479,7 +1479,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Found by the IMP-039 verifier (2026-10-17).
 
 ### IMP-093 — Keep pre-switch schedule edits when scope changes to future
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / correctness
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`changeScope`), `src/features/item/ItemEditorSheet.test.tsx`
