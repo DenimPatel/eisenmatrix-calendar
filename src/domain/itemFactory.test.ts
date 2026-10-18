@@ -65,4 +65,24 @@ describe('createItem recurrence defaults', () => {
     const goal = normalizeItem({ kind: 'goal', data: { why: 'Because' } as never });
     expect(goal.data).toEqual({ ...defaultDataFor('goal'), why: 'Because' });
   });
+
+  it('falls back to task for an unknown kind and coerces invalid collections', () => {
+    const item = normalizeItem({
+      kind: 'bogus' as never,
+      title: 'Bad',
+      status: 'weird' as never,
+      reminders: { x: 1 } as never,
+      tags: 'nope' as never,
+      checklist: 5 as never,
+      occurrences: [1] as never,
+    });
+
+    expect(item.kind).toBe('task');
+    expect(item.status).toBe('todo');
+    expect(item.reminders).toEqual([]);
+    expect(item.tags).toEqual([]);
+    expect(item.checklist).toEqual([]);
+    expect(item.occurrences).toEqual({});
+    expect(item.data).toEqual(defaultDataFor('task'));
+  });
 });

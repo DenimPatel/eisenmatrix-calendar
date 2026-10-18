@@ -47,6 +47,17 @@ function describeError(error: unknown): string {
   return 'Unknown error';
 }
 
+function importSummary(
+  imported: number,
+  skipped: number,
+  overwritten: number,
+  duplicated: number,
+  invalid: number,
+): string {
+  const summary = `Imported ${imported} items · skipped ${skipped} · overwritten ${overwritten} · duplicated ${duplicated}`;
+  return invalid > 0 ? `${summary} · invalid ${invalid}` : summary;
+}
+
 export function SettingsView() {
   const items = useItems(true);
   const lists = useLists();
@@ -113,7 +124,7 @@ export function SettingsView() {
       await itemRepo.createMany(toPut);
       if (parsed.lists.length) await listRepo.createMany(parsed.lists);
       setImportReport(
-        `Imported ${toPut.length} items · skipped ${skipped} · overwritten ${overwritten} · duplicated ${duplicated}`,
+        importSummary(toPut.length, skipped, overwritten, duplicated, parsed.invalid),
       );
       pushToast({ message: 'Backup imported', tone: 'success' });
     } catch (error) {
@@ -125,7 +136,7 @@ export function SettingsView() {
     try {
       const file = await pickFile('.csv,text/csv');
       if (!file) return;
-      const { items: parsedItems, skippedBlank } = csvToItems(await readTextFile(file));
+      const { items: parsedItems, skippedBlank, invalid } = csvToItems(await readTextFile(file));
       const parsed = parsedItems.map(normalizeItem);
       const { toPut, skipped, overwritten, duplicated } = mergeImportedItems(
         items,
@@ -134,7 +145,7 @@ export function SettingsView() {
       );
       await itemRepo.createMany(toPut);
       setImportReport(
-        `Imported ${toPut.length} items · skipped ${skipped + skippedBlank} · overwritten ${overwritten} · duplicated ${duplicated}`,
+        importSummary(toPut.length, skipped + skippedBlank, overwritten, duplicated, invalid),
       );
       pushToast({ message: 'CSV imported', tone: 'success' });
     } catch (error) {

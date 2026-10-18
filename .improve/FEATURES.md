@@ -1110,7 +1110,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** `ItemEditorSheet.handleSave` also pushes its own "Series split" toast; consolidate to one.
 
 ### IMP-038 — Validate imported JSON/CSV item shape before persisting
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** security / data integrity
 - **Type:** improvement
 - **Area / files:** `src/lib/backup.ts` (`:35-50`), `src/lib/csv.ts` (`csvToItems`, `:124-165`), `src/domain/itemFactory.ts` (`normalizeItem`, `:88-121`)

@@ -1,4 +1,5 @@
 import { newId } from '@/lib/id';
+import { coerceItemShape, isPlainObject } from '@/lib/itemValidation';
 import type { BaseItem, Item, ItemKind, Priority } from '@/types';
 
 export function defaultDataFor(kind: ItemKind): Item['data'] {
@@ -90,25 +91,30 @@ export function isRecurringKind(kind: ItemKind): boolean {
   return kind === 'habit' || kind === 'bill';
 }
 
+function normalizeRecurrence(value: unknown): BaseItem['recurrence'] {
+  return isPlainObject(value) ? (value as unknown as BaseItem['recurrence']) : null;
+}
+
 /** Coerce a partial/imported item into a fully-formed Item without losing fields. */
 export function normalizeItem(partial: Partial<Item>): Item {
-  const kind = (partial.kind ?? 'task') as ItemKind;
+  const shape = coerceItemShape(partial);
+  const kind = shape.kind;
   const base = createItem({
     kind,
     title: partial.title ?? '',
     notes: partial.notes ?? '',
-    status: partial.status ?? 'todo',
-    urgency: partial.urgency ?? 'low',
-    importance: partial.importance ?? 'low',
+    status: shape.status,
+    urgency: shape.urgency,
+    importance: shape.importance,
     start: partial.start ?? null,
     end: partial.end ?? null,
     allDay: partial.allDay ?? true,
     dueAt: partial.dueAt ?? null,
     listId: partial.listId ?? null,
     parentId: partial.parentId ?? null,
-    tags: partial.tags ?? [],
-    reminders: partial.reminders ?? [],
-    checklist: partial.checklist ?? [],
+    tags: shape.tags,
+    reminders: shape.reminders,
+    checklist: shape.checklist,
     order: partial.order ?? 0,
   });
   return {
@@ -116,13 +122,22 @@ export function normalizeItem(partial: Partial<Item>): Item {
     ...partial,
     id: partial.id ?? base.id,
     kind,
-    recurrence: partial.recurrence ?? null,
+    status: shape.status,
+    urgency: shape.urgency,
+    importance: shape.importance,
+    tags: shape.tags,
+    reminders: shape.reminders,
+    checklist: shape.checklist,
+    recurrence: normalizeRecurrence(partial.recurrence),
     createdAt: partial.createdAt ?? base.createdAt,
     updatedAt: partial.updatedAt ?? base.updatedAt,
     completedAt: partial.completedAt ?? null,
     archivedAt: partial.archivedAt ?? null,
-    history: partial.history ?? [],
-    occurrences: partial.occurrences ?? {},
-    data: { ...(defaultDataFor(kind) as object), ...(partial.data ?? {}) },
+    history: Array.isArray(partial.history) ? partial.history : [],
+    occurrences: shape.occurrences,
+    data: {
+      ...(defaultDataFor(kind) as object),
+      ...(isPlainObject(partial.data) ? partial.data : {}),
+    },
   } as Item;
 }

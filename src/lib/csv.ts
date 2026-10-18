@@ -1,4 +1,6 @@
 import type { Item } from '@/types';
+import { newId } from './id';
+import { validateItem } from './itemValidation';
 
 /** RFC-4180 CSV serialiser. Handles quotes, commas and newlines. */
 export function toCSV(rows: Record<string, unknown>[], headers?: string[]): string {
@@ -124,6 +126,7 @@ function safeJSON<T>(value: string, fallback: T): T {
 export interface ParsedCSV {
   items: Partial<Item>[];
   skippedBlank: number;
+  invalid: number;
 }
 
 export function csvToItems(text: string): ParsedCSV {
@@ -139,6 +142,7 @@ export function csvToItems(text: string): ParsedCSV {
 
   const items: Partial<Item>[] = [];
   let skippedBlank = 0;
+  let invalid = 0;
   for (const row of rows) {
     const get = (key: string) => {
       const i = index[key];
@@ -149,8 +153,8 @@ export function csvToItems(text: string): ParsedCSV {
       skippedBlank++;
       continue;
     }
-    const item: Record<string, unknown> = {
-      id: get('id') || undefined,
+    const candidate: Record<string, unknown> = {
+      id: get('id').trim() || newId(),
       kind: get('kind') || 'task',
       title,
       notes: get('notes'),
@@ -177,8 +181,14 @@ export function csvToItems(text: string): ParsedCSV {
       data: safeJSON(get('data'), {}),
     };
     const legacyRaw = get('legacy');
-    if (legacyRaw) item.legacy = safeJSON(legacyRaw, undefined);
-    items.push(item as Partial<Item>);
+    if (legacyRaw) candidate.legacy = safeJSON(legacyRaw, undefined);
+
+    const validated = validateItem(candidate);
+    if (!validated.ok) {
+      invalid++;
+      continue;
+    }
+    items.push({ ...candidate, ...validated.shape } as Partial<Item>);
   }
-  return { items, skippedBlank };
+  return { items, skippedBlank, invalid };
 }

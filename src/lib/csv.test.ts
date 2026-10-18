@@ -74,6 +74,31 @@ describe('csv', () => {
     expect(() => csvToItems('')).toThrow(/empty file/i);
   });
 
+  it('falls back to task for an unknown kind and coerces non-array shape fields', () => {
+    const csv = [
+      'id,kind,title,status,reminders,tags,checklist,occurrences',
+      'bad-1,bogus,Bad kind,weird,{},{},"{""a"":1}",[1,2]',
+    ].join('\r\n');
+
+    const result = csvToItems(csv);
+    expect(result.invalid).toBe(0);
+    const [bad] = result.items.map(normalizeItem);
+
+    expect(bad.kind).toBe('task');
+    expect(bad.status).toBe('todo');
+    expect(bad.reminders).toEqual([]);
+    expect(bad.tags).toEqual([]);
+    expect(bad.checklist).toEqual([]);
+    expect(bad.occurrences).toEqual({});
+  });
+
+  it('generates an id for a row that omits one', () => {
+    const [item] = csvToItems('kind,title\r\ntask,No id').items.map(normalizeItem);
+
+    expect(typeof item.id).toBe('string');
+    expect(item.id.length).toBeGreaterThan(0);
+  });
+
   it('skips and counts rows with an empty title', () => {
     const result = csvToItems(
       'id,kind,title\r\nblank-1,task,\r\nblank-2,task,"   "\r\ncsv-1,goal,Keep me',

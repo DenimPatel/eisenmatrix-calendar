@@ -59,6 +59,59 @@ describe('backup', () => {
     });
   });
 
+  it('falls back to task for an unknown kind and coerces non-array shape fields', () => {
+    const parsed = parseBackup(
+      JSON.stringify({
+        app: 'eisenmatrix',
+        version: 2,
+        items: [
+          {
+            id: 'bad',
+            kind: 'bogus',
+            title: 'Bad',
+            status: 'weird',
+            reminders: { x: 1 },
+            tags: 'nope',
+            checklist: 5,
+            occurrences: [1],
+          },
+        ],
+      }),
+    );
+
+    expect(parsed.invalid).toBe(0);
+    const [bad] = parsed.items.map(normalizeItem);
+
+    expect(bad.kind).toBe('task');
+    expect(bad.status).toBe('todo');
+    expect(bad.reminders).toEqual([]);
+    expect(bad.tags).toEqual([]);
+    expect(bad.checklist).toEqual([]);
+    expect(bad.occurrences).toEqual({});
+  });
+
+  it('counts non-object entries as invalid instead of throwing', () => {
+    const parsed = parseBackup(
+      JSON.stringify({
+        app: 'eisenmatrix',
+        version: 2,
+        items: [1, null, 'nope', { id: 'ok', kind: 'task', title: 'Fine' }],
+      }),
+    );
+
+    expect(parsed.invalid).toBe(3);
+    expect(parsed.items.map((i) => i.id)).toEqual(['ok']);
+  });
+
+  it('counts an item without an id as invalid', () => {
+    const parsed = parseBackup(
+      JSON.stringify({ app: 'eisenmatrix', version: 2, items: [{ kind: 'task', title: 'No id' }] }),
+    );
+
+    expect(parsed.invalid).toBe(1);
+    expect(parsed.items).toEqual([]);
+  });
+
   describe('payload identity and version', () => {
     it('rejects a payload produced by another app', () => {
       const json = JSON.stringify({ app: 'other-app', version: 2, items: [item('a', 'Alpha')] });

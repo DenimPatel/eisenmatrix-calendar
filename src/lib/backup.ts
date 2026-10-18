@@ -1,4 +1,5 @@
 import { newId } from './id';
+import { validateItem } from './itemValidation';
 import type { Item, List } from '@/types';
 
 export const BACKUP_VERSION = 2;
@@ -30,6 +31,7 @@ export interface ParsedBackup {
   lists: List[];
   exportedAt: string | null;
   version: number;
+  invalid: number;
 }
 
 export function parseBackup(json: string): ParsedBackup {
@@ -61,13 +63,24 @@ export function parseBackup(json: string): ParsedBackup {
   if (!hasItems && !hasTasks) {
     throw new Error('Not an EisenMatrix backup (no items or tasks array)');
   }
-  const items = hasItems ? payload.items : payload.tasks;
+  const rawItems = (hasItems ? payload.items : payload.tasks) as unknown[];
   const lists = Array.isArray(payload.lists) ? payload.lists : [];
+  const items: Item[] = [];
+  let invalid = 0;
+  for (const raw of rawItems) {
+    const validated = validateItem(raw);
+    if (!validated.ok) {
+      invalid++;
+      continue;
+    }
+    items.push({ ...(raw as Partial<Item>), ...validated.shape } as Item);
+  }
   return {
-    items: (items as unknown[]).filter((i) => i && typeof i === 'object' && 'id' in i) as Item[],
+    items,
     lists: lists as List[],
     exportedAt: typeof payload.exportedAt === 'string' ? payload.exportedAt : null,
     version,
+    invalid,
   };
 }
 
