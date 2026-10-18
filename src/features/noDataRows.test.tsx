@@ -19,6 +19,11 @@ function rawItem(kind: Item['kind']): Item {
   return raw as Item;
 }
 
+function rawWithData(kind: Item['kind'], data: unknown, id?: string): Item {
+  const raw = rawItem(kind);
+  return { ...raw, ...(id ? { id } : {}), data } as unknown as Item;
+}
+
 async function seedRawRows(): Promise<void> {
   await db.items.bulkPut(ITEM_KINDS.map(rawItem));
 }
@@ -80,6 +85,31 @@ describe('views with raw no-data rows', () => {
     await waitForText(mounted.host, title);
     expect(mounted.host.textContent).toContain(title);
     if (title === 'Raw task') expect(mounted.host.textContent).toContain('Raw event');
+
+    await mounted.unmount();
+  });
+});
+
+describe('views with nested partial payloads', () => {
+  it('renders habits with a null target and a partial target', async () => {
+    await db.items.bulkPut([
+      rawWithData('habit', { target: null }, 'null-target'),
+      rawWithData('habit', { target: { count: 2 } }, 'partial-target'),
+    ]);
+    const mounted = await mount(<HabitsView />);
+
+    await waitForText(mounted.host, 'Raw habit');
+    expect(mounted.host.textContent).toContain('1× per day');
+    expect(mounted.host.textContent).toContain('2× per day');
+
+    await mounted.unmount();
+  });
+
+  it('renders a goal with a null metric', async () => {
+    await db.items.bulkPut([rawWithData('goal', { metric: null }, 'null-metric')]);
+    const mounted = await mount(<GoalsView />);
+
+    await waitForText(mounted.host, 'Raw goal');
 
     await mounted.unmount();
   });

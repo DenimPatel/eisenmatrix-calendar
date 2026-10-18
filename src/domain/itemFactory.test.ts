@@ -66,6 +66,29 @@ describe('createItem recurrence defaults', () => {
     expect(goal.data).toEqual({ ...defaultDataFor('goal'), why: 'Because' });
   });
 
+  it('deep-fills a nested habit target that omits a field', () => {
+    const habit = normalizeItem({ kind: 'habit', data: { target: { count: 2 } } as never });
+    expect(habit.data).toEqual({
+      target: { count: 2, per: 'day' },
+      streak: { current: 0, best: 0, lastAt: null },
+    });
+  });
+
+  it('deep-fills a nested goal metric over the default', () => {
+    const goal = normalizeItem({
+      kind: 'goal',
+      data: { metric: { type: 'numeric', current: 3 } } as never,
+    });
+    expect(goal.data).toEqual({ metric: { type: 'numeric', current: 3 }, horizon: 'month' });
+  });
+
+  it('replaces a null nested object with the kind default', () => {
+    const habit = normalizeItem({ kind: 'habit', data: { target: null } as never });
+    const goal = normalizeItem({ kind: 'goal', data: { metric: null } as never });
+    expect(habit.data).toEqual(defaultDataFor('habit'));
+    expect(goal.data).toEqual(defaultDataFor('goal'));
+  });
+
   it('falls back to task for an unknown kind and coerces invalid collections', () => {
     const item = normalizeItem({
       kind: 'bogus' as never,

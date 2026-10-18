@@ -29,6 +29,26 @@ function defaultRecurrenceFor(kind: ItemKind): BaseItem['recurrence'] {
   return { freq: 'daily', interval: 1, weekStartsOn: 1, exceptions: [], overrides: {} };
 }
 
+/**
+ * Recursively fill nested default objects so a partial payload cannot drop a
+ * required field. Non-object defaults are kept unless the payload supplies a
+ * defined value; `null` is replaced only where the default is an object.
+ */
+function mergeDefaults<T>(defaults: T, value: unknown): T {
+  if (!isPlainObject(defaults)) {
+    return (value === undefined ? defaults : value) as T;
+  }
+  const source = isPlainObject(value) ? value : {};
+  const merged: Record<string, unknown> = {};
+  for (const [key, fallback] of Object.entries(defaults)) {
+    merged[key] = mergeDefaults(fallback, source[key]);
+  }
+  for (const [key, provided] of Object.entries(source)) {
+    if (!(key in merged) && provided !== undefined) merged[key] = provided;
+  }
+  return merged as T;
+}
+
 export interface CreateItemOptions {
   kind: ItemKind;
   title?: string;
@@ -77,7 +97,7 @@ export function createItem(options: CreateItemOptions): Item {
     archivedAt: null,
     history: [],
     occurrences: {},
-    data: { ...(defaultDataFor(options.kind) as object), ...(options.data ?? {}) },
+    data: mergeDefaults(defaultDataFor(options.kind), options.data),
   } as Item;
   return base;
 }
@@ -135,9 +155,6 @@ export function normalizeItem(partial: Partial<Item>): Item {
     archivedAt: partial.archivedAt ?? null,
     history: Array.isArray(partial.history) ? partial.history : [],
     occurrences: shape.occurrences,
-    data: {
-      ...(defaultDataFor(kind) as object),
-      ...(isPlainObject(partial.data) ? partial.data : {}),
-    },
+    data: mergeDefaults(defaultDataFor(kind), partial.data),
   } as Item;
 }

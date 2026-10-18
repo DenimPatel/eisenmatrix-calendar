@@ -61,3 +61,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-17 · IMP-089 · Concurrent occurrence status writes can no longer lose a key · be7edc1 · files: `src/db/repository.ts`, `src/domain/itemActions.ts`
 - 2026-10-18 · IMP-038 · Imported JSON/CSV items are shape-validated and coerced; invalid entries counted instead of crashing
 - 2026-10-18 · IMP-036 · Reminder delivery log has unique [itemId+occKey] index with atomic record and tick guard, preventing duplicate notifications
+- 2026-10-18 · IMP-090 · Habits/goals with partial nested target/metric payloads now render and compute stats without throwing

@@ -85,6 +85,37 @@ describe('itemRepo', () => {
     }
   });
 
+  it('deep-fills nested kind payloads on read without rewriting the stored rows', async () => {
+    const partialTarget = {
+      ...rawWithoutData('habit'),
+      id: 'partial-target',
+      data: { target: { count: 2 } },
+    } as Item;
+    const nullTarget = {
+      ...rawWithoutData('habit'),
+      id: 'null-target',
+      data: { target: null },
+    } as unknown as Item;
+    const nullMetric = {
+      ...rawWithoutData('goal'),
+      id: 'null-metric',
+      data: { metric: null },
+    } as unknown as Item;
+    await db.items.bulkPut([partialTarget, nullTarget, nullMetric]);
+
+    const all = await itemRepo.all();
+    expect(all.find((item) => item.id === 'partial-target')?.data).toEqual({
+      target: { count: 2, per: 'day' },
+      streak: { current: 0, best: 0, lastAt: null },
+    });
+    expect((await itemRepo.get('null-target'))?.data).toEqual(defaultDataFor('habit'));
+    expect((await itemRepo.get('null-metric'))?.data).toEqual(defaultDataFor('goal'));
+
+    expect((await db.items.get('partial-target'))?.data).toEqual({ target: { count: 2 } });
+    expect((await db.items.get('null-target'))?.data).toEqual({ target: null });
+    expect((await db.items.get('null-metric'))?.data).toEqual({ metric: null });
+  });
+
   it('removes children with their parent', async () => {
     await itemRepo.createMany([
       task('p', 'Parent'),

@@ -406,4 +406,34 @@ describe('missing data', () => {
     ).not.toThrow();
     expect(() => activeDayStreak(items, new Date(2024, 0, 31))).not.toThrow();
   });
+
+  it('tolerates a habit with a null or partial target', () => {
+    const base = makeHabit('2024-01-01');
+    const nullTarget = { ...base, data: { target: null } } as unknown as Item;
+    const partialTarget = { ...base, data: { target: { count: 2 } } } as unknown as Item;
+
+    expect(() => habitStreak(nullTarget, new Date(2024, 0, 31))).not.toThrow();
+    expect(habitStreak(partialTarget, new Date(2024, 0, 31))).toEqual({
+      current: 0,
+      best: 0,
+      lastAt: null,
+    });
+  });
+
+  it('tolerates a goal with a null or partial metric', () => {
+    const base = makeGoal({ type: 'numeric', current: 3, target: 8 });
+    const nullMetric = { ...base, data: { metric: null } } as unknown as Item;
+    const partialMetric = {
+      ...base,
+      data: { metric: { type: 'numeric', current: 4 } },
+    } as unknown as Item;
+
+    expect(goalProgress(nullMetric)).toEqual({ current: 0, target: 1, percent: 0, label: '0/1' });
+    expect(goalProgress(partialMetric)).toEqual({
+      current: 4,
+      target: 1,
+      percent: 100,
+      label: '4/1',
+    });
+  });
 });

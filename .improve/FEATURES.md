@@ -1431,7 +1431,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). itemRepo.updateAtomic reads/merges/writes in one rw transaction; setStatus uses patchItemAtomic, so concurrent keys both persist with two undo entries and no-op writes nothing. +1 test (455). Verified PASS (typecheck/lint, build, format, focused test 10/10, non-vacuous). Reports: impl-IMP-089.md, verify-IMP-089.md. Found by the IMP-076 verifier (2026-10-17).
 
 ### IMP-090 — Deep-normalize nested kind payloads
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / robustness
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemFactory.ts` (`normalizeItem`), `src/domain/stats.ts`, `src/features/habits/HabitsView.tsx`, `src/features/goals/GoalsView.tsx`, `src/features/item/KindFields.tsx`
@@ -1444,10 +1444,10 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-088
 - **Priority score:** 8
-- **Notes:** Found by the IMP-088 verifier (2026-10-17). Prefer a small recursive defaults merge over per-callsite guards.
+- **Notes:** DONE (attempt 1). `mergeDefaults` recursively fills nested object defaults in `normalizeItem` (and `createItem`), so `{target:null}`, `{target:{count:2}}` and `{metric:null}` yield complete `target`/`streak`/`metric`; merge is pure and read-only. +7 tests across itemFactory, repository read shape, Habits/Goals mounts and stats. Gates: typecheck/lint/test (42 files / 471) / format:check all PASS. Reports: impl-IMP-090.md, discovered-IMP-090.md. Follow-up: `itemRepo` write-return values remain unnormalized.
 
 ### IMP-091 — Keep column context when the mobile List header is hidden
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/features/list/ListView.tsx` (header row, responsive classes), `src/features/list/ListView.test.tsx`
