@@ -133,6 +133,10 @@ export function mergeImportedItems(
       });
       continue;
     }
+    if (strategy === 'duplicate' && item.parentId && idMap.has(item.parentId)) {
+      toPut.push({ ...item, parentId: idMap.get(item.parentId) ?? item.parentId });
+      continue;
+    }
     toPut.push(item);
   }
 

@@ -1241,7 +1241,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). App exposes an optional onBootEffects test hook; smoke test awaits both migrations and asserts markers; CI runs the suite twice in one Test step. 10 local runs zero Unhandled; reject mutations fail the test. Verified PASS (typecheck/lint, build, format). Reports: impl-IMP-083.md, verify-IMP-083.md. Source: `discovered-IMP-068.md` §2 and §3. The doubled run is the cheapest available detector for the failure IMP-068 actually had. No production code changes.
 
 ### IMP-084 — Remap `parentId` for every incoming item under the duplicate strategy
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data integrity
 - **Type:** bug-fix
 - **Area / files:** `src/lib/backup.ts:88-96` (the `idMap` pre-pass covers colliding ids only), `:110-117` (the `parentId` rewrite, applied only inside the `duplicate` branch)

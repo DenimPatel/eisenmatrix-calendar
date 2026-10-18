@@ -219,6 +219,34 @@ describe('backup', () => {
       expect(toPut[1].parentId).toBe('new-p');
     });
 
+    it('repoints a fresh-id child at the duplicated parent', () => {
+      const freshChild = { ...item('new-c', 'Child'), parentId: 'p' };
+      const { toPut, duplicated } = mergeImportedItems([parent], [parent, freshChild], 'duplicate');
+      expect(duplicated).toBe(1);
+
+      const dupParent = toPut.find((i) => i.title === 'Parent');
+      const keptChild = toPut.find((i) => i.title === 'Child');
+      expect(keptChild?.id).toBe('new-c');
+      expect(dupParent?.id).not.toBe('p');
+      expect(keptChild?.parentId).toBe(dupParent?.id);
+      expect(keptChild?.parentId).not.toBe('p');
+    });
+
+    it('resolves a parent that appears twice in the payload to one canonical target', () => {
+      const dupPayload = { ...parent, title: 'Parent Again' };
+      const freshChild = { ...item('new-c', 'Child'), parentId: 'p' };
+      const { toPut, duplicated } = mergeImportedItems(
+        [parent],
+        [parent, dupPayload, freshChild],
+        'duplicate',
+      );
+      expect(duplicated).toBe(2);
+
+      const targetIds = new Set(toPut.map((i) => i.parentId).filter(Boolean));
+      expect(targetIds.size).toBe(1);
+      expect(targetIds.has('p')).toBe(false);
+    });
+
     it('leaves skip and overwrite parentIds untouched', () => {
       const skip = mergeImportedItems([parent, child], [parent, child], 'skip');
       expect(skip.toPut).toEqual([]);
