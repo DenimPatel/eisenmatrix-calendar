@@ -104,6 +104,13 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  Reflect.deleteProperty(navigator, 'serviceWorker');
+  // Drain the module-level item source so a reminder left by one test cannot be delivered by
+  // the next test's first tick before its live query has emitted.
+  await act(async () => {
+    await db.items.clear();
+  });
+  await actRounds(2);
   if (root) await act(async () => void root!.unmount());
   root = null;
   host?.remove();
@@ -133,6 +140,22 @@ describe('ReminderRuntime blocked-storage async paths', () => {
     });
   });
 
+  it('settles a tick with a due reminder when the delivery log read is blocked', async () => {
+    await itemRepo.create(
+      probeItem('due', [{ id: 'due-r', absolute: Date.now() - 1000, label: 'due' }]),
+    );
+    vi.spyOn(reminderLogRepo, 'wasFired').mockRejectedValue(new Error('database is blocked'));
+
+    await withUnhandledRejectionCapture(async (unhandled) => {
+      await mountRuntime();
+      await settleUntil(() => expect(reminderLogRepo.wasFired).toHaveBeenCalled());
+      await actRounds(10);
+
+      expect(unhandled).toEqual([]);
+      expect(useUiStore.getState().toasts).toEqual([]);
+    });
+  });
+
   it('swallows a rejected pending-undelivered count without an unhandled rejection or a toast', async () => {
     await itemRepo.create(probeItem('probe'));
     vi.spyOn(reminderFailureRepo, 'count').mockRejectedValue(new Error('database is blocked'));
@@ -144,6 +167,31 @@ describe('ReminderRuntime blocked-storage async paths', () => {
 
       expect(unhandled).toEqual([]);
       expect(useUiStore.getState().toasts).toEqual([]);
+    });
+  });
+
+  it('settles a blocked service-worker click message without an unhandled rejection', async () => {
+    const target = new EventTarget();
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        addEventListener: target.addEventListener.bind(target),
+        removeEventListener: target.removeEventListener.bind(target),
+      } as unknown as ServiceWorkerContainer,
+    });
+    vi.spyOn(itemRepo, 'get').mockRejectedValue(new Error('database is blocked'));
+
+    await withUnhandledRejectionCapture(async (unhandled) => {
+      await mountRuntime();
+      await act(async () => {
+        target.dispatchEvent(
+          new MessageEvent('message', { data: { type: 'OPEN_ITEM', itemId: 'blocked' } }),
+        );
+      });
+      await actRounds(5);
+
+      expect(itemRepo.get).toHaveBeenCalledWith('blocked');
+      expect(unhandled).toEqual([]);
     });
   });
 

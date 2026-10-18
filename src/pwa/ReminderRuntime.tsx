@@ -136,6 +136,10 @@ export function ReminderRuntime() {
         // also surfaces any that already aged out of the retry window. Not awaited, so the
         // report cannot lengthen the tick and make an effect rebuild drop its own tick.
         if (undelivered || !document.hidden) void reportUndelivered();
+      } catch {
+        // Storage unavailable: `deliver` awaits `wasFired`/`record`, so a blocked IndexedDB
+        // rejects here. The boot already reported it once and the next tick retries, so this
+        // must settle quietly rather than become an unhandled rejection.
       } finally {
         ticking.current = false;
       }
@@ -160,29 +164,34 @@ export function ReminderRuntime() {
       const data = event.data as
         { type?: string; itemId?: string; occKey?: string; action?: string } | undefined;
       if (data?.type !== 'OPEN_ITEM' || !data.itemId) return;
-      void itemRepo.get(data.itemId).then(async (item) => {
-        if (!item) return;
-        if (data.action === 'done' && data.occKey) {
-          await toggleDone(item, data.occKey);
-          return;
-        }
-        if (data.action?.startsWith('snooze-')) {
-          const minutes = Number(data.action.replace('snooze-', '')) || 10;
-          const snooze: Reminder = {
-            id: newId(),
-            absolute: Date.now() + minutes * 60_000,
-            label: `Snoozed ${minutes}m`,
-          };
-          await patchItem(
-            item.id,
-            { reminders: withSnooze(item.reminders, snooze) },
-            { silent: true, trackHistory: false },
-          );
-          pushToast({ message: `Snoozed for ${minutes} minutes`, tone: 'info' });
-          return;
-        }
-        openEditor(item, data.occKey ?? null);
-      });
+      void itemRepo
+        .get(data.itemId)
+        .then(async (item) => {
+          if (!item) return;
+          if (data.action === 'done' && data.occKey) {
+            await toggleDone(item, data.occKey);
+            return;
+          }
+          if (data.action?.startsWith('snooze-')) {
+            const minutes = Number(data.action.replace('snooze-', '')) || 10;
+            const snooze: Reminder = {
+              id: newId(),
+              absolute: Date.now() + minutes * 60_000,
+              label: `Snoozed ${minutes}m`,
+            };
+            await patchItem(
+              item.id,
+              { reminders: withSnooze(item.reminders, snooze) },
+              { silent: true, trackHistory: false },
+            );
+            pushToast({ message: `Snoozed for ${minutes} minutes`, tone: 'info' });
+            return;
+          }
+          openEditor(item, data.occKey ?? null);
+        })
+        // Storage unavailable: the click still focuses the tab, so a failed lookup must settle
+        // quietly rather than escape as an unhandled rejection.
+        .catch(() => {});
     };
     navigator.serviceWorker?.addEventListener('message', onWorkerMessage);
 

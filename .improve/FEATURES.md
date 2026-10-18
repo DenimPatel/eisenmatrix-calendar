@@ -1789,7 +1789,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#2, S2, Impact 4/Reach 2/Confidence 5).
 
 ### IMP-112 — Never emit COUNT and UNTIL in the same RRULE after a "this and future" split
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / ICS
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts` (`:74-79`), `src/domain/recurrence.ts` (`:424-428`)
@@ -1821,7 +1821,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#4, S2, Impact 4/Reach 2/Confidence 5); promoted from `discovered-IMP-037` #3.
 
 ### IMP-114 — Escape carriage returns in ICS text so CRLF notes do not corrupt content lines
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / ICS
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts` (`:35-41` `escapeText`, used at `:105`, `:128-131`)
@@ -1837,7 +1837,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#5, S3, Impact 3/Reach 2/Confidence 5).
 
 ### IMP-115 — Never export a DTEND earlier than DTSTART for a timed item
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / ICS
 - **Type:** bug-fix
 - **Area / files:** `src/lib/ics.ts` (`:133-144`), `src/features/item/ItemEditorSheet.tsx` (`:642-655`), `src/domain/recurrence.ts` (`:122-128`)
@@ -1869,7 +1869,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#7, S3, Impact 2/Reach 2/Confidence 4).
 
 ### IMP-117 — Catch rejections in the delivery tick on blocked storage
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** error handling / reliability
 - **Type:** bug-fix
 - **Area / files:** `src/pwa/ReminderRuntime.tsx` (`:150-152`, `:163`), `src/pwa/delivery.ts` (`:89`, `:92-93`, `:108-109`)

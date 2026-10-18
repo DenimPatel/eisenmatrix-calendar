@@ -33,11 +33,16 @@ export function foldLine(line: string): string[] {
 }
 
 function escapeText(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\\;')
-    .replace(/,/g, '\\,')
-    .replace(/\n/g, '\\n');
+  return (
+    value
+      // RFC 5545 §3.1 forbids a bare CR in a content line, so normalise CRLF/CR to LF
+      // first and let the LF escape below turn it into the `\n` escape sequence.
+      .replace(/\r\n?/g, '\n')
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\n/g, '\\n')
+  );
 }
 
 function pad(n: number): string {
@@ -137,7 +142,10 @@ export function itemsToICS(items: Item[]): string {
     if (timed) {
       lines.push(`DTSTART:${floating(start)}`);
       const end = parseLocalDate(item.end);
-      if (end) lines.push(`DTEND:${floating(end)}`);
+      // RFC 5545 §3.8.2.2: DTEND MUST be later than DTSTART. The occurrence engine
+      // substitutes the start for an inverted range, so the export does the same by
+      // omitting DTEND rather than emitting an invalid one.
+      if (end && end.getTime() > start.getTime()) lines.push(`DTEND:${floating(end)}`);
     } else {
       lines.push(`DTSTART;VALUE=DATE:${dateOnly(start)}`);
       const end = parseLocalDate(item.end);

@@ -77,3 +77,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-110 · Reminders set 'N before' crossing midnight now fire at their true time
 - 2026-10-18 · IMP-111 · Malformed imported recurrence rules are coerced or rejected instead of throwing or expanding wrongly
 - 2026-10-18 · IMP-113 · Editing recurrence with 'This and future' now persists; ICS RRULE no longer emits both COUNT and UNTIL
+- 2026-10-18 · IMP-114 · ICS export handles CRLF notes and inverted ranges; delivery tick tolerates blocked storage

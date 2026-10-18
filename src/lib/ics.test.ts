@@ -17,6 +17,71 @@ describe('ics', () => {
     expect(recurrenceToRRule(rule, false)).toBe('FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR');
   });
 
+  it('normalises CRLF in text fields so no raw CR reaches a content line', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Sync\r\nstandup',
+      start: '2024-05-01T09:00',
+      allDay: false,
+    });
+    item.notes = 'line1\r\nline2\rline3';
+    if (item.kind === 'event') item.data.location = 'Room A\r\nFloor 2';
+
+    const ics = itemsToICS([item]);
+    // The only CR allowed is the first octet of the CRLF record separator.
+    expect(ics.replace(/\r\n/g, '')).not.toContain('\r');
+    expect(ics).toContain('SUMMARY:Sync\\nstandup');
+    expect(ics).toContain('DESCRIPTION:line1\\nline2\\nline3');
+    expect(ics).toContain('LOCATION:Room A\\nFloor 2');
+  });
+
+  it('omits DTEND when a timed end is not later than the start', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Backwards',
+      start: '2026-01-05T10:00',
+      end: '2026-01-05',
+      allDay: false,
+    });
+    const lines = itemsToICS([item]).split('\r\n');
+    expect(lines).toContain('DTSTART:20260105T100000');
+    expect(lines.some((line) => line.startsWith('DTEND'))).toBe(false);
+  });
+
+  it('never emits a DTEND at or before its DTSTART', () => {
+    const cases: Item[] = [
+      createItem({
+        kind: 'event',
+        title: 'Inverted',
+        start: '2026-01-05T10:00',
+        end: '2026-01-05T09:00',
+        allDay: false,
+      }),
+      createItem({
+        kind: 'event',
+        title: 'Equal',
+        start: '2026-01-05T10:00',
+        end: '2026-01-05T10:00',
+        allDay: false,
+      }),
+      createItem({
+        kind: 'event',
+        title: 'Forward',
+        start: '2026-01-05T10:00',
+        end: '2026-01-05T11:30',
+        allDay: false,
+      }),
+    ];
+
+    for (const event of itemsToICS(cases).split('BEGIN:VEVENT').slice(1)) {
+      const lines = event.split('\r\n');
+      const start = lines.find((line) => line.startsWith('DTSTART:'))!;
+      const end = lines.find((line) => line.startsWith('DTEND:'));
+      // Floating stamps are fixed-width local, so a string compare is a time compare.
+      if (end) expect(end.slice('DTEND:'.length) > start.slice('DTSTART:'.length)).toBe(true);
+    }
+  });
+
   it('exports events with alarms and escapes text', () => {
     const item = createItem({
       kind: 'event',
