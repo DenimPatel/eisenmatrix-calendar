@@ -144,15 +144,18 @@ export function ItemEditorSheet() {
 
   const isRecurring = !!draft?.recurrence;
 
+  // Analytics run `itemCompletionStats` plus a 120-day `expandOccurrences`. `draft` changes on
+  // every keystroke, so the window is only computed while the Analytics tab is actually open
+  // (its `TabPanel` renders nothing otherwise). Output is unchanged for the open tab.
   const analytics = useMemo(() => {
-    if (!draft) return null;
+    if (tab !== 'analytics' || !draft) return null;
     const to = new Date();
     const from = new Date();
     from.setDate(from.getDate() - 120);
     const stats = itemCompletionStats(draft, from, to);
     const recent = expandOccurrences(draft, from, to).reverse().slice(0, 12);
     return { stats, recent };
-  }, [draft]);
+  }, [draft, tab]);
 
   if (!editor.open || !draft) return null;
 

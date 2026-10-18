@@ -1,15 +1,21 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ItemEditorSheet } from './ItemEditorSheet';
 import { db } from '@/db/schema';
 import { itemRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { createItem } from '@/domain/itemFactory';
 import { expandOccurrences, resolveOccurrenceStatus } from '@/domain/recurrence';
+import { itemCompletionStats } from '@/domain/stats';
 import { hasTimeComponent, parseLocalDate } from '@/lib/date';
 import type { Item } from '@/types';
+
+vi.mock('@/domain/recurrence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/recurrence')>();
+  return { ...actual, expandOccurrences: vi.fn(actual.expandOccurrences) };
+});
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -546,6 +552,38 @@ describe('ItemEditorSheet', () => {
       end: '2026-07-21',
       allDay: true,
     });
+
+    await mounted.unmount();
+  });
+
+  it('computes analytics only while the Analytics tab is open, with identical output', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    // No occurrence key, so the draft is a clone of the series and the expected window is exact.
+    useUiStore.getState().openEditor(item);
+    const mounted = await mountEditor();
+    const spy = vi.mocked(expandOccurrences);
+    spy.mockClear();
+
+    await editInput(mounted.host.querySelector('input.input')!, 'Standup renamed');
+    expect(spy).not.toHaveBeenCalled();
+
+    await clickButton(mounted.host, 'Analytics');
+    expect(spy).toHaveBeenCalled();
+
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - 120);
+    const stats = itemCompletionStats(item, from, to);
+    const recent = expandOccurrences(item, from, to)
+      .reverse()
+      .slice(0, 12)
+      .map((occ) => occ.occKey);
+
+    const text = mounted.host.textContent ?? '';
+    expect(text).toContain(`${stats.rate}%`);
+    expect(text).toContain(`${stats.done} of ${stats.total} in last 120 days`);
+    for (const occKey of recent) expect(text).toContain(occKey);
 
     await mounted.unmount();
   });

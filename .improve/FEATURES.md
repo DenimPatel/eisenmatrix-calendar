@@ -2115,7 +2115,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F12, S3, Impact 3/Reach 3/Confidence 5).
 
 ### IMP-133 — Split the ten views out of the single 384 KB entry chunk
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** performance
 - **Type:** improvement
 - **Area / files:** `src/App.tsx` (`:4-19`), `vite.config.ts` (`:61-72`), `dist/assets/index-*.js`
@@ -2130,7 +2130,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F13, S3, Impact 3/Reach 4/Confidence 3).
 
 ### IMP-134 — Add an in-app Help entry point for quick-add syntax and export formats
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** docs / onboarding
 - **Type:** new-feature
 - **Area / files:** `src/features/shell/ShortcutSheet.tsx` (`:5-14`), `src/features/settings/SettingsView.tsx` (`:357-363`), `src/features/quickadd/QuickAdd.tsx` (`:17-21`)

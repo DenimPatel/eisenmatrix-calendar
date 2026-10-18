@@ -90,3 +90,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-100 · Completion toggle and calendar day-add now have 44px hit areas; other tiny controls clear 24px
 - 2026-10-18 · IMP-102 · What's next now prefers timed actionable items; truncated Today sections expose +N more
 - 2026-10-18 · IMP-129 · New shopping list uses the app dialog; bulk delete/clear purchased undo is covered by tests
+- 2026-10-18 · IMP-131 · Year view expands 3.3x faster; editor no longer recomputes analytics per keystroke

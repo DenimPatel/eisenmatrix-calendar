@@ -1,13 +1,27 @@
 // @vitest-environment jsdom
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { DndContext } from '@dnd-kit/core';
 import { CalendarView } from './CalendarView';
 import { itemRepo, settingsRepo } from '@/db/repository';
 import { createItem } from '@/domain/itemFactory';
-import { formatISODate, parseLocalDate, startOfWeek, todayKey } from '@/lib/date';
+import {
+  endOfMonthDate,
+  formatDisplayDate,
+  formatISODate,
+  parseLocalDate,
+  startOfWeek,
+  todayKey,
+} from '@/lib/date';
+import { expandOccurrences } from '@/domain/recurrence';
+import type { Item } from '@/types';
 import { DEFAULT_SETTINGS } from '@/types/settings';
+
+vi.mock('@/domain/recurrence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/recurrence')>();
+  return { ...actual, expandOccurrences: vi.fn(actual.expandOccurrences) };
+});
 
 interface Mounted {
   host: HTMLElement;
@@ -241,6 +255,94 @@ describe('CalendarView overflow affordance', () => {
 
     expect(moreControl(mounted.host)).toBeUndefined();
     expect(visibleTitles(mounted.host, titles)).toHaveLength(5);
+    await unmount(mounted);
+  });
+});
+
+function yearCardItems(host: HTMLElement, label: string): string[] {
+  const heading = Array.from(host.querySelectorAll('h3')).find((el) => el.textContent === label);
+  expect(heading, `year card "${label}"`).toBeDefined();
+  const card = heading!.closest('.card')!;
+  return Array.from(card.querySelectorAll('button')).map((el) => el.textContent ?? '');
+}
+
+/** Items that exercise `count`, `until`, month-end clamping and a one-off. */
+function yearFixtureItems(year: number): Item[] {
+  const weekly = createItem({
+    kind: 'task',
+    title: 'Standup',
+    start: formatISODate(new Date(year, 0, 5)),
+    allDay: true,
+  });
+  weekly.recurrence = {
+    freq: 'weekly',
+    interval: 1,
+    weekStartsOn: 1,
+    byWeekday: [1],
+    count: 4,
+    exceptions: [],
+    overrides: {},
+  };
+  const clamped = createItem({
+    kind: 'task',
+    title: 'Invoice',
+    start: formatISODate(new Date(year, 0, 31)),
+    allDay: true,
+  });
+  clamped.recurrence = {
+    freq: 'monthly',
+    interval: 1,
+    weekStartsOn: 1,
+    until: formatISODate(new Date(year, 2, 15)),
+    exceptions: [],
+    overrides: {},
+  };
+  const oneOff = createItem({
+    kind: 'task',
+    title: 'Dentist',
+    start: formatISODate(new Date(year, 5, 15)),
+    allDay: true,
+  });
+  return [weekly, clamped, oneOff];
+}
+
+describe('CalendarView year expansion', () => {
+  beforeEach(async () => {
+    await itemRepo.replaceAll([]);
+    vi.mocked(expandOccurrences).mockClear();
+  });
+
+  it('expands the year range once instead of once per month card', async () => {
+    const titles = await seedTasksOnToday(1);
+    const mounted = await mountCalendar(1);
+    await waitForOccurrences(mounted.host, titles);
+
+    vi.mocked(expandOccurrences).mockClear();
+    await switchMode(mounted.host, 'year');
+    await waitForOccurrences(mounted.host, titles);
+
+    expect(vi.mocked(expandOccurrences).mock.calls).toHaveLength(1);
+    await unmount(mounted);
+  });
+
+  it('renders each month card exactly as a per-month expansion would', async () => {
+    const year = new Date().getFullYear();
+    const items = yearFixtureItems(year);
+    await itemRepo.replaceAll(items);
+    const mounted = await mountCalendar(1);
+    await switchMode(mounted.host, 'year');
+    await waitForOccurrences(mounted.host, ['Standup', 'Invoice', 'Dentist']);
+
+    for (let index = 0; index < 12; index++) {
+      const from = new Date(year, index, 1);
+      const to = endOfMonthDate(from);
+      const expected = items
+        .flatMap((item) => expandOccurrences(item, from, to))
+        .sort((a, b) => (a.start ?? a.occKey).localeCompare(b.start ?? b.occKey))
+        .map((occ) => `${parseLocalDate(occ.occKey)!.getDate()}${occ.title}`);
+      expect(yearCardItems(mounted.host, formatDisplayDate(from, 'MMMM'))).toEqual(expected);
+    }
+
     await unmount(mounted);
   });
 });

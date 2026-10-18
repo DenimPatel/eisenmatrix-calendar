@@ -149,7 +149,7 @@ export function CalendarView() {
       </div>
 
       {mode === 'year' ? (
-        <YearView currentDate={currentDate} items={items} onOpen={openEditor} />
+        <YearView currentDate={currentDate} occurrences={occurrences} onOpen={openEditor} />
       ) : mode === 'day' ? (
         <div className="card p-4">
           <div className="mb-3 flex items-center justify-between">
@@ -294,11 +294,11 @@ function AgendaList({
 
 function YearView({
   currentDate,
-  items,
+  occurrences,
   onOpen,
 }: {
   currentDate: Date;
-  items: import('@/types').Item[];
+  occurrences: Occurrence[];
   onOpen: (item: import('@/types').Item, occKey?: string | null) => void;
 }) {
   const months = useMemo(
@@ -311,15 +311,25 @@ function YearView({
     [currentDate],
   );
 
+  // One expansion over the whole year, bucketed by the occurrence's local month, replaces
+  // twelve per-month expansions. Bucketing by `occKey` matches the old per-month window
+  // exactly: `expandOccurrences` counts `count`/`until` from the series start either way.
+  const byMonth = useMemo(() => {
+    const buckets: Occurrence[][] = Array.from({ length: 12 }, () => []);
+    for (const occ of occurrences) {
+      const index = Number(occ.occKey.slice(5, 7)) - 1;
+      if (index >= 0 && index < 12) buckets[index].push(occ);
+    }
+    return buckets;
+  }, [occurrences]);
+
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {months.map((month) => (
+      {months.map((month, index) => (
         <YearMonthCard
           key={month.label}
-          from={month.from}
-          to={month.to}
           label={month.label}
-          items={items}
+          occurrences={byMonth[index]}
           onOpen={onOpen}
         />
       ))}
@@ -328,19 +338,14 @@ function YearView({
 }
 
 function YearMonthCard({
-  from,
-  to,
   label,
-  items,
+  occurrences,
   onOpen,
 }: {
-  from: Date;
-  to: Date;
   label: string;
-  items: import('@/types').Item[];
+  occurrences: Occurrence[];
   onOpen: (item: import('@/types').Item, occKey?: string | null) => void;
 }) {
-  const occurrences = useOccurrences(items, from, to);
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="card p-3">
