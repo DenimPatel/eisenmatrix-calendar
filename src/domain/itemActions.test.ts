@@ -798,6 +798,49 @@ describe('updateRecurring (scope: future)', () => {
     expect((await tailOf()).start).toBe('2026-07-21T11:00');
   });
 
+  it('drops a tail end the patched start leaves behind', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const stored = (await itemRepo.get('s'))!;
+
+    // The editor sends start/end/dueAt back on every save; only `start` was actually edited, so
+    // the shifted end (2026-07-20) is kept while the start moves to 2026-07-25.
+    await updateRecurring(stored, 'future', OCC, {
+      start: '2026-07-25T11:00',
+      end: stored.end,
+      dueAt: stored.dueAt,
+    });
+
+    const tail = await tailOf();
+    expect(tail.start).toBe('2026-07-25T11:00');
+    expect(tail.end).toBeNull();
+    for (const item of await itemRepo.all()) {
+      if (item.start && item.end) {
+        expect(parseLocalDate(item.end)!.getTime()).toBeGreaterThanOrEqual(
+          parseLocalDate(item.start)!.getTime(),
+        );
+      }
+    }
+  });
+
+  it('writes no tail when the split lands past the series’ last occurrence', async () => {
+    const item = countedWeeklyTask('s');
+    // Weekly from 2026-07-13: the only occurrence is 2026-07-13, so 2026-07-20 is past the end.
+    item.recurrence = { ...item.recurrence!, until: '2026-07-14' };
+    await itemRepo.create(item);
+    const before = (await itemRepo.get('s'))!;
+
+    const written = await updateRecurring(before, 'future', OCC, { title: 'Standup (retro)' });
+
+    expect(written).toBe(false);
+    expect(await itemRepo.all()).toEqual([before]);
+    expect(useUiStore.getState().undoStack).toHaveLength(0);
+    const toasts = useUiStore.getState().toasts;
+    expect(toasts[toasts.length - 1]?.message).toMatch(/no later occurrences/i);
+    for (const persisted of await itemRepo.all()) {
+      if (persisted.recurrence) expect(occurrences(persisted).length).toBeGreaterThan(0);
+    }
+  });
+
   /**
    * The editor's `seriesPatch` always sends `start`/`end`/`dueAt`, so a save with no date
    * edit hands the branch the stored dates back. Unless they are recognised as untouched,

@@ -1,8 +1,8 @@
 import { itemRepo, type ItemPatch } from '@/db/repository';
 import { newId } from '@/lib/id';
-import { formatISODate } from '@/lib/date';
+import { formatISODate, parseLocalDate } from '@/lib/date';
 import { useUiStore } from '@/store/useUiStore';
-import { resolveOccurrenceStatus, splitSeries } from './recurrence';
+import { hasOccurrenceOnOrAfter, resolveOccurrenceStatus, splitSeries } from './recurrence';
 import { pruneExpiredAbsolute } from './reminders';
 import { habitStreak } from './stats';
 import type {
@@ -367,6 +367,13 @@ export async function updateRecurring(
     toast('Series updated', 'success');
     return true;
   }
+  // Splitting at or past the series' last occurrence (a passed `until`, a consumed `count`)
+  // would persist a tail that expands to zero occurrences — a phantom recurring row. Refuse it
+  // and leave the series untouched, exactly as it would render unsplit.
+  if (!hasOccurrenceOnOrAfter(stored, occKey)) {
+    toast('Nothing to split — the series has no later occurrences', 'info');
+    return false;
+  }
   const { head, tail } = splitSeries(stored, occKey, newId());
   // `splitSeries` anchors the tail on the split day and hands it only the count the head
   // did not use, so a start/end/dueAt the editor left untouched must not drag the tail back
@@ -382,6 +389,11 @@ export async function updateRecurring(
     recurrence: (tailPatch.recurrence as Item['recurrence']) ?? tail.recurrence,
     updatedAt: Date.now(),
   } as Item;
+  // A start-only edit keeps the shifted `end`, which can now precede the patched start. Drop
+  // the end rather than persist a row whose range is inverted.
+  const tailStart = tailPatched.start ? parseLocalDate(tailPatched.start) : null;
+  const tailEnd = tailPatched.end ? parseLocalDate(tailPatched.end) : null;
+  if (tailStart && tailEnd && tailEnd.getTime() < tailStart.getTime()) tailPatched.end = null;
   await itemRepo.createMany([head, tailPatched]);
   // One entry: undo restores the pre-split series row and removes the tail it created, in a
   // single transaction so it cannot half-apply.

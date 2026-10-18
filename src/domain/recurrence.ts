@@ -334,6 +334,31 @@ function occurrencesBeforeKey(item: Item, rule: RecurrenceRule, fromKey: string)
 }
 
 /**
+ * Whether a series still has at least one occurrence on or after `fromKey`. Counts candidate
+ * days exactly as `expandOccurrences` does, so `count` and `until` cap the tally and a skipped
+ * day still consumes a `count` slot. A "this and future" split past this point would leave a
+ * tail that expands to zero occurrences, so the caller refuses to write one.
+ */
+export function hasOccurrenceOnOrAfter(item: Item, fromKey: string): boolean {
+  const rule = item.recurrence;
+  const seriesStart = seriesStartOf(item);
+  const boundary = parseLocalDate(fromKey);
+  if (!rule || !seriesStart || !boundary) return false;
+  const boundaryDay = startOfDay(boundary);
+  const untilBound = rule.until ? parseLocalDate(rule.until) : null;
+  const untilDay = untilBound ? endOfDay(untilBound) : null;
+  let generated = 0;
+  for (const candidate of candidateDates(rule, seriesStart)) {
+    const day = startOfDay(candidate);
+    if (untilDay && day > untilDay) break;
+    if (rule.count !== undefined && generated >= rule.count) break;
+    generated++;
+    if (day >= boundaryDay) return true;
+  }
+  return false;
+}
+
+/**
  * The grid fields `candidateDates` infers from the series start when they are absent —
  * `byWeekday` for weekly, `byMonthDay` for monthly, `byMonth`/`byMonthDay` for yearly.
  * `RecurrenceEditor.baseRule()` leaves them unset, so this is the shape the editor stores.

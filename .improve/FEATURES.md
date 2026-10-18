@@ -1207,7 +1207,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:**
 
 ### IMP-082 — Guard the split tail against an empty series and an inverted range
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / recurrence
 - **Type:** bug-fix
 - **Area / files:** `src/domain/recurrence.ts` (`splitSeries`, `:373-416`, tail keeps `recurrence.until` at `:407`); `src/domain/itemActions.ts` (`updateRecurring`'s `future` branch, `:318-338`, tail field filter at `:325-327`)

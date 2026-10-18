@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   expandOccurrences,
+  hasOccurrenceOnOrAfter,
   nextOccurrence,
   resolveOccurrenceStatus,
   splitSeries,
@@ -468,6 +469,32 @@ describe('splitSeries', () => {
     expect(tailKeys).toEqual([]);
     expect(keys(tail, '2024-01-01', '2124-01-01')).toEqual([]);
     expect(keys(head, WIDE.from, WIDE.to)).toEqual(['2024-01-01', '2024-01-02', '2024-01-03']);
+  });
+});
+
+describe('hasOccurrenceOnOrAfter', () => {
+  it('is true from a mid-series key and at the last occurrence', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 3 });
+    expect(hasOccurrenceOnOrAfter(item, '2024-01-01')).toBe(true);
+    expect(hasOccurrenceOnOrAfter(item, '2024-01-02')).toBe(true);
+    expect(hasOccurrenceOnOrAfter(item, '2024-01-03')).toBe(true);
+  });
+
+  it('is false past a consumed count or a passed until, and for a key off the grid', () => {
+    const counted = makeItem('2024-01-01', { freq: 'daily', count: 3 });
+    expect(hasOccurrenceOnOrAfter(counted, '2024-01-04')).toBe(false);
+    const bounded = makeItem('2024-01-01', { freq: 'daily', until: '2024-01-03' });
+    expect(hasOccurrenceOnOrAfter(bounded, '2024-01-10')).toBe(false);
+    const weekly = makeItem('2024-01-01', { freq: 'weekly', byWeekday: [1], count: 10 });
+    // 2024-01-03 is a Wednesday: no occurrence on that day, but later ones remain.
+    expect(hasOccurrenceOnOrAfter(weekly, '2024-01-03')).toBe(true);
+  });
+
+  it('is true for an unbounded series and false for a recurrence-less row', () => {
+    expect(hasOccurrenceOnOrAfter(makeItem('2024-01-01', { freq: 'daily' }), '2030-01-01')).toBe(
+      true,
+    );
+    expect(hasOccurrenceOnOrAfter(makeItem('2024-01-01'), '2024-01-01')).toBe(false);
   });
 });
 
