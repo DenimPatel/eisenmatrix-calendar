@@ -48,6 +48,16 @@ function markDone(item: Item, keys: string[]): Item {
 }
 
 describe('habitStreak', () => {
+  it('does not throw when the habit start is malformed', () => {
+    const item = makeHabit('not-a-date');
+    expect(() => habitStreak(item, new Date(2024, 0, 15))).not.toThrow();
+    expect(habitStreak(item, new Date(2024, 0, 15))).toEqual({
+      current: 0,
+      best: 0,
+      lastAt: null,
+    });
+  });
+
   it('resets the best run across a fully-missed month', () => {
     const item = markDone(makeHabit('2024-01-01'), ['2024-01-10', '2024-03-10']);
     const result = habitStreak(item, new Date(2024, 2, 31));

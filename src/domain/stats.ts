@@ -51,7 +51,8 @@ export function habitStreak(item: Item, today = new Date()): StreakResult {
   const per = target.per ?? 'day';
   const weekStartsOn = item.recurrence?.weekStartsOn ?? 1;
 
-  const earliest = item.start ? parseLocalDate(item.start)! : addMonths(today, -12);
+  const parsedStart = item.start ? parseLocalDate(item.start) : null;
+  const earliest = parsedStart ?? addMonths(today, -12);
   const occurrences = expandOccurrences(item, addDays(earliest, -7), today);
   const doneByPeriod = new Map<string, number>();
   let lastAt: string | null = null;
@@ -91,18 +92,21 @@ export function habitStreak(item: Item, today = new Date()): StreakResult {
   let best = 0;
   let run = 0;
   if (keys.length > 0) {
-    const end = parseLocalDate(keys[keys.length - 1])!;
-    let cursor = parseLocalDate(keys[0])!;
-    for (let guard = 0; cursor.getTime() <= end.getTime() && guard < 40000; guard++) {
-      if (complete(formatISODate(cursor))) {
-        run++;
-        if (run > best) best = run;
-      } else {
-        run = 0;
+    const end = parseLocalDate(keys[keys.length - 1]);
+    const first = parseLocalDate(keys[0]);
+    if (end && first) {
+      let cursor = first;
+      for (let guard = 0; cursor.getTime() <= end.getTime() && guard < 40000; guard++) {
+        if (complete(formatISODate(cursor))) {
+          run++;
+          if (run > best) best = run;
+        } else {
+          run = 0;
+        }
+        const next = nextPeriod(cursor, per, weekStartsOn);
+        if (next.getTime() <= cursor.getTime()) break;
+        cursor = next;
       }
-      const next = nextPeriod(cursor, per, weekStartsOn);
-      if (next.getTime() <= cursor.getTime()) break;
-      cursor = next;
     }
   }
   best = Math.max(best, current);

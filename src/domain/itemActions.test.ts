@@ -13,6 +13,7 @@ import {
   skipOccurrence,
   todayOccKey,
   toggleDone,
+  updateOccurrence,
   updateRecurring,
 } from './itemActions';
 import { expandOccurrences } from './recurrence';
@@ -1254,5 +1255,59 @@ describe('pruneItemReminders', () => {
     // A day later the 10-minute row is outside every tick's lookback, so only it goes.
     expect(await pruneItemReminders(NOW + 24 * 60 * 60_000, 24 * 60 * 60_000)).toBe(1);
     expect((await itemRepo.get('stale'))!.reminders.map((r) => r.id)).toEqual(['owed']);
+  });
+});
+
+describe('updateOccurrence (non-recurring)', () => {
+  async function seed(id: string): Promise<Item> {
+    const item = normalizeItem({
+      ...createItem({
+        kind: 'task',
+        title: 'Timed',
+        start: '2026-07-20T09:00',
+        end: '2026-07-20T10:00',
+        notes: 'original',
+      }),
+      id,
+    });
+    item.recurrence = null;
+    await itemRepo.create(item);
+    return item;
+  }
+
+  it('applies start, end and notes for a non-recurring item', async () => {
+    const item = await seed('nr');
+
+    await updateOccurrence(item, '2026-07-20', {
+      start: '2026-07-21T09:00',
+      end: '2026-07-21T10:30',
+      notes: 'moved',
+    });
+
+    const stored = (await itemRepo.get('nr'))!;
+    expect(stored.start).toBe('2026-07-21T09:00');
+    expect(stored.end).toBe('2026-07-21T10:30');
+    expect(stored.notes).toBe('moved');
+  });
+
+  it('leaves omitted fields unchanged', async () => {
+    const item = await seed('nr-partial');
+
+    await updateOccurrence(item, '2026-07-20', { start: '2026-07-21T09:00' });
+
+    const stored = (await itemRepo.get('nr-partial'))!;
+    expect(stored.start).toBe('2026-07-21T09:00');
+    expect(stored.end).toBe('2026-07-20T10:00');
+    expect(stored.notes).toBe('original');
+  });
+
+  it('clears end when the patch explicitly passes null', async () => {
+    const item = await seed('nr-clear');
+
+    await updateOccurrence(item, '2026-07-20', { end: null });
+
+    const stored = (await itemRepo.get('nr-clear'))!;
+    expect(stored.end).toBeNull();
+    expect(stored.start).toBe('2026-07-20T09:00');
   });
 });

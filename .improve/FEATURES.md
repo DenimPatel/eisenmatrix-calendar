@@ -1143,7 +1143,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). Root ErrorBoundary with Reload/Try again and fixed secret-free copy; Dexie open/upgrade, migration, settings and PWA failures surface one persistent toast. +5 tests (425). Verified PASS (typecheck/lint, build, preview normal boot 0 errors, simulated storage failure recoverable). Reports: impl-IMP-039.md, verify-IMP-039.md. Non-blocking follow-up: ReminderRuntime prune rejection on blocked storage.
 
 ### IMP-040 — Apply all supported fields in `updateOccurrence` for non-recurring items
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / bug-fix
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`updateOccurrence`, `:192-207`)
@@ -1156,10 +1156,10 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 8
-- **Notes:**
+- **Notes:** DONE. Non-recurring `updateOccurrence` now applies every provided field (`start`, `end`, `notes`); `status` was removed from the patch by IMP-016 (per-occurrence state), so it is out of scope. Omitted fields untouched; `end: null` clears. Recurring override path unchanged. +4 tests (693). Verified PASS (typecheck/lint/format, build, probes; editor non-recurring save and history/undo unchanged). Reports: impl-IMP-040.md, verify-IMP-040.md.
 
 ### IMP-041 — Null-guard `parseLocalDate` non-null assertions
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / robustness
 - **Type:** bug-fix
 - **Area / files:** `src/domain/recurrence.ts` (`:293`), `src/domain/stats.ts` (`:47`)
@@ -1172,10 +1172,10 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 8
-- **Notes:**
+- **Notes:** DONE. `splitSeries` no-op guard pre-existed (recurrence.ts:434-435); `habitStreak` now null-checks `item.start` and the first/last period keys, and no `!` remains on `parseLocalDate` in either module. Caveat: the stats half is behaviour-preserving — the pre-fix code also returned the zeroed result for a malformed start (`addDays(null,-7)` does not throw; `expandOccurrences` returns `[]`), so the added test is not fail-before evidence. Verified PASS (typecheck/lint/format, build). Reports: impl-IMP-040.md, verify-IMP-040.md.
 
 ### IMP-042 — Surface swallowed errors instead of failing silently
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** observability / error handling
 - **Type:** improvement
 - **Area / files:** `src/pwa/notifications.ts` (`:49`), `src/lib/csv.ts` (`safeJSON`, `:115-122`), `src/db/migrations/legacyTasks.ts` (`parseLegacyTasks`, `:194-202`)

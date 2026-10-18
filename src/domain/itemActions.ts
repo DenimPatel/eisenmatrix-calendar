@@ -312,7 +312,14 @@ export async function updateOccurrence(
 ): Promise<void> {
   const rule = item.recurrence;
   if (!rule) {
-    await patchItem(item.id, { start: patch.start ?? item.start });
+    // A non-recurring item has no override map, so every supported field the caller
+    // provides is a plain column write. `undefined` means "leave unchanged"; `end: null`
+    // clears it.
+    const next: ItemPatch = {};
+    if (patch.start !== undefined) next.start = patch.start;
+    if (patch.end !== undefined) next.end = patch.end;
+    if (patch.notes !== undefined) next.notes = patch.notes;
+    await patchItem(item.id, next);
     return;
   }
   const overrides = {
