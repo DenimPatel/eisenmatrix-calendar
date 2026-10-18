@@ -9,11 +9,12 @@ import { ProgressRing } from '@/components/ui/ProgressRing';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { createItem } from '@/domain/itemFactory';
+import { toggleHabitOccurrence } from '@/domain/itemActions';
 import { goalProgress, habitStreak } from '@/domain/stats';
 import { parseLocalDate } from '@/lib/date';
 import { cn } from '@/lib/cn';
 import { CheckCircle2, Plus, Sparkles, TriangleAlert } from 'lucide-react';
-import type { BillItem, Item, Occurrence } from '@/types';
+import type { BillItem, HabitItem, Item, Occurrence } from '@/types';
 
 function isBillUnpaid(occ: Occurrence): occ is Occurrence & { item: BillItem } {
   return occ.item.kind === 'bill' && !occ.item.data.payments?.[occ.occKey];
@@ -59,7 +60,10 @@ export function TodayView() {
   );
   const weekAhead = useOccurrences(items, todayStart, addDays(todayEnd, 7));
 
-  const habits = useMemo(() => items.filter((i) => i.kind === 'habit' && !i.archivedAt), [items]);
+  const habits = useMemo(
+    () => items.filter((i): i is HabitItem => i.kind === 'habit' && !i.archivedAt),
+    [items],
+  );
   const goals = useMemo(() => items.filter((i) => i.kind === 'goal' && !i.archivedAt), [items]);
   const goalChildren = useMemo(() => {
     const map = new Map<string, Item[]>();
@@ -196,16 +200,37 @@ export function TodayView() {
             <div className="space-y-3">
               {habits.map((habit) => {
                 const streak = habitStreak(habit);
-                const doneToday = todays.some((o) => o.item.id === habit.id && o.status === 'done');
+                const doneCount = todays.filter(
+                  (o) => o.item.id === habit.id && o.status === 'done',
+                ).length;
+                const doneToday = doneCount >= Math.max(1, habit.data.target.count);
+                const habitName = habit.title || 'habit';
                 return (
                   <div key={habit.id} className="flex items-center gap-3">
-                    <ProgressRing
-                      value={doneToday ? 100 : 0}
-                      size={40}
-                      strokeWidth={4}
-                      tone={doneToday ? 'success' : 'accent'}
-                      label={<span className="text-[10px] font-bold">{doneToday ? '✓' : '0'}</span>}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => void toggleHabitOccurrence(habit)}
+                      className={cn(
+                        'flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-accent',
+                        !doneToday && 'hover:bg-elevated',
+                      )}
+                      aria-label={
+                        doneToday
+                          ? `Undo ${habitName} for today`
+                          : `Complete ${habitName} for today`
+                      }
+                      aria-pressed={doneToday}
+                    >
+                      <ProgressRing
+                        value={doneToday ? 100 : 0}
+                        size={40}
+                        strokeWidth={4}
+                        tone={doneToday ? 'success' : 'accent'}
+                        label={
+                          <span className="text-[10px] font-bold">{doneToday ? '✓' : '0'}</span>
+                        }
+                      />
+                    </button>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-fg">{habit.title}</div>
                       <div className="text-xs text-muted">

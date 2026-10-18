@@ -2010,7 +2010,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F5, S3, Impact 2/Reach 4/Confidence 5).
 
 ### IMP-126 — Let habits be completed from the Today dashboard
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / missing feature
 - **Type:** feature-improvement
 - **Area / files:** `src/features/today/TodayView.tsx` (`:196-220`); contrast `src/features/habits/HabitsView.tsx` (`:60-63`, `:104-117`)

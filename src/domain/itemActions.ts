@@ -1,8 +1,13 @@
 import { itemRepo, type ItemPatch } from '@/db/repository';
 import { newId } from '@/lib/id';
-import { formatISODate, parseLocalDate } from '@/lib/date';
+import { formatISODate, parseLocalDate, startOfDay, endOfDay, todayKey } from '@/lib/date';
 import { useUiStore } from '@/store/useUiStore';
-import { hasOccurrenceOnOrAfter, resolveOccurrenceStatus, splitSeries } from './recurrence';
+import {
+  expandOccurrences,
+  hasOccurrenceOnOrAfter,
+  resolveOccurrenceStatus,
+  splitSeries,
+} from './recurrence';
 import { pruneExpiredAbsolute } from './reminders';
 import { habitStreak } from './stats';
 import type {
@@ -280,6 +285,16 @@ export async function toggleDone(item: Item, occKey?: string | null): Promise<vo
     : item.status === 'done';
   const nextStatus: ItemStatus = isDone ? 'todo' : 'done';
   await setStatus(item, nextStatus, occKey);
+}
+
+/**
+ * Toggle a habit's occurrence for today. Shared by the Habits and Today views so the
+ * entry points cannot drift: today's first expanded occurrence, falling back to the
+ * local today key when the habit is not scheduled today.
+ */
+export async function toggleHabitOccurrence(habit: Item): Promise<void> {
+  const occ = expandOccurrences(habit, startOfDay(new Date()), endOfDay(new Date()))[0];
+  await toggleDone(habit, occ?.occKey ?? todayKey());
 }
 
 export async function setPriority(

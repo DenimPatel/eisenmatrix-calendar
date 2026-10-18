@@ -27,6 +27,17 @@ async function waitForText(host: HTMLElement, text: string): Promise<void> {
   throw new Error(`view never rendered "${text}"`);
 }
 
+async function waitForHabitToggle(host: HTMLElement, label: string): Promise<HTMLButtonElement> {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+    const button = host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
+    if (button) return button;
+  }
+  throw new Error(`habit toggle never became ${label}`);
+}
+
 async function mount(
   element: React.ReactElement,
 ): Promise<{ host: HTMLElement; unmount: () => Promise<void> }> {
@@ -100,6 +111,51 @@ describe('TodayView habit rendering', () => {
     expect(text).toContain('1/2 done');
     expect(text).toContain('✓');
     expect(agendaHeading(mounted.host)?.textContent).toBe("Today's agenda2");
+
+    await mounted.unmount();
+  });
+});
+
+describe('TodayView habit completion', () => {
+  it('toggles the habit ring and updates the streak in place', async () => {
+    await db.items.bulkPut([habit('Journal')]);
+    const mounted = await mount(<TodayView />);
+
+    const before = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
+    expect(before.getAttribute('aria-pressed')).toBe('false');
+    expect(before.classList.contains('h-11')).toBe(true);
+    expect(before.classList.contains('w-11')).toBe(true);
+    expect(mounted.host.textContent).toContain('0 day streak');
+
+    await act(async () => {
+      before.click();
+    });
+
+    const after = await waitForHabitToggle(mounted.host, 'Undo Journal for today');
+    expect(after.getAttribute('aria-pressed')).toBe('true');
+    expect(mounted.host.textContent).toContain('✓');
+    expect(mounted.host.textContent).toContain('1 day streak');
+
+    const stored = (await db.items.toArray())[0];
+    expect(stored.occurrences?.[todayKey()]?.status).toBe('done');
+
+    await mounted.unmount();
+  });
+
+  it('reverts the ring when a completed habit is toggled off', async () => {
+    await db.items.bulkPut([habit('Journal', 'done')]);
+    const mounted = await mount(<TodayView />);
+
+    const before = await waitForHabitToggle(mounted.host, 'Undo Journal for today');
+    expect(before.getAttribute('aria-pressed')).toBe('true');
+
+    await act(async () => {
+      before.click();
+    });
+
+    const after = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
+    expect(after.getAttribute('aria-pressed')).toBe('false');
+    expect(mounted.host.textContent).not.toContain('✓');
 
     await mounted.unmount();
   });

@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/Badge';
 import { createItem } from '@/domain/itemFactory';
 import { expandOccurrences } from '@/domain/recurrence';
 import { habitStreak } from '@/domain/stats';
-import { toggleDone } from '@/domain/itemActions';
-import { addDays, endOfDay, formatISODate, startOfDay, startOfWeek, todayKey } from '@/lib/date';
+import { toggleHabitOccurrence } from '@/domain/itemActions';
+import { addDays, endOfDay, formatISODate, startOfWeek, todayKey } from '@/lib/date';
 import { cn } from '@/lib/cn';
 import { weekdayLabels } from '@/lib/labels';
 import { DEFAULT_SETTINGS } from '@/types/settings';
@@ -58,8 +58,7 @@ export function HabitsView() {
   );
 
   const markToday = async (habit: Item) => {
-    const occ = expandOccurrences(habit, startOfDay(new Date()), endOfDay(new Date()))[0];
-    await toggleDone(habit, occ?.occKey ?? today);
+    await toggleHabitOccurrence(habit);
   };
 
   return (
