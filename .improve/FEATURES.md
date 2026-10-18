@@ -2085,7 +2085,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F10, S2, Impact 3/Reach 3/Confidence 5).
 
 ### IMP-131 — Expand occurrences once per year view instead of twelve times
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** performance
 - **Type:** improvement
 - **Area / files:** `src/features/calendar/CalendarView.tsx` (`:328-341`), `src/hooks/useOccurrences.ts` (`:8-18`)
@@ -2100,7 +2100,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F11, S2, Impact 3/Reach 3/Confidence 4).
 
 ### IMP-132 — Compute editor analytics only when the Analytics tab is open
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** performance
 - **Type:** improvement
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`:146-154`)

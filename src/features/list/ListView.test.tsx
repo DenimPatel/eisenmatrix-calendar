@@ -227,3 +227,50 @@ describe('ListView empty states', () => {
     await unmount(mounted);
   });
 });
+
+describe('ListView bulk delete undo', () => {
+  it('offers Undo after deleting the selection and restores it', async () => {
+    await itemRepo.create(
+      createItem({ kind: 'task', title: 'Ship the release', start: '2026-10-18' }),
+    );
+    await itemRepo.create(createItem({ kind: 'task', title: 'Write the notes' }));
+
+    const mounted = await mountList();
+    await waitForRow(mounted.host, 'Ship the release');
+    await waitForRow(mounted.host, 'Write the notes');
+
+    const select = mounted.host.querySelector<HTMLInputElement>(
+      'input[aria-label="Select Ship the release"]',
+    );
+    expect(select).not.toBeNull();
+    await act(async () => {
+      select!.click();
+    });
+
+    const deleteButton = buttonByText(mounted.host, 'Delete');
+    expect(deleteButton).toBeDefined();
+    await act(async () => {
+      deleteButton!.click();
+    });
+
+    await waitFor(
+      () => bodyRows(mounted.host).every((row) => !row.textContent?.includes('Ship the release')),
+      'deleted row did not disappear',
+    );
+    expect((await itemRepo.all()).map((i) => i.title)).toEqual(['Write the notes']);
+
+    const toast = useUiStore.getState().toasts.find((t) => t.actionLabel === 'Undo');
+    expect(toast).toBeDefined();
+    await act(async () => {
+      await toast!.onAction?.();
+    });
+
+    await waitForRow(mounted.host, 'Ship the release');
+    expect((await itemRepo.all()).map((i) => i.title).sort()).toEqual([
+      'Ship the release',
+      'Write the notes',
+    ]);
+
+    await unmount(mounted);
+  });
+});

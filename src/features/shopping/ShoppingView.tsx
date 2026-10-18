@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Plus, ShoppingCart, Trash2 } from 'lucide-react';
 import { useItems, useLists } from '@/hooks/useData';
 import { useUiStore } from '@/store/useUiStore';
 import { Button } from '@/components/ui/Button';
+import { Dialog } from '@/components/ui/Dialog';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Checkbox, Select } from '@/components/ui/Form';
+import { Checkbox, Field, Select } from '@/components/ui/Form';
 import { createItem } from '@/domain/itemFactory';
 import { createItemPersisted, deleteItems, patchItem } from '@/domain/itemActions';
 import { listRepo } from '@/db/repository';
@@ -18,6 +19,9 @@ export function ShoppingView() {
   const openEditor = useUiStore((s) => s.openEditor);
   const [activeListId, setActiveListId] = useState<string>('all');
   const [draft, setDraft] = useState('');
+  const [listDialogOpen, setListDialogOpen] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const listInputRef = useRef<HTMLInputElement>(null);
 
   const shoppingLists = useMemo(() => lists.filter((l) => l.kind === 'shopping'), [lists]);
 
@@ -91,13 +95,18 @@ export function ShoppingView() {
     await deleteItems(purchased);
   };
 
+  const openListDialog = () => {
+    setNewListName('');
+    setListDialogOpen(true);
+  };
+
   const addList = async () => {
-    const name = window.prompt('New shopping list name');
-    if (!name?.trim()) return;
+    const name = newListName.trim();
+    if (!name) return;
     const id = newId();
     await listRepo.create({
       id,
-      name: name.trim(),
+      name,
       kind: 'shopping',
       color: 'accent',
       icon: 'cart',
@@ -107,6 +116,8 @@ export function ShoppingView() {
       updatedAt: Date.now(),
     });
     setActiveListId(id);
+    setNewListName('');
+    setListDialogOpen(false);
   };
 
   return (
@@ -129,7 +140,7 @@ export function ShoppingView() {
               ...shoppingLists.map((l) => ({ value: l.id, label: l.name })),
             ]}
           />
-          <Button variant="outline" size="sm" onClick={() => void addList()}>
+          <Button variant="outline" size="sm" onClick={openListDialog}>
             <Plus size={14} /> List
           </Button>
           <Button
@@ -207,6 +218,35 @@ export function ShoppingView() {
           ))}
         </div>
       )}
+
+      <Dialog
+        open={listDialogOpen}
+        onClose={() => setListDialogOpen(false)}
+        title="New shopping list"
+        size="sm"
+        initialFocusRef={listInputRef}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setListDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" disabled={!newListName.trim()} onClick={() => void addList()}>
+              Create
+            </Button>
+          </div>
+        }
+      >
+        <Field label="List name">
+          <input
+            ref={listInputRef}
+            className="input"
+            value={newListName}
+            onChange={(e) => setNewListName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void addList()}
+            placeholder="Groceries"
+          />
+        </Field>
+      </Dialog>
     </div>
   );
 }

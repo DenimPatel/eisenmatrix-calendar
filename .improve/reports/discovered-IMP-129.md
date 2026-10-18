@@ -1,0 +1,1 @@
+- toast Undo pops newest entry if another action intervenes; 'Deleted N items' counts top-level only
