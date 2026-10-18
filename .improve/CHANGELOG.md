@@ -93,3 +93,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-131 · Year view expands 3.3x faster; editor no longer recomputes analytics per keystroke
 - 2026-10-18 · IMP-133 · Views load as separate precached chunks (entry 394->342 kB) with retry on chunk failure
 - 2026-10-18 · IMP-134 · New Help dialog reachable from header, palette, shortcut sheet and Settings
+- 2026-10-18 · IMP-118 · Coverage added for notification registration, reminder helpers and weekday labels

@@ -3,6 +3,8 @@ import { LOOKBACK_MS } from '@/pwa/delivery';
 import { createItem } from './itemFactory';
 import {
   DEFAULT_LOOKBACK_MS,
+  fireTimesForOccurrence,
+  formatReminderLabel,
   pruneExpiredAbsolute,
   reminderFireTime,
   upcomingReminders,
@@ -266,5 +268,147 @@ describe('withSnooze', () => {
       { id: 'tod', timeOfDay: '08:00' },
       next,
     ]);
+  });
+});
+
+describe('fireTimesForOccurrence', () => {
+  it('returns sorted, de-duplicated fire times for mixed reminder triggers', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Mixed',
+      start: '2024-01-01T10:00',
+      allDay: false,
+    });
+    item.reminders = [
+      { id: 'abs', absolute: 1_000 },
+      { id: 'off-a', offsetMinutes: -30 },
+      { id: 'off-dup', offsetMinutes: -30 },
+      { id: 'tod', timeOfDay: '08:00' },
+      { id: 'none' },
+    ];
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(fireTimesForOccurrence(occ)).toEqual([
+      1_000,
+      new Date('2024-01-01T08:00').getTime(),
+      new Date('2024-01-01T09:30').getTime(),
+    ]);
+  });
+
+  it('returns an empty list when no reminder has a usable trigger', () => {
+    const item = createItem({ kind: 'task', title: 'None', start: '2024-01-01', allDay: true });
+    item.reminders = [{ id: 'a' }, { id: 'b' }];
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(fireTimesForOccurrence(occ)).toEqual([]);
+  });
+
+  it('collapses reminders that resolve to the same instant to one entry', () => {
+    const item = createItem({ kind: 'task', title: 'Same', start: '2024-01-01', allDay: true });
+    item.reminders = [
+      { id: 'tod', timeOfDay: '09:00' },
+      { id: 'tod-2', timeOfDay: '09:00' },
+    ];
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(fireTimesForOccurrence(occ)).toEqual([new Date('2024-01-01T09:00').getTime()]);
+  });
+});
+
+describe('reminderFireTime timeOfDay path', () => {
+  it('anchors timeOfDay to the occurrence day, not the item series start', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Timed',
+      start: '2024-01-01T10:00',
+      allDay: false,
+    });
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(reminderFireTime(occ, { id: 'r', timeOfDay: '08:15' })).toBe(
+      new Date('2024-01-01T08:15').getTime(),
+    );
+  });
+
+  it('treats a missing hour or minute component as zero', () => {
+    const item = createItem({ kind: 'task', title: 'Odd', start: '2024-01-01', allDay: true });
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(reminderFireTime(occ, { id: 'r', timeOfDay: ':30' })).toBe(
+      new Date('2024-01-01T00:30').getTime(),
+    );
+  });
+
+  it('returns null when no trigger is present', () => {
+    const item = createItem({ kind: 'task', title: 'None', start: '2024-01-01', allDay: true });
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(reminderFireTime(occ, { id: 'r' })).toBeNull();
+  });
+
+  it('prefers an absolute time over any relative trigger', () => {
+    const item = createItem({ kind: 'task', title: 'Abs', start: '2024-01-01', allDay: true });
+    const [occ] = expandOccurrences(
+      item,
+      new Date('2024-01-01T00:00:00'),
+      new Date('2024-01-01T23:59:59'),
+    );
+
+    expect(reminderFireTime(occ, { id: 'r', absolute: 5, offsetMinutes: -10 })).toBe(5);
+  });
+});
+
+describe('formatReminderLabel', () => {
+  it('renders an absolute reminder as a local date-time string', () => {
+    const at = new Date('2024-03-09T14:45').getTime();
+    expect(formatReminderLabel({ id: 'r', absolute: at })).toBe(new Date(at).toLocaleString());
+  });
+
+  it('renders a time-of-day reminder', () => {
+    expect(formatReminderLabel({ id: 'r', timeOfDay: '08:30' })).toBe('At 08:30');
+  });
+
+  it('renders an at-start reminder', () => {
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 0 })).toBe('At start');
+  });
+
+  it('renders day, hour and minute units with correct pluralisation and direction', () => {
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 1440 })).toBe('After 1 day');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: -1440 })).toBe('Before 1 day');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 2880 })).toBe('After 2 days');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 60 })).toBe('After 1 hour');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: -60 })).toBe('Before 1 hour');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 120 })).toBe('After 2 hours');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 30 })).toBe('After 30 min');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: -30 })).toBe('Before 30 min');
+    expect(formatReminderLabel({ id: 'r', offsetMinutes: 90 })).toBe('After 90 min');
+  });
+
+  it('falls back to a generic label when no trigger is present', () => {
+    expect(formatReminderLabel({ id: 'r' })).toBe('Reminder');
   });
 });

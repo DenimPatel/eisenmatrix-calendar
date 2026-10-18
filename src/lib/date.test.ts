@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  dateKeyOf,
   formatISODate,
   formatISODateTime,
   parseLocalDate,
+  setTimeOnDateString,
   startOfWeek,
+  stripTime,
+  todayKey,
+  withTime,
   clampDayOfMonth,
   firstDayOfISOWeek,
   calendarDaysBetween,
@@ -44,5 +49,48 @@ describe('date utils', () => {
 
   it('computes calendar day deltas across DST', () => {
     expect(calendarDaysBetween(new Date(2024, 2, 8), new Date(2024, 2, 12))).toBe(4);
+  });
+});
+
+describe('dateKeyOf', () => {
+  it('returns a date-only string unchanged', () => {
+    expect(dateKeyOf('2024-03-09')).toBe('2024-03-09');
+  });
+
+  it('truncates a datetime string to its local day', () => {
+    expect(dateKeyOf('2024-03-09T23:30')).toBe('2024-03-09');
+  });
+
+  it('parses a non-ISO but parseable value locally', () => {
+    expect(dateKeyOf('March 9, 2024')).toBe('2024-03-09');
+  });
+
+  it('returns null for an unparseable value or empty input', () => {
+    expect(dateKeyOf('not a date')).toBeNull();
+    expect(dateKeyOf('')).toBeNull();
+    expect(dateKeyOf(null)).toBeNull();
+    expect(dateKeyOf(undefined)).toBeNull();
+  });
+});
+
+describe('time-of-day helpers', () => {
+  it('withTime joins a date key and a clock time', () => {
+    expect(withTime('2024-03-09', '14:45')).toBe('2024-03-09T14:45');
+  });
+
+  it('setTimeOnDateString replaces the time and keeps the day', () => {
+    expect(setTimeOnDateString('2024-03-09', '14:45')).toBe('2024-03-09T14:45');
+    expect(setTimeOnDateString('2024-03-09T08:00', '14:45')).toBe('2024-03-09T14:45');
+  });
+
+  it('setTimeOnDateString falls back to today for an unparseable value', () => {
+    expect(setTimeOnDateString('nonsense', '14:45')).toBe(`${todayKey()}T14:45`);
+  });
+
+  it('stripTime reduces a value to its local day or null', () => {
+    expect(stripTime('2024-03-09T14:45')).toBe('2024-03-09');
+    expect(stripTime('2024-03-09')).toBe('2024-03-09');
+    expect(stripTime('')).toBeNull();
+    expect(stripTime(null)).toBeNull();
   });
 });

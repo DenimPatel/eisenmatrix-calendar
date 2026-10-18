@@ -1898,7 +1898,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** M    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 18
-- **Notes:** Source: `.improve/reports/discover3-quality.md` (#9, S3, Impact 3/Reach 3/Confidence 4). Kept separate from the IMP-117 fix.
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#9, S3, Impact 3/Reach 3/Confidence 4). Kept separate from the IMP-117 fix. DONE 2026-10-18: added `src/pwa/notifications.test.ts` (permission gate, registration vs. `new Notification` fallback, throwing API → false, `requestNotificationPermission`, `sendSkipWaiting`), `src/pwa/register.test.ts` (setupPWA lifecycle → toasts/reportBootFailure), and extracted the `notificationclick` body into `src/pwa/notificationClick.ts` (sw.ts now delegates to it) with `src/pwa/notificationClick.test.ts`. Coverage: notifications.ts 13.6%→100% stmts / 15.4%→100% branch; register.ts 28.6%→100%; notificationClick.ts 100%; sw.ts stays 0% (thin workbox bootstrap + event wiring, not loadable in tests). 689 tests green; typecheck/lint/format:check clean. See `impl-IMP-118.md` and `discovered-IMP-118.md`.
 
 ### IMP-119 — Test the reminder helpers `fireTimesForOccurrence`, `formatReminderLabel` and the `timeOfDay` path
 - **Status:** DONE
@@ -1914,10 +1914,10 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 25
-- **Notes:** Source: `.improve/reports/discover3-quality.md` (#10, S3, Impact 2/Reach 3/Confidence 5).
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#10, S3, Impact 2/Reach 3/Confidence 5). DONE 2026-10-18: added `fireTimesForOccurrence` (mixed absolute/offset/timeOfDay/duplicate/no-trigger → sorted, de-duplicated epochs; empty when nothing usable), `reminderFireTime` (timeOfDay on a timed occurrence, `:30` component fallback, null with no trigger, absolute precedence) and `formatReminderLabel` (absolute, timeOfDay, 0, ±1440/±60/±30/90, no-trigger fallback) to `src/domain/reminders.test.ts`. Coverage: reminders.ts 80%→97.56% stmts, 70.96%→94.73% branch, lines 100%. 689 tests green.
 
 ### IMP-120 — Test `labels.ts` weekday helpers, `date.ts` helpers and the backup glue
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** tests / tooling
 - **Type:** test
 - **Area / files:** `src/lib/labels.ts` (`:64-77`), `src/lib/date.ts` (`:61-67`, `:130-141`), `src/lib/backup.ts` (`:146-176`), `src/db/repository.ts` (`:159-165`, `:296`, `:302-311`)
@@ -1931,7 +1931,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** M    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 15
-- **Notes:** Source: `.improve/reports/discover3-quality.md` (#11 + #12, S3). Merged into one test item per instruction.
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#11 + #12, S3). Merged into one test item per instruction. DONE 2026-10-18: added `statusClasses`/`priorityBadgeClasses` cases to `src/lib/labels.test.ts` (labels.ts 64.7%→100% stmts, 0%→100% branch); `dateKeyOf` (date-only, datetime, non-ISO parseable, unparseable/null) and `withTime`/`setTimeOnDateString`/`stripTime` to `src/lib/date.test.ts`; `readTextFile` resolve/empty/reject with a stubbed `FileReader` to `src/lib/backup.test.ts`; `itemRepo.replaceAll` and `backupRepo.add/all/latest/remove/prune` to `src/db/repository.test.ts`. Spec AC-2 ("every status variant carries `dark:`") was inaccurate for `todo`, which uses theme-aware semantic tokens by design — test asserts the real behavior. See `discovered-IMP-118.md`. 689 tests green.
 
 ### IMP-121 — Give every form control an accessible name
 - **Status:** DONE
@@ -2143,3 +2143,17 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Depends on:** none
 - **Priority score:** 25
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F14, S3, Impact 3/Reach 3/Confidence 4). DONE — `HelpDialog` (quick-add examples + syntax, shortcuts, export formats) mounted in `App.tsx`; opened from the header Help button, the command palette ("Help & syntax"), the shortcut sheet footer, and Settings → About. Every documented example is asserted against `parseQuickAdd` in `helpContent.test.ts`. See `.improve/reports/impl-IMP-134.md`.
+
+### IMP-135 — Fix flaky `noDataRows` habits partial-target test
+- **Status:** DONE
+- **Category:** tests
+- **Type:** test
+- **Area / files:** `src/features/noDataRows.test.tsx` (`waitForText('Raw habit')` matches first of two same-titled rows)
+- **Intent:** Flaky 1-in-5 failures seen by IMP-043/100/118 verifiers erode trust in the gate.
+- **Acceptance criteria:**
+  1. The test uses unique titles or a row-specific query; 20 consecutive runs pass.
+- **Verification method:** `for i in $(seq 20); do npx vitest run src/features/noDataRows.test.tsx; done`
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 8
+- **Notes:** Found by verifiers 2026-10-18.

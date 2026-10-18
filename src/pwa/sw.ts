@@ -1,5 +1,6 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { handleNotificationClick } from './notificationClick';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -20,25 +21,5 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  const notification = event.notification;
-  const data = (notification.data ?? {}) as { itemId?: string; occKey?: string };
-  const action = event.action;
-  notification.close();
-
-  event.waitUntil(
-    (async () => {
-      const windowClients = await self.clients.matchAll({
-        type: 'window',
-        includeUncontrolled: true,
-      });
-      const payload = { type: 'OPEN_ITEM', itemId: data.itemId, occKey: data.occKey, action };
-      if (windowClients.length > 0) {
-        const client = windowClients[0];
-        await client.focus();
-        client.postMessage(payload);
-      } else {
-        await self.clients.openWindow('./');
-      }
-    })(),
-  );
+  event.waitUntil(handleNotificationClick(self.clients, event.notification, event.action));
 });

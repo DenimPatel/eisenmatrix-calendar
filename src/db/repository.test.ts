@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import Dexie, { type Table } from 'dexie';
 import { db, EisenMatrixDB, type ReminderLogEntry } from './schema';
 import {
+  backupRepo,
   itemRepo,
   listRepo,
   reminderFailureRepo,
@@ -35,6 +36,7 @@ beforeEach(async () => {
     db.settings.clear(),
     db.reminderLog.clear(),
     db.reminderFailures.clear(),
+    db.backups.clear(),
   ]);
 });
 
@@ -346,5 +348,57 @@ describe('reminderLog unique index migration', () => {
     await expect(
       upgraded.reminderLog.add({ itemId: 'a', occKey: 'k', firedAt: 4 }),
     ).rejects.toBeInstanceOf(Dexie.ConstraintError);
+  });
+});
+
+describe('itemRepo.replaceAll', () => {
+  it('clears existing rows and bulk-puts the replacement set in one transaction', async () => {
+    await itemRepo.createMany([task('a', 'A'), task('b', 'B')]);
+
+    await itemRepo.replaceAll([task('c', 'C'), task('d', 'D')]);
+
+    expect((await itemRepo.all()).map((i) => i.id).sort()).toEqual(['c', 'd']);
+    expect(await itemRepo.count()).toBe(2);
+  });
+});
+
+describe('backupRepo', () => {
+  it('adds backups and lists them newest first', async () => {
+    await backupRepo.add('legacy-import', '{"a":1}', 1_000);
+    await backupRepo.add('manual', '{"b":2}', 2_000);
+
+    const all = await backupRepo.all();
+    expect(all.map((b) => b.reason)).toEqual(['manual', 'legacy-import']);
+    expect((await backupRepo.latest())?.reason).toBe('manual');
+  });
+
+  it('removes one backup by id', async () => {
+    const id = await backupRepo.add('only', '{}', 1_000);
+
+    await backupRepo.remove(id);
+
+    expect(await backupRepo.all()).toEqual([]);
+    expect(await backupRepo.latest()).toBeUndefined();
+  });
+
+  it('prunes all but the newest keep rows', async () => {
+    for (let i = 1; i <= 5; i += 1) {
+      await backupRepo.add(`r${i}`, '{}', i * 1_000);
+    }
+
+    await backupRepo.prune(2);
+
+    const remaining = await backupRepo.all();
+    expect(remaining.map((b) => b.reason)).toEqual(['r5', 'r4']);
+    expect(remaining).toHaveLength(2);
+  });
+
+  it('keeps every row when fewer than keep exist', async () => {
+    await backupRepo.add('a', '{}', 1_000);
+    await backupRepo.add('b', '{}', 2_000);
+
+    await backupRepo.prune(5);
+
+    expect(await backupRepo.all()).toHaveLength(2);
   });
 });

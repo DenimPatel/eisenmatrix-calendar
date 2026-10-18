@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   BACKUP_VERSION,
   buildBackup,
   backupToJSON,
   mergeImportedItems,
   parseBackup,
+  readTextFile,
   timestampedName,
 } from './backup';
 import { createItem, normalizeItem } from '@/domain/itemFactory';
@@ -302,5 +303,39 @@ describe('backup', () => {
       expect(overwrite.toPut.map((i) => i.id)).toEqual(['p', 'c']);
       expect(overwrite.toPut[1].parentId).toBe('p');
     });
+  });
+});
+
+describe('readTextFile', () => {
+  function stubFileReader(mode: 'resolve' | 'reject', result: unknown = 'content'): void {
+    class FakeFileReader {
+      onload: ((event: { target: { result: unknown } }) => void) | null = null;
+      onerror: (() => void) | null = null;
+      error: unknown = new Error('read failed');
+      readAsText(): void {
+        if (mode === 'reject') this.onerror?.();
+        else this.onload?.({ target: { result } });
+      }
+    }
+    vi.stubGlobal('FileReader', FakeFileReader);
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('resolves with the reader result', async () => {
+    stubFileReader('resolve', 'file body');
+    await expect(readTextFile({} as File)).resolves.toBe('file body');
+  });
+
+  it('resolves with an empty string when the reader yields no result', async () => {
+    stubFileReader('resolve', null);
+    await expect(readTextFile({} as File)).resolves.toBe('');
+  });
+
+  it('rejects with the reader error', async () => {
+    stubFileReader('reject');
+    await expect(readTextFile({} as File)).rejects.toThrow('read failed');
   });
 });
