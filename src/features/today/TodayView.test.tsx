@@ -160,3 +160,33 @@ describe('TodayView habit completion', () => {
     await mounted.unmount();
   });
 });
+
+describe('TodayView progress semantics', () => {
+  it('exposes the agenda ring as a named progressbar', async () => {
+    await db.items.bulkPut([
+      createItem({ kind: 'task', title: 'Done task', start: todayKey(), status: 'done' }),
+      createItem({ kind: 'task', title: 'Open task', start: todayKey() }),
+    ]);
+    const mounted = await mount(<TodayView />);
+
+    await waitForText(mounted.host, '1/2 done');
+
+    const bar = mounted.host.querySelector('[role="progressbar"]');
+    expect(bar).not.toBeNull();
+    expect(bar!.getAttribute('aria-valuenow')).toBe('50');
+    expect(bar!.getAttribute('aria-label')).toBe("Today's agenda progress: 50% complete");
+
+    await mounted.unmount();
+  });
+
+  it('hides the habit ring because its toggle button is already labelled', async () => {
+    await db.items.bulkPut([habit('Journal')]);
+    const mounted = await mount(<TodayView />);
+
+    const toggle = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
+    expect(toggle.querySelector('[role="progressbar"]')).toBeNull();
+    expect(toggle.querySelector('[aria-hidden="true"]')).not.toBeNull();
+
+    await mounted.unmount();
+  });
+});

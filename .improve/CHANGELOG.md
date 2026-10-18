@@ -84,3 +84,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-101 · Empty Lists shows 'No items yet' with an Add item button instead of 'No items match'
 - 2026-10-18 · IMP-126 · Habits can be completed and undone directly from Today
 - 2026-10-18 · IMP-121 · All form controls have programmatic labels; regression test added
+- 2026-10-18 · IMP-122 · ProgressRing exposes progressbar semantics; Tabs follow WAI-ARIA with arrow-key navigation; weekday toggles expose pressed state

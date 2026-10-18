@@ -1961,10 +1961,10 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 25
-- **Notes:** Source: `.improve/reports/discover3-features.md` (F2, S2, Impact 3/Reach 4/Confidence 5).
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F2, S2, Impact 3/Reach 4/Confidence 5). DONE 2026-10-18: `ProgressRing` renders `role="progressbar"` with `aria-valuenow/min/max` + accessible name (`ariaLabel` or `N%`); new `decorative` prop hides rings inside already-labelled content. Today agenda ring + Goals ring are named progressbars; Today habit/goal rings (inside labelled buttons) are decorative. New `ProgressRing.test.tsx` + Today/Goals assertions; 558 tests green. Report: `.improve/reports/impl-IMP-122.md`.
 
 ### IMP-123 — Add ARIA state and keyboard semantics to Tabs and the recurrence weekday picker
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** bug-fix
 - **Area / files:** `src/components/ui/Tabs.tsx` (`:16-36`), `src/features/item/ItemEditorSheet.tsx` (`:371-381`), `src/features/item/RecurrenceEditor.tsx` (`:75-92`)
@@ -1977,10 +1977,10 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-033
 - **Priority score:** 25
-- **Notes:** Source: `.improve/reports/discover3-features.md` (F3, S2, Impact 3/Reach 4/Confidence 5).
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F3, S2, Impact 3/Reach 4/Confidence 5). DONE 2026-10-18: `Tabs` has roving `tabindex`, ArrowLeft/Right/Home/End, `type="button"`, `aria-controls`/ids; new `TabPanel` renders `role="tabpanel"` + `aria-labelledby` (ItemEditorSheet rewired). Recurrence weekday buttons get `aria-pressed` + full `WEEKDAY_FULL` name. New `Tabs.test.tsx` + `RecurrenceEditor.test.tsx`; 558 tests green. Report: `.improve/reports/impl-IMP-122.md`.
 
 ### IMP-124 — Add a legend and a non-colour summary to the habit heatmap
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/features/habits/HabitsView.tsx` (`:151-175`)
@@ -1995,7 +1995,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F4, S3, Impact 3/Reach 3/Confidence 4). Complements the IMP-099 light-mode fix.
 
 ### IMP-125 — Add a skip-to-content link and an addressable `<main>`
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/features/shell/AppShell.tsx` (`:212`; nav landmarks `:122`), `src/features/shell/MobileBottomNav.tsx` (`:43`)

@@ -85,7 +85,14 @@ export function GoalsView() {
             return (
               <div key={goal.id} className="card flex flex-col gap-3 p-4">
                 <div className="flex items-start gap-3">
-                  <ProgressRing value={progress.percent} size={56} strokeWidth={5} />
+                  <ProgressRing
+                    value={progress.percent}
+                    size={56}
+                    strokeWidth={5}
+                    ariaLabel={`${goal.title || 'Untitled goal'} progress: ${Math.round(
+                      progress.percent,
+                    )}%`}
+                  />
                   <div className="min-w-0 flex-1">
                     <button
                       type="button"

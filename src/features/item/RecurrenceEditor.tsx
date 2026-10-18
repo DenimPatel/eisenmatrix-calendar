@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/Button';
 import { Field, Select, Toggle } from '@/components/ui/Form';
-import { FREQUENCY_LABELS, WEEKDAY_SHORT } from '@/lib/labels';
+import { FREQUENCY_LABELS, WEEKDAY_FULL, WEEKDAY_SHORT } from '@/lib/labels';
 import { cn } from '@/lib/cn';
 import { parseLocalDate } from '@/lib/date';
 import type { Frequency, RecurrenceRule } from '@/types';
@@ -78,6 +78,8 @@ export function RecurrenceEditor({ value, start, weekStartsOn, onChange }: Recur
                     <button
                       key={day}
                       type="button"
+                      aria-label={WEEKDAY_FULL[day]}
+                      aria-pressed={active}
                       onClick={() => toggleWeekday(day)}
                       className={cn(
                         'h-8 w-8 rounded-full text-xs font-semibold transition-colors',

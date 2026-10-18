@@ -8,6 +8,13 @@ export interface ProgressRingProps {
   className?: string;
   label?: React.ReactNode;
   tone?: 'accent' | 'success' | 'warning';
+  /** Accessible name for the progressbar. Ignored when `decorative` is set. */
+  ariaLabel?: string;
+  /**
+   * Renders the ring as a purely visual decoration. Use it inside content that is already
+   * labelled (e.g. a button with its own name) so the value is not announced twice.
+   */
+  decorative?: boolean;
 }
 
 const toneVar: Record<NonNullable<ProgressRingProps['tone']>, string> = {
@@ -23,15 +30,31 @@ export function ProgressRing({
   className,
   label,
   tone = 'accent',
+  ariaLabel,
+  decorative = false,
 }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(100, value));
+  const percent = Math.round(clamped);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (clamped / 100) * circumference;
 
+  const semantics: React.HTMLAttributes<HTMLDivElement> = decorative
+    ? { 'aria-hidden': true }
+    : {
+        role: 'progressbar',
+        'aria-valuemin': 0,
+        'aria-valuemax': 100,
+        'aria-valuenow': percent,
+        'aria-label': ariaLabel ?? `${percent}%`,
+      };
+
   return (
-    <div className={cn('relative inline-flex items-center justify-center', className)}>
-      <svg width={size} height={size} className="-rotate-90">
+    <div
+      className={cn('relative inline-flex items-center justify-center', className)}
+      {...semantics}
+    >
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true" focusable="false">
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -54,7 +77,7 @@ export function ProgressRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        {label ?? <span className="text-xs font-semibold text-fg">{Math.round(clamped)}%</span>}
+        {label ?? <span className="text-xs font-semibold text-fg">{percent}%</span>}
       </div>
     </div>
   );

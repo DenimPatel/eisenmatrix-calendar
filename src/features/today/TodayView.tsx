@@ -160,7 +160,12 @@ export function TodayView() {
                 <span className="text-xs text-muted">
                   {completedToday}/{agenda.length} done
                 </span>
-                <ProgressRing value={todayProgress} size={28} strokeWidth={3} />
+                <ProgressRing
+                  value={todayProgress}
+                  size={28}
+                  strokeWidth={3}
+                  ariaLabel={`Today's agenda progress: ${Math.round(todayProgress)}% complete`}
+                />
               </div>
             }
           >
@@ -226,6 +231,7 @@ export function TodayView() {
                         size={40}
                         strokeWidth={4}
                         tone={doneToday ? 'success' : 'accent'}
+                        decorative
                         label={
                           <span className="text-[10px] font-bold">{doneToday ? '✓' : '0'}</span>
                         }
@@ -279,7 +285,7 @@ export function TodayView() {
                     onClick={() => openEditor(goal)}
                     className="flex w-full items-center gap-3 text-left"
                   >
-                    <ProgressRing value={progress.percent} size={40} strokeWidth={4} />
+                    <ProgressRing value={progress.percent} size={40} strokeWidth={4} decorative />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-fg">{goal.title}</div>
                       <div className="text-xs text-muted">{progress.label}</div>

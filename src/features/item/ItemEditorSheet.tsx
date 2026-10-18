@@ -4,7 +4,7 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Checkbox, Field, Select } from '@/components/ui/Form';
-import { Tabs } from '@/components/ui/Tabs';
+import { Tabs, TabPanel } from '@/components/ui/Tabs';
 import { useUiStore } from '@/store/useUiStore';
 import { useChildren, useLists, useSetting } from '@/hooks/useData';
 import { cn } from '@/lib/cn';
@@ -379,364 +379,374 @@ export function ItemEditorSheet() {
           ...(isRecurring ? [{ value: 'analytics' as const, label: 'Analytics' }] : []),
           { value: 'history', label: `History (${draft.history.length})` },
         ]}
-      />
-
-      {tab === 'details' && (
-        <div className="space-y-4">
-          <Field label="Title">
-            <input
-              ref={titleRef}
-              className="input"
-              value={draft.title}
-              onChange={(e) => update({ title: e.target.value })}
-              placeholder="What is it?"
-            />
-          </Field>
-
-          <Field label="Notes">
-            <textarea
-              className="input min-h-[96px]"
-              value={draft.notes}
-              onChange={(e) => update({ notes: e.target.value })}
-              placeholder="Details, links, context…"
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Field label="Status">
-              <Select
-                value={draft.status}
-                onChange={(e) => update({ status: e.target.value as Item['status'] })}
-                options={Object.entries(ITEM_STATUS_LABELS).map(([v, l]) => ({
-                  value: v,
-                  label: l,
-                }))}
+      >
+        <TabPanel value="details">
+          <div className="space-y-4">
+            <Field label="Title">
+              <input
+                ref={titleRef}
+                className="input"
+                value={draft.title}
+                onChange={(e) => update({ title: e.target.value })}
+                placeholder="What is it?"
               />
             </Field>
-            <Field label="Urgency" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+
+            <Field label="Notes">
+              <textarea
+                className="input min-h-[96px]"
+                value={draft.notes}
+                onChange={(e) => update({ notes: e.target.value })}
+                placeholder="Details, links, context…"
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <Field label="Status">
+                <Select
+                  value={draft.status}
+                  onChange={(e) => update({ status: e.target.value as Item['status'] })}
+                  options={Object.entries(ITEM_STATUS_LABELS).map(([v, l]) => ({
+                    value: v,
+                    label: l,
+                  }))}
+                />
+              </Field>
+              <Field label="Urgency" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+                <Select
+                  value={draft.urgency}
+                  disabled={occurrenceScoped}
+                  onChange={(e) => update({ urgency: e.target.value as Item['urgency'] })}
+                  options={Object.entries(PRIORITY_LABELS).map(([v, l]) => ({
+                    value: v,
+                    label: l,
+                  }))}
+                />
+              </Field>
+              <Field label="Importance" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+                <Select
+                  value={draft.importance}
+                  disabled={occurrenceScoped}
+                  onChange={(e) => update({ importance: e.target.value as Item['importance'] })}
+                  options={Object.entries(PRIORITY_LABELS).map(([v, l]) => ({
+                    value: v,
+                    label: l,
+                  }))}
+                />
+              </Field>
+            </div>
+
+            <SeriesOnlyGroup locked={occurrenceScoped}>
+              <KindFields item={draft} onData={updateData} />
+            </SeriesOnlyGroup>
+
+            <Field label="List" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
               <Select
-                value={draft.urgency}
+                value={draft.listId ?? ''}
                 disabled={occurrenceScoped}
-                onChange={(e) => update({ urgency: e.target.value as Item['urgency'] })}
-                options={Object.entries(PRIORITY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+                onChange={(e) => update({ listId: e.target.value || null })}
+                options={[
+                  { value: '', label: 'No list' },
+                  ...lists.map((l) => ({ value: l.id, label: l.name })),
+                ]}
               />
             </Field>
-            <Field label="Importance" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
-              <Select
-                value={draft.importance}
-                disabled={occurrenceScoped}
-                onChange={(e) => update({ importance: e.target.value as Item['importance'] })}
-                options={Object.entries(PRIORITY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
-              />
-            </Field>
-          </div>
 
-          <SeriesOnlyGroup locked={occurrenceScoped}>
-            <KindFields item={draft} onData={updateData} />
-          </SeriesOnlyGroup>
-
-          <Field label="List" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
-            <Select
-              value={draft.listId ?? ''}
-              disabled={occurrenceScoped}
-              onChange={(e) => update({ listId: e.target.value || null })}
-              options={[
-                { value: '', label: 'No list' },
-                ...lists.map((l) => ({ value: l.id, label: l.name })),
-              ]}
-            />
-          </Field>
-
-          <Field label="Tags" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
-            <fieldset disabled={occurrenceScoped} className="min-w-0 opacity-60">
-              <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface p-2">
-                {draft.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-xs text-muted"
-                  >
-                    #{tag}
-                    <button
-                      type="button"
-                      onClick={() => update({ tags: draft.tags.filter((t) => t !== tag) })}
-                      aria-label={`Remove ${tag}`}
+            <Field label="Tags" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+              <fieldset disabled={occurrenceScoped} className="min-w-0 opacity-60">
+                <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border bg-surface p-2">
+                  {draft.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5 text-xs text-muted"
                     >
-                      <X size={10} />
-                    </button>
-                  </span>
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => update({ tags: draft.tags.filter((t) => t !== tag) })}
+                        aria-label={`Remove ${tag}`}
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    className="min-w-[6rem] flex-1 bg-transparent text-sm outline-none"
+                    value={tagInput}
+                    placeholder="Add tag…"
+                    aria-label="Add tag"
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        addTag();
+                      }
+                    }}
+                  />
+                </div>
+              </fieldset>
+            </Field>
+
+            {(draft.kind === 'task' || draft.kind === 'goal' || draft.kind === 'event') && (
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted">
+                  {draft.kind === 'goal' ? 'Milestones' : 'Subtasks'}
+                </span>
+                {children.map((child) => (
+                  <div
+                    key={child.id}
+                    className="flex items-center gap-2 rounded-lg border border-border p-2"
+                  >
+                    <Checkbox
+                      checked={child.status === 'done'}
+                      onChange={() => void toggleDone(child)}
+                      aria-label={child.title}
+                    />
+                    <span
+                      className={cn(
+                        'flex-1 text-sm',
+                        child.status === 'done' && 'text-muted line-through',
+                      )}
+                    >
+                      {child.title}
+                    </span>
+                  </div>
                 ))}
                 <input
-                  className="min-w-[6rem] flex-1 bg-transparent text-sm outline-none"
-                  value={tagInput}
-                  placeholder="Add tag…"
-                  aria-label="Add tag"
-                  onChange={(e) => setTagInput(e.target.value)}
+                  className="input"
+                  aria-label={draft.kind === 'goal' ? 'Add milestone' : 'Add subtask'}
+                  placeholder={
+                    draft.kind === 'goal'
+                      ? 'Add a milestone and press Enter'
+                      : 'Add a subtask and press Enter'
+                  }
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ',') {
+                    if (e.key === 'Enter') {
                       e.preventDefault();
-                      addTag();
+                      const value = e.currentTarget.value;
+                      e.currentTarget.value = '';
+                      void addChild(value);
                     }
                   }}
                 />
               </div>
-            </fieldset>
-          </Field>
+            )}
 
-          {(draft.kind === 'task' || draft.kind === 'goal' || draft.kind === 'event') && (
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-muted">
-                {draft.kind === 'goal' ? 'Milestones' : 'Subtasks'}
-              </span>
-              {children.map((child) => (
-                <div
-                  key={child.id}
-                  className="flex items-center gap-2 rounded-lg border border-border p-2"
-                >
-                  <Checkbox
-                    checked={child.status === 'done'}
-                    onChange={() => void toggleDone(child)}
-                    aria-label={child.title}
-                  />
-                  <span
-                    className={cn(
-                      'flex-1 text-sm',
-                      child.status === 'done' && 'text-muted line-through',
-                    )}
-                  >
-                    {child.title}
-                  </span>
-                </div>
-              ))}
-              <input
-                className="input"
-                aria-label={draft.kind === 'goal' ? 'Add milestone' : 'Add subtask'}
-                placeholder={
-                  draft.kind === 'goal'
-                    ? 'Add a milestone and press Enter'
-                    : 'Add a subtask and press Enter'
-                }
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const value = e.currentTarget.value;
-                    e.currentTarget.value = '';
-                    void addChild(value);
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          <SeriesOnlyGroup locked={occurrenceScoped}>
-            <div className="space-y-2">
-              <span className="text-xs font-medium text-muted">
-                Checklist {occurrenceScoped ? `· ${SERIES_ONLY_HINT}` : ''}
-              </span>
-              {draft.checklist.map((entry) => (
-                <div key={entry.id} className="flex items-center gap-2">
-                  <Checkbox
-                    checked={entry.done}
-                    aria-label={entry.text}
-                    onChange={() => toggleChecklist(entry.id)}
-                  />
-                  <span className={cn('flex-1 text-sm', entry.done && 'text-muted line-through')}>
-                    {entry.text}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() =>
-                      update({ checklist: draft.checklist.filter((c) => c.id !== entry.id) })
-                    }
-                    aria-label="Remove checklist item"
-                  >
-                    <X size={14} />
-                  </Button>
-                </div>
-              ))}
-              <input
-                className="input"
-                placeholder="Add checklist item and press Enter"
-                aria-label="Add checklist item"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const value = e.currentTarget.value;
-                    e.currentTarget.value = '';
-                    addChecklistEntry(value);
-                  }
-                }}
-              />
-            </div>
-          </SeriesOnlyGroup>
-        </div>
-      )}
-
-      {tab === 'schedule' && (
-        <div className="space-y-4">
-          <label className="flex items-center gap-2 text-sm text-fg">
-            <Checkbox
-              checked={draft.allDay}
-              onChange={(e) => {
-                const allDay = e.target.checked;
-                const base = (draft.start ? parseLocalDate(draft.start) : null) ?? new Date();
-                const time =
-                  draft.start && hasTimeComponent(draft.start) ? formatTime(draft.start) : '09:00';
-                const next = allDay ? formatISODate(base) : `${formatISODate(base)}T${time}`;
-                // Keep `end` in the same shape as `start`, otherwise flipping the flag leaves
-                // a bare date ending a timed occurrence (or an instant ending an all-day one).
-                const end = draft.end
-                  ? allDay
-                    ? formatISODate(parseLocalDate(draft.end)!)
-                    : hasTimeComponent(draft.end)
-                      ? draft.end
-                      : `${formatISODate(parseLocalDate(draft.end)!)}T${time}`
-                  : null;
-                update({ allDay, start: next, dueAt: next, end });
-              }}
-            />
-            All day
-          </label>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Start">
-              <div className="flex gap-2">
+            <SeriesOnlyGroup locked={occurrenceScoped}>
+              <div className="space-y-2">
+                <span className="text-xs font-medium text-muted">
+                  Checklist {occurrenceScoped ? `· ${SERIES_ONLY_HINT}` : ''}
+                </span>
+                {draft.checklist.map((entry) => (
+                  <div key={entry.id} className="flex items-center gap-2">
+                    <Checkbox
+                      checked={entry.done}
+                      aria-label={entry.text}
+                      onChange={() => toggleChecklist(entry.id)}
+                    />
+                    <span className={cn('flex-1 text-sm', entry.done && 'text-muted line-through')}>
+                      {entry.text}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        update({ checklist: draft.checklist.filter((c) => c.id !== entry.id) })
+                      }
+                      aria-label="Remove checklist item"
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                ))}
                 <input
-                  type="date"
                   className="input"
-                  aria-label="Start date"
-                  value={startDate ? formatISODate(startDate) : ''}
-                  onChange={(e) => {
-                    const dateKey = e.target.value;
-                    const time = !draft.allDay && draft.start ? formatTime(draft.start) : '';
-                    const next = time ? `${dateKey}T${time}` : dateKey;
-                    update({ start: next, dueAt: next });
+                  placeholder="Add checklist item and press Enter"
+                  aria-label="Add checklist item"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const value = e.currentTarget.value;
+                      e.currentTarget.value = '';
+                      addChecklistEntry(value);
+                    }
                   }}
                 />
-                {!draft.allDay && (
+              </div>
+            </SeriesOnlyGroup>
+          </div>
+        </TabPanel>
+
+        <TabPanel value="schedule">
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 text-sm text-fg">
+              <Checkbox
+                checked={draft.allDay}
+                onChange={(e) => {
+                  const allDay = e.target.checked;
+                  const base = (draft.start ? parseLocalDate(draft.start) : null) ?? new Date();
+                  const time =
+                    draft.start && hasTimeComponent(draft.start)
+                      ? formatTime(draft.start)
+                      : '09:00';
+                  const next = allDay ? formatISODate(base) : `${formatISODate(base)}T${time}`;
+                  // Keep `end` in the same shape as `start`, otherwise flipping the flag leaves
+                  // a bare date ending a timed occurrence (or an instant ending an all-day one).
+                  const end = draft.end
+                    ? allDay
+                      ? formatISODate(parseLocalDate(draft.end)!)
+                      : hasTimeComponent(draft.end)
+                        ? draft.end
+                        : `${formatISODate(parseLocalDate(draft.end)!)}T${time}`
+                    : null;
+                  update({ allDay, start: next, dueAt: next, end });
+                }}
+              />
+              All day
+            </label>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Start">
+                <div className="flex gap-2">
                   <input
-                    type="time"
-                    className="input w-28"
-                    aria-label="Start time"
-                    value={draft.start ? formatTime(draft.start) : ''}
+                    type="date"
+                    className="input"
+                    aria-label="Start date"
+                    value={startDate ? formatISODate(startDate) : ''}
                     onChange={(e) => {
-                      const dateKey = draft.start
-                        ? formatISODate(parseLocalDate(draft.start)!)
-                        : formatISODate(new Date());
-                      const next = `${dateKey}T${e.target.value || '09:00'}`;
+                      const dateKey = e.target.value;
+                      const time = !draft.allDay && draft.start ? formatTime(draft.start) : '';
+                      const next = time ? `${dateKey}T${time}` : dateKey;
                       update({ start: next, dueAt: next });
                     }}
                   />
-                )}
-              </div>
-            </Field>
+                  {!draft.allDay && (
+                    <input
+                      type="time"
+                      className="input w-28"
+                      aria-label="Start time"
+                      value={draft.start ? formatTime(draft.start) : ''}
+                      onChange={(e) => {
+                        const dateKey = draft.start
+                          ? formatISODate(parseLocalDate(draft.start)!)
+                          : formatISODate(new Date());
+                        const next = `${dateKey}T${e.target.value || '09:00'}`;
+                        update({ start: next, dueAt: next });
+                      }}
+                    />
+                  )}
+                </div>
+              </Field>
 
-            <Field label="Due" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+              <Field label="Due" hint={occurrenceScoped ? SERIES_ONLY_HINT : undefined}>
+                <input
+                  type="datetime-local"
+                  className="input"
+                  disabled={occurrenceScoped}
+                  // A date-only value needs a time to satisfy the input, even when the item is
+                  // timed and the due date is left at the series value.
+                  value={
+                    draft.dueAt
+                      ? hasTimeComponent(draft.dueAt) && !draft.allDay
+                        ? draft.dueAt
+                        : `${dateKeyOf(draft.dueAt)}T00:00`
+                      : ''
+                  }
+                  onChange={(e) => update({ dueAt: e.target.value || null })}
+                />
+              </Field>
+            </div>
+
+            <Field label="End">
               <input
                 type="datetime-local"
                 className="input"
-                disabled={occurrenceScoped}
-                // A date-only value needs a time to satisfy the input, even when the item is
-                // timed and the due date is left at the series value.
                 value={
-                  draft.dueAt
-                    ? hasTimeComponent(draft.dueAt) && !draft.allDay
-                      ? draft.dueAt
-                      : `${dateKeyOf(draft.dueAt)}T00:00`
-                    : ''
+                  draft.end && hasTimeComponent(draft.end)
+                    ? draft.end
+                    : draft.end
+                      ? `${draft.end}T00:00`
+                      : ''
                 }
-                onChange={(e) => update({ dueAt: e.target.value || null })}
+                onChange={(e) => update({ end: e.target.value || null })}
               />
             </Field>
+
+            <SeriesOnlyGroup locked={occurrenceScoped} label={`Series · ${SERIES_ONLY_HINT}`}>
+              <RecurrenceEditor
+                value={draft.recurrence}
+                start={draft.start}
+                weekStartsOn={settings.weekStartsOn}
+                onChange={(rule) => update({ recurrence: rule })}
+              />
+
+              <ReminderEditor
+                value={draft.reminders}
+                allDay={draft.allDay}
+                onChange={(reminders) => update({ reminders })}
+              />
+            </SeriesOnlyGroup>
           </div>
+        </TabPanel>
 
-          <Field label="End">
-            <input
-              type="datetime-local"
-              className="input"
-              value={
-                draft.end && hasTimeComponent(draft.end)
-                  ? draft.end
-                  : draft.end
-                    ? `${draft.end}T00:00`
-                    : ''
-              }
-              onChange={(e) => update({ end: e.target.value || null })}
-            />
-          </Field>
-
-          <SeriesOnlyGroup locked={occurrenceScoped} label={`Series · ${SERIES_ONLY_HINT}`}>
-            <RecurrenceEditor
-              value={draft.recurrence}
-              start={draft.start}
-              weekStartsOn={settings.weekStartsOn}
-              onChange={(rule) => update({ recurrence: rule })}
-            />
-
-            <ReminderEditor
-              value={draft.reminders}
-              allDay={draft.allDay}
-              onChange={(reminders) => update({ reminders })}
-            />
-          </SeriesOnlyGroup>
-        </div>
-      )}
-
-      {tab === 'analytics' && analytics && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-border bg-elevated p-4">
-              <div className="text-xs text-muted">Completion rate</div>
-              <div className="text-3xl font-bold text-fg">{analytics.stats.rate}%</div>
-              <div className="text-xs text-muted">
-                {analytics.stats.done} of {analytics.stats.total} in last 120 days
-              </div>
-            </div>
-            <div className="rounded-xl border border-border bg-elevated p-4">
-              <div className="text-xs text-muted">Tracked occurrences</div>
-              <div className="text-3xl font-bold text-fg">{analytics.stats.total}</div>
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            {analytics.recent.map((occ) => (
-              <div
-                key={occ.occKey}
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
-              >
-                <span className="font-mono text-xs text-muted">{occ.occKey}</span>
-                <Badge tone={occ.status === 'done' ? 'success' : 'default'}>
-                  {ITEM_STATUS_LABELS[occ.status]}
-                </Badge>
-              </div>
-            ))}
-            {analytics.recent.length === 0 && (
-              <p className="text-sm text-muted">No occurrences yet.</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {tab === 'history' && (
-        <div className="space-y-2">
-          {draft.history
-            .slice()
-            .reverse()
-            .map((entry) => (
-              <div key={entry.id} className="rounded-lg border border-border p-3 text-sm">
-                <div className="text-fg">
-                  <span className="font-semibold">{entry.field}</span>{' '}
-                  <span className="text-muted">
-                    {entry.oldValue || 'empty'} → {entry.newValue || 'empty'}
-                  </span>
+        <TabPanel value="analytics">
+          {analytics && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border bg-elevated p-4">
+                  <div className="text-xs text-muted">Completion rate</div>
+                  <div className="text-3xl font-bold text-fg">{analytics.stats.rate}%</div>
+                  <div className="text-xs text-muted">
+                    {analytics.stats.done} of {analytics.stats.total} in last 120 days
+                  </div>
                 </div>
-                <div className="mt-1 text-xs text-muted">
-                  {new Date(entry.timestamp).toLocaleString()}
+                <div className="rounded-xl border border-border bg-elevated p-4">
+                  <div className="text-xs text-muted">Tracked occurrences</div>
+                  <div className="text-3xl font-bold text-fg">{analytics.stats.total}</div>
                 </div>
               </div>
-            ))}
-          {draft.history.length === 0 && <p className="text-sm text-muted">No history yet.</p>}
-        </div>
-      )}
+              <div className="space-y-1.5">
+                {analytics.recent.map((occ) => (
+                  <div
+                    key={occ.occKey}
+                    className="flex items-center justify-between rounded-lg border border-border px-3 py-2"
+                  >
+                    <span className="font-mono text-xs text-muted">{occ.occKey}</span>
+                    <Badge tone={occ.status === 'done' ? 'success' : 'default'}>
+                      {ITEM_STATUS_LABELS[occ.status]}
+                    </Badge>
+                  </div>
+                ))}
+                {analytics.recent.length === 0 && (
+                  <p className="text-sm text-muted">No occurrences yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </TabPanel>
+
+        <TabPanel value="history">
+          <div className="space-y-2">
+            {draft.history
+              .slice()
+              .reverse()
+              .map((entry) => (
+                <div key={entry.id} className="rounded-lg border border-border p-3 text-sm">
+                  <div className="text-fg">
+                    <span className="font-semibold">{entry.field}</span>{' '}
+                    <span className="text-muted">
+                      {entry.oldValue || 'empty'} → {entry.newValue || 'empty'}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted">
+                    {new Date(entry.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              ))}
+            {draft.history.length === 0 && <p className="text-sm text-muted">No history yet.</p>}
+          </div>
+        </TabPanel>
+      </Tabs>
     </Sheet>
   );
 }
