@@ -1885,7 +1885,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#8, S3, Impact 3/Reach 2/Confidence 4); promoted from `discovered-IMP-092` D1. Kept separate from the IMP-118 test item.
 
 ### IMP-118 — Add tests for the notification and service-worker boundary
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** tests / tooling
 - **Type:** test
 - **Area / files:** `src/pwa/notifications.ts` (`:9-58`), `src/pwa/register.ts` (`:9-27`), `src/pwa/sw.ts` (`:6-40`)
@@ -1901,7 +1901,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#9, S3, Impact 3/Reach 3/Confidence 4). Kept separate from the IMP-117 fix.
 
 ### IMP-119 — Test the reminder helpers `fireTimesForOccurrence`, `formatReminderLabel` and the `timeOfDay` path
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** tests / tooling
 - **Type:** test
 - **Area / files:** `src/domain/reminders.ts` (`:24-29`, `:31-41`, `:135-152`)

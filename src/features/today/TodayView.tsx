@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { addDays, endOfDay, formatDisplayDate, startOfDay, todayKey } from '@/lib/date';
 import { useItems } from '@/hooks/useData';
 import { useOccurrences } from '@/hooks/useOccurrences';
@@ -11,13 +11,42 @@ import { Button } from '@/components/ui/Button';
 import { createItem } from '@/domain/itemFactory';
 import { toggleHabitOccurrence } from '@/domain/itemActions';
 import { goalProgress, habitStreak } from '@/domain/stats';
+import { selectNextUp } from '@/domain/nextUp';
 import { parseLocalDate } from '@/lib/date';
 import { cn } from '@/lib/cn';
 import { CheckCircle2, Plus, Sparkles, TriangleAlert } from 'lucide-react';
 import type { BillItem, HabitItem, Item, Occurrence } from '@/types';
 
+const OVERDUE_LIMIT = 6;
+const BILLS_LIMIT = 6;
+const GOALS_LIMIT = 4;
+
+type CollapsibleSection = 'overdue' | 'bills' | 'goals';
+
 function isBillUnpaid(occ: Occurrence): occ is Occurrence & { item: BillItem } {
   return occ.item.kind === 'bill' && !occ.item.data.payments?.[occ.occKey];
+}
+
+function MoreControl({
+  hidden,
+  expanded,
+  onToggle,
+}: {
+  hidden: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  if (hidden <= 0) return null;
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      onClick={onToggle}
+      className="mt-1 text-xs font-medium text-accent hover:underline"
+    >
+      {expanded ? 'Show less' : `+${hidden} more`}
+    </button>
+  );
 }
 
 function Section({
@@ -49,6 +78,13 @@ export function TodayView() {
   const items = useItems();
   const openEditor = useUiStore((s) => s.openEditor);
   const setQuickAddOpen = useUiStore((s) => s.setQuickAddOpen);
+  const [expanded, setExpanded] = useState<Record<CollapsibleSection, boolean>>({
+    overdue: false,
+    bills: false,
+    goals: false,
+  });
+  const toggleSection = (key: CollapsibleSection) =>
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const now = new Date();
   const todayStart = startOfDay(now);
@@ -76,13 +112,11 @@ export function TodayView() {
     return map;
   }, [items]);
 
-  const billsThisWeek = weekAhead.filter(isBillUnpaid).slice(0, 6);
+  const unpaidBills = weekAhead.filter(isBillUnpaid);
 
   const agenda = todays.filter((occ) => occ.item.kind !== 'habit');
 
-  const nextUp = agenda
-    .filter((occ) => occ.status !== 'done')
-    .sort((a, b) => (a.start ?? a.occKey).localeCompare(b.start ?? b.occKey))[0];
+  const nextUp = selectNextUp(agenda);
 
   const completedToday = agenda.filter((o) => o.status === 'done').length;
   const todayProgress = agenda.length ? Math.round((completedToday / agenda.length) * 100) : 0;
@@ -127,7 +161,7 @@ export function TodayView() {
               <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950">
                 <TriangleAlert size={16} className="mt-0.5 shrink-0 text-rose-500" />
                 <div className="w-full space-y-1.5">
-                  {overdue.slice(0, 6).map((occ) => (
+                  {(expanded.overdue ? overdue : overdue.slice(0, OVERDUE_LIMIT)).map((occ) => (
                     <div
                       key={`${occ.item.id}-${occ.occKey}`}
                       className="flex items-center justify-between gap-2"
@@ -147,6 +181,11 @@ export function TodayView() {
                       </span>
                     </div>
                   ))}
+                  <MoreControl
+                    hidden={overdue.length - OVERDUE_LIMIT}
+                    expanded={expanded.overdue}
+                    onToggle={() => toggleSection('overdue')}
+                  />
                 </div>
               </div>
             </Section>
@@ -253,9 +292,9 @@ export function TodayView() {
             </div>
           </Section>
 
-          <Section title="Bills due soon" count={billsThisWeek.length}>
+          <Section title="Bills due soon" count={unpaidBills.length}>
             <div className="space-y-2">
-              {billsThisWeek.map((occ) => (
+              {(expanded.bills ? unpaidBills : unpaidBills.slice(0, BILLS_LIMIT)).map((occ) => (
                 <button
                   key={`${occ.item.id}-${occ.occKey}`}
                   type="button"
@@ -268,15 +307,20 @@ export function TodayView() {
                   </span>
                 </button>
               ))}
-              {billsThisWeek.length === 0 && (
+              {unpaidBills.length === 0 && (
                 <p className="text-sm text-muted">No bills due this week.</p>
               )}
+              <MoreControl
+                hidden={unpaidBills.length - BILLS_LIMIT}
+                expanded={expanded.bills}
+                onToggle={() => toggleSection('bills')}
+              />
             </div>
           </Section>
 
           <Section title="Goal progress" count={goals.length}>
             <div className="space-y-3">
-              {goals.slice(0, 4).map((goal) => {
+              {(expanded.goals ? goals : goals.slice(0, GOALS_LIMIT)).map((goal) => {
                 const progress = goalProgress(goal, goalChildren.get(goal.id) ?? []);
                 return (
                   <button
@@ -294,6 +338,11 @@ export function TodayView() {
                 );
               })}
               {goals.length === 0 && <p className="text-sm text-muted">No goals yet.</p>}
+              <MoreControl
+                hidden={goals.length - GOALS_LIMIT}
+                expanded={expanded.goals}
+                onToggle={() => toggleSection('goals')}
+              />
             </div>
           </Section>
         </div>

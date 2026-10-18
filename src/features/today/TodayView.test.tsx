@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { TodayView } from './TodayView';
 import { db } from '@/db/schema';
 import { createItem } from '@/domain/itemFactory';
-import { todayKey } from '@/lib/date';
+import { addDays, formatISODate, todayKey } from '@/lib/date';
 import { useUiStore } from '@/store/useUiStore';
 import type { Item, ItemStatus } from '@/types';
 
@@ -186,6 +186,140 @@ describe('TodayView progress semantics', () => {
     const toggle = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
     expect(toggle.querySelector('[role="progressbar"]')).toBeNull();
     expect(toggle.querySelector('[aria-hidden="true"]')).not.toBeNull();
+
+    await mounted.unmount();
+  });
+});
+
+function sectionByTitle(host: HTMLElement, prefix: string): HTMLElement | undefined {
+  return Array.from(host.querySelectorAll('section')).find((section) =>
+    section.querySelector('h2')?.textContent?.startsWith(prefix),
+  );
+}
+
+function moreButton(section: HTMLElement | undefined): HTMLButtonElement | undefined {
+  if (!section) return undefined;
+  return Array.from(section.querySelectorAll('button')).find((el) =>
+    /^\+\d+ more$/.test(el.textContent?.trim() ?? ''),
+  );
+}
+
+function showLessButton(section: HTMLElement | undefined): HTMLButtonElement | undefined {
+  if (!section) return undefined;
+  return Array.from(section.querySelectorAll('button')).find(
+    (el) => el.textContent?.trim() === 'Show less',
+  );
+}
+
+function countText(section: HTMLElement | undefined, needle: string): number {
+  return (section?.textContent ?? '').split(needle).length - 1;
+}
+
+describe("TodayView what's next", () => {
+  it('promotes the timed task over an all-day note', async () => {
+    await db.items.bulkPut([
+      createItem({ kind: 'note', title: 'An all-day note', start: todayKey() }),
+      createItem({
+        kind: 'task',
+        title: 'Timed task',
+        start: `${todayKey()}T09:00`,
+        allDay: false,
+      }),
+    ]);
+    const mounted = await mount(<TodayView />);
+
+    await waitForText(mounted.host, "What's next");
+    const banner = Array.from(mounted.host.querySelectorAll('div')).find((el) =>
+      el.textContent?.startsWith("What's next"),
+    );
+    expect(banner?.textContent).toContain('Timed task');
+    expect(banner?.textContent).not.toContain('An all-day note');
+
+    await mounted.unmount();
+  });
+});
+
+describe('TodayView truncated sections', () => {
+  it('shows +N more for overdue, keeps the badge equal to the reachable count, and reveals rows', async () => {
+    const yesterday = formatISODate(addDays(new Date(), -1));
+    await db.items.bulkPut(
+      Array.from({ length: 7 }, (_, i) =>
+        createItem({ kind: 'task', title: `Overdue ${i}`, start: yesterday }),
+      ),
+    );
+    const mounted = await mount(<TodayView />);
+
+    await waitForText(mounted.host, 'Overdue7');
+    const section = sectionByTitle(mounted.host, 'Overdue');
+    expect(section?.querySelector('h2')?.textContent).toBe('Overdue7');
+    expect(countText(section, 'Overdue ')).toBe(6);
+    expect(moreButton(section)?.textContent).toBe('+1 more');
+
+    await act(async () => {
+      moreButton(section)!.click();
+    });
+    expect(countText(sectionByTitle(mounted.host, 'Overdue'), 'Overdue ')).toBe(7);
+    expect(moreButton(sectionByTitle(mounted.host, 'Overdue'))).toBeUndefined();
+    expect(showLessButton(sectionByTitle(mounted.host, 'Overdue'))).toBeDefined();
+
+    await mounted.unmount();
+  });
+
+  it('caps bills due soon at 6 and reveals the rest', async () => {
+    const today = todayKey();
+    await db.items.bulkPut(
+      Array.from({ length: 7 }, (_, i) =>
+        createItem({ kind: 'bill', title: `Bill ${i}`, start: today }),
+      ),
+    );
+    const mounted = await mount(<TodayView />);
+
+    await waitForText(mounted.host, 'Bills due soon7');
+    const section = sectionByTitle(mounted.host, 'Bills due soon');
+    expect(section?.querySelector('h2')?.textContent).toBe('Bills due soon7');
+    expect(countText(section, 'Bill ')).toBe(6);
+
+    await act(async () => {
+      moreButton(section)!.click();
+    });
+    expect(countText(sectionByTitle(mounted.host, 'Bills due soon'), 'Bill ')).toBe(7);
+
+    await mounted.unmount();
+  });
+
+  it('caps goal progress at 4 and reveals the rest', async () => {
+    await db.items.bulkPut(
+      Array.from({ length: 5 }, (_, i) => createItem({ kind: 'goal', title: `Target ${i}` })),
+    );
+    const mounted = await mount(<TodayView />);
+
+    await waitForText(mounted.host, 'Goal progress5');
+    const section = sectionByTitle(mounted.host, 'Goal progress');
+    expect(section?.querySelector('h2')?.textContent).toBe('Goal progress5');
+    expect(countText(section, 'Target ')).toBe(4);
+
+    await act(async () => {
+      moreButton(section)!.click();
+    });
+    expect(countText(sectionByTitle(mounted.host, 'Goal progress'), 'Target ')).toBe(5);
+
+    await mounted.unmount();
+  });
+
+  it('renders no more-control when a section is within its cap', async () => {
+    await db.items.bulkPut([
+      createItem({
+        kind: 'task',
+        title: 'Overdue A',
+        start: formatISODate(addDays(new Date(), -1)),
+      }),
+      createItem({ kind: 'goal', title: 'Target A' }),
+    ]);
+    const mounted = await mount(<TodayView />);
+
+    await waitForText(mounted.host, 'Overdue A');
+    expect(moreButton(sectionByTitle(mounted.host, 'Overdue'))).toBeUndefined();
+    expect(moreButton(sectionByTitle(mounted.host, 'Goal progress'))).toBeUndefined();
 
     await mounted.unmount();
   });

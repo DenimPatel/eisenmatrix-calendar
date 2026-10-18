@@ -88,3 +88,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-124 · Habit heatmap has a legend and per-day text; skip-to-content link and main landmark added
 - 2026-10-18 · IMP-105 · Header CTAs stay on one line at 390px, digest time input no longer clips, boot failure names the local database
 - 2026-10-18 · IMP-100 · Completion toggle and calendar day-add now have 44px hit areas; other tiny controls clear 24px
+- 2026-10-18 · IMP-102 · What's next now prefers timed actionable items; truncated Today sections expose +N more
