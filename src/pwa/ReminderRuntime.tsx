@@ -33,6 +33,15 @@ function createTickGate(): TickGate {
 }
 
 /**
+ * Boot maintenance reads storage that may be unavailable. The boot already reports a storage
+ * failure once, so a rejected prune must be swallowed here rather than becoming an unhandled
+ * rejection or a repeated toast.
+ */
+function ignorePruneFailure(pass: () => Promise<unknown>): void {
+  void pass().catch(() => {});
+}
+
+/**
  * Drives reminder delivery. Runs on load, on visibility change, and every 60s.
  * There is no push server; this is best-effort while the tab/PWA is alive.
  */
@@ -74,6 +83,9 @@ export function ReminderRuntime() {
           tone: 'error',
           duration: 10000,
         });
+      } catch {
+        // Storage unavailable: the boot already reported it once, and the count is retried on
+        // the next visible tick, so this pass must not add an unhandled rejection or a toast.
       } finally {
         reporting.current = false;
       }
@@ -188,11 +200,13 @@ export function ReminderRuntime() {
 
   useEffect(() => {
     void notificationPermission();
-    void reminderLogRepo.pruneBefore(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    ignorePruneFailure(() => reminderLogRepo.pruneBefore(Date.now() - 30 * 24 * 60 * 60 * 1000));
     // Failure rows are kept long enough to be surfaced after the reminder aged out of the
     // retry window, then dropped so the pending count cannot grow without bound.
-    void reminderFailureRepo.pruneBefore(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    void (async () => {
+    ignorePruneFailure(() =>
+      reminderFailureRepo.pruneBefore(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    );
+    ignorePruneFailure(async () => {
       // `items` is a dep of the tick effect above, so this pass's write tears that effect down
       // and rebuilds it, starting another tick. `deliver`'s dedupe is a check-then-record
       // (IMP-036), so a prune landing while a tick is still delivering gets the same reminder
@@ -204,7 +218,7 @@ export function ReminderRuntime() {
       // is left for the first tick to fire (which keeps a snooze missed while the app was closed
       // alive) and only rows older than the window — which no tick can reach again — are dropped.
       await pruneItemReminders(Date.now(), LOOKBACK_MS);
-    })();
+    });
   }, []);
 
   return null;

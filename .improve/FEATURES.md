@@ -1463,7 +1463,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Found by the IMP-033 verifier (2026-10-17); non-blocking but a real mobile AT gap.
 
 ### IMP-092 — Catch ReminderRuntime prune rejections on blocked storage
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** error handling / reliability
 - **Type:** bug-fix
 - **Area / files:** `src/pwa/ReminderRuntime.tsx` (`:149-162`)
