@@ -69,3 +69,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-084 · Duplicate-import children with fresh ids attach to the duplicated parent
 - 2026-10-18 · IMP-085 · A 'This occurrence' retitle now shows on that occurrence in cards, Today and Calendar
 - 2026-10-18 · IMP-086 · Undelivered reminders are recorded and surfaced once instead of dropped silently; digest no longer rebuilt each tick; notifications show retitled occurrence
+- 2026-10-18 · IMP-094 · Closing a top overlay no longer unlocks scroll behind a remaining modal

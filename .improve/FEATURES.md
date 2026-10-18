@@ -1495,7 +1495,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Found by the IMP-077 verifier (2026-10-17); non-blocking but silently loses input.
 
 ### IMP-094 — Keep body scroll locked while any modal layer remains
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / accessibility
 - **Type:** bug-fix
 - **Area / files:** `src/components/ui/Dialog.tsx`, `src/components/ui/Sheet.tsx`, `src/store/useUiStore.ts`, `src/hooks/useOverlayLayer.ts`

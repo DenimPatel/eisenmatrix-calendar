@@ -2,6 +2,7 @@ import React, { useEffect, useId, useRef, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 import { useOverlayLayer } from '@/hooks/useOverlayLayer';
 import { Button } from './Button';
 
@@ -46,6 +47,7 @@ export function Dialog({
   const isTopOverlay = useOverlayLayer(open);
   const titleId = useId();
   const descriptionId = useId();
+  useBodyScrollLock(open);
 
   useEffect(() => {
     if (!open) return;
@@ -53,10 +55,8 @@ export function Dialog({
       if (e.key === 'Escape' && isTopOverlay()) onClose();
     };
     document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
     };
   }, [open, onClose, isTopOverlay]);
 

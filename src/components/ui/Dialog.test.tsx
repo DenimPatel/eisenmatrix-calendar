@@ -300,6 +300,27 @@ describe('Dialog', () => {
 
     await mounted.unmount();
   });
+
+  it('keeps body scroll locked until the last stacked layer closes, then restores the prior value', async () => {
+    document.body.style.overflow = 'scroll';
+    useUiStore.setState({ quickAddOpen: true, commandOpen: true });
+    const mounted = await mount(<StackedStoreDialogs />);
+    expect(document.body.style.overflow).toBe('hidden');
+
+    await act(async () => {
+      useUiStore.getState().setCommandOpen(false);
+    });
+    expect(dialogTitles(mounted.host)).toEqual(['Quick add']);
+    expect(document.body.style.overflow).toBe('hidden');
+
+    await act(async () => {
+      useUiStore.getState().setQuickAddOpen(false);
+    });
+    expect(dialogTitles(mounted.host)).toEqual([]);
+    expect(document.body.style.overflow).toBe('scroll');
+
+    await mounted.unmount();
+  });
 });
 
 describe('ConfirmDialog', () => {
