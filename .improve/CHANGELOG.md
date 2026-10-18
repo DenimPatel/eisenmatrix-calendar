@@ -80,3 +80,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-114 · ICS export handles CRLF notes and inverted ranges; delivery tick tolerates blocked storage
 - 2026-10-18 · IMP-116 · Recurring events keep their wall-clock end across DST transitions
 - 2026-10-18 · IMP-099 · Habit heatmap grid is visible in light mode
+- 2026-10-18 · IMP-098 · Lists status pill and date no longer wrap; Goals progress track visible in light mode

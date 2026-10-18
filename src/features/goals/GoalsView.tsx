@@ -147,7 +147,7 @@ export function GoalsView() {
                 )}
 
                 {goal.data.metric.type === 'numeric' && (
-                  <div className="h-2 overflow-hidden rounded-full bg-elevated">
+                  <div className="h-2 overflow-hidden rounded-full bg-border">
                     <div
                       className="h-full rounded-full bg-accent transition-all"
                       style={{ width: `${progress.percent}%` }}

@@ -1568,7 +1568,7 @@ _Third pass (2026-10-05, re-read of all 27 `discovered-IMP-*.md` reports against
 _Rejected during critic review (not checkable / premise false / not a defect): the former history-blob item (`buildHistory` already skips `occurrences` at `itemActions.ts:32`), the former hardcoded-color item (badge classes in `labels.ts` already carry `dark:` variants; `bg-white` is a cosmetic knob only), and the former "reset all data" item (the confirm copy already enumerates exactly the tables it clears). The former standalone `npm ci` item was merged into IMP-005._
 
 ### IMP-098 — Give the Lists table a dedicated status/date column so neither wraps
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / layout
 - **Type:** bug-fix
 - **Area / files:** `src/features/list/ListView.tsx` (header grid `:274`, row grid `:337`, status+date cell `:380-390`)

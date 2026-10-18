@@ -19,6 +19,14 @@ import type { Item, ItemStatus, List } from '@/types';
 
 type SortKey = 'date' | 'priority' | 'title' | 'created';
 
+/**
+ * Shared desktop track template for the header row and every body row so the two grids stay
+ * identical. The List track only appears at `xl`; below it, the four fixed tracks leave the
+ * Item track too little room.
+ */
+const TABLE_GRID =
+  'md:grid-cols-[2rem_minmax(0,1fr)_5.5rem_6.5rem_6rem] xl:grid-cols-[2rem_minmax(0,1fr)_5.5rem_5.5rem_6.5rem_6rem]';
+
 export function ListView() {
   const items = useItems();
   const lists = useLists();
@@ -271,7 +279,10 @@ export function ListView() {
           <div role="rowgroup">
             <div
               role="row"
-              className="hidden grid-cols-[2rem_1fr_7rem_7rem_6rem] gap-3 border-b border-border bg-elevated px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted md:grid"
+              className={cn(
+                'hidden grid-cols-1 gap-3 border-b border-border bg-elevated px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-muted md:grid',
+                TABLE_GRID,
+              )}
             >
               <span role="columnheader" aria-label="Select">
                 <Checkbox
@@ -285,7 +296,7 @@ export function ListView() {
               <div
                 role="columnheader"
                 aria-sort={sortDirection('title')}
-                className="flex items-center"
+                className="flex min-w-0 items-center"
               >
                 <button
                   type="button"
@@ -295,7 +306,9 @@ export function ListView() {
                   Item <ArrowUpDown size={12} />
                 </button>
               </div>
-              <span role="columnheader">List</span>
+              <span role="columnheader" className="hidden xl:block">
+                List
+              </span>
               <div
                 role="columnheader"
                 aria-sort={sortDirection('priority')}
@@ -309,6 +322,7 @@ export function ListView() {
                   Priority <ArrowUpDown size={12} />
                 </button>
               </div>
+              <span role="columnheader">Status</span>
               <div
                 role="columnheader"
                 aria-sort={sortDirection('date')}
@@ -334,7 +348,10 @@ export function ListView() {
                   <div
                     key={item.id}
                     role="row"
-                    className="grid grid-cols-1 items-center gap-2 border-b border-border px-3 py-2 hover:bg-elevated md:grid-cols-[2rem_1fr_7rem_7rem_6rem] md:gap-3"
+                    className={cn(
+                      'grid grid-cols-1 items-center gap-2 border-b border-border px-3 py-2 hover:bg-elevated md:gap-3',
+                      TABLE_GRID,
+                    )}
                   >
                     <span role="cell" className="flex items-center">
                       <Checkbox
@@ -367,7 +384,7 @@ export function ListView() {
                         </div>
                       </button>
                     </div>
-                    <span role="cell" className="truncate text-xs text-muted">
+                    <span role="cell" className="hidden truncate text-xs text-muted xl:block">
                       {list?.name ?? '—'}
                     </span>
                     <span role="cell" className="flex items-center gap-1">
@@ -377,17 +394,19 @@ export function ListView() {
                         {quadrant.toUpperCase()}
                       </Badge>
                     </span>
-                    <div role="cell" className="flex items-center justify-between gap-2">
+                    <span role="cell" className="flex items-center">
                       <span
                         className={cn(
-                          'rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          'whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-medium',
                           statusClasses(item.status),
                         )}
                       >
                         {ITEM_STATUS_LABELS[item.status]}
                       </span>
-                      <span className="text-xs text-muted">{item.start?.slice(0, 10) ?? ''}</span>
-                    </div>
+                    </span>
+                    <span role="cell" className="truncate whitespace-nowrap text-xs text-muted">
+                      {item.start?.slice(0, 10) ?? ''}
+                    </span>
                   </div>
                 );
               })}
