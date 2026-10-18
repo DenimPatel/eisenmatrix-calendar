@@ -91,3 +91,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-102 · What's next now prefers timed actionable items; truncated Today sections expose +N more
 - 2026-10-18 · IMP-129 · New shopping list uses the app dialog; bulk delete/clear purchased undo is covered by tests
 - 2026-10-18 · IMP-131 · Year view expands 3.3x faster; editor no longer recomputes analytics per keystroke
+- 2026-10-18 · IMP-133 · Views load as separate precached chunks (entry 394->342 kB) with retry on chunk failure

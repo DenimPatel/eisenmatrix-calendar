@@ -2127,7 +2127,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** M    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 18
-- **Notes:** Source: `.improve/reports/discover3-features.md` (F13, S3, Impact 3/Reach 4/Confidence 3).
+- **Notes:** DONE. Nine views (all but Today) load via `lazyRoute` (`React.lazy`, reload-once guarded by `sessionStorage` + an in-memory flag, no reload loop when storage is blocked) inside an accessible `Suspense` fallback and a route-level `RouteErrorBoundary` keyed by `location.pathname` so navigation clears a latched error. Entry chunk 394.23 kB → 342.69 kB raw / 118.55 → 105.74 kB gzip; all 10 view chunks are in the `injectManifest` precache so routes load offline. Today stays eager. Verified: typecheck/lint/64 files/617 tests/format:check/build, preview online + offline sweep of all routes, forced chunk-abort recovery on navigation, zero console errors. See `.improve/reports/impl-IMP-133.md` (and `verify-IMP-133.md`). Source: `.improve/reports/discover3-features.md` (F13, S3, Impact 3/Reach 4/Confidence 3).
 
 ### IMP-134 — Add an in-app Help entry point for quick-add syntax and export formats
 - **Status:** DONE
