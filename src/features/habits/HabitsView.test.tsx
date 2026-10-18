@@ -21,13 +21,17 @@ import { DEFAULT_SETTINGS } from '@/types/settings';
 
 const DAYS = 12 * 7;
 
+let habitSeq = 0;
+
 interface Mounted {
   host: HTMLElement;
   root: Root;
+  title: string;
 }
 
 async function mountHabits(weekStartsOn: 0 | 1 | null): Promise<Mounted> {
-  await itemRepo.create(createItem({ kind: 'habit', title: 'Stretch', start: todayKey() }));
+  const title = `Stretch ${++habitSeq}`;
+  await itemRepo.create(createItem({ kind: 'habit', title, start: todayKey() }));
   if (weekStartsOn === null) {
     await settingsRepo.remove('app');
   } else {
@@ -40,7 +44,26 @@ async function mountHabits(weekStartsOn: 0 | 1 | null): Promise<Mounted> {
     root.render(<HabitsView />);
   });
   await waitForSettingApplied(host, weekStartsOn ?? DEFAULT_SETTINGS.weekStartsOn);
-  return { host, root };
+  await waitForHeatmap(host, title);
+  return { host, root, title };
+}
+
+/**
+ * The items store is shared across mounts and keeps the last snapshot after the final
+ * listener unsubscribes. Wait for the grid labelled with this mount's unique habit so a
+ * preceding test's snapshot can never be asserted against.
+ */
+async function waitForHeatmap(host: HTMLElement, title: string): Promise<HTMLElement> {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    });
+    const grid = host.querySelector<HTMLElement>(
+      `[role="img"][aria-label="${title} completion heatmap"]`,
+    );
+    if (grid?.children.length === DAYS) return grid;
+  }
+  throw new Error(`heatmap for ${title} never rendered`);
 }
 
 /** The setting is read through a Dexie live query, so the render lands asynchronously. */
@@ -55,7 +78,7 @@ async function waitForSettingApplied(host: HTMLElement, weekStartsOn: 0 | 1): Pr
   throw new Error(`habits did not apply weekStartsOn=${weekStartsOn}`);
 }
 
-async function unmount({ host, root }: Mounted): Promise<void> {
+async function unmount({ host, root }: Pick<Mounted, 'host' | 'root'>): Promise<void> {
   await act(async () => {
     root.unmount();
   });
@@ -115,7 +138,9 @@ describe('HabitsView mark today', () => {
 describe('HabitsView empty heatmap cells', () => {
   it('uses a token that differs from the card surface for empty cells', async () => {
     const mounted = await mountHabits(1);
-    const grid = mounted.host.querySelector<HTMLElement>('[role="img"]');
+    const grid = mounted.host.querySelector<HTMLElement>(
+      `[role="img"][aria-label="${mounted.title} completion heatmap"]`,
+    );
     expect(grid).not.toBeNull();
     const emptyCells = Array.from(grid!.children).filter((el) =>
       (el.getAttribute('title') ?? '').endsWith(': 0'),

@@ -9,10 +9,12 @@ import { addDays, formatISODate, todayKey } from '@/lib/date';
 import { useUiStore } from '@/store/useUiStore';
 import type { Item, ItemStatus } from '@/types';
 
+let habitSeq = 0;
+
 function habit(title: string, status: ItemStatus = 'todo'): Item {
   const key = todayKey();
   return {
-    ...createItem({ kind: 'habit', title, start: key }),
+    ...createItem({ kind: 'habit', title: `${title} ${++habitSeq}`, start: key }),
     occurrences: status === 'done' ? { [key]: { status: 'done', completedAt: Date.now() } } : {},
   };
 }
@@ -80,16 +82,17 @@ afterAll(async () => {
 
 describe('TodayView habit rendering', () => {
   it('renders a daily habit only in the Habits panel and counts only agenda items', async () => {
+    const journal = habit('Journal');
     await db.items.bulkPut([
       createItem({ kind: 'task', title: 'Write report', start: todayKey() }),
-      habit('Journal'),
+      journal,
     ]);
     const mounted = await mount(<TodayView />);
 
     await waitForText(mounted.host, '0/1 done');
 
     const text = mounted.host.textContent ?? '';
-    expect(countOccurrences(text, 'Journal')).toBe(1);
+    expect(countOccurrences(text, journal.title)).toBe(1);
     expect(text).toContain('0/1 done');
     expect(agendaHeading(mounted.host)?.textContent).toBe("Today's agenda1");
 
@@ -97,17 +100,18 @@ describe('TodayView habit rendering', () => {
   });
 
   it('excludes a completed habit from the agenda label and ring count', async () => {
+    const journal = habit('Journal', 'done');
     await db.items.bulkPut([
       createItem({ kind: 'task', title: 'Done task', start: todayKey(), status: 'done' }),
       createItem({ kind: 'task', title: 'Open task', start: todayKey() }),
-      habit('Journal', 'done'),
+      journal,
     ]);
     const mounted = await mount(<TodayView />);
 
     await waitForText(mounted.host, '1/2 done');
 
     const text = mounted.host.textContent ?? '';
-    expect(countOccurrences(text, 'Journal')).toBe(1);
+    expect(countOccurrences(text, journal.title)).toBe(1);
     expect(text).toContain('1/2 done');
     expect(text).toContain('✓');
     expect(agendaHeading(mounted.host)?.textContent).toBe("Today's agenda2");
@@ -118,10 +122,11 @@ describe('TodayView habit rendering', () => {
 
 describe('TodayView habit completion', () => {
   it('toggles the habit ring and updates the streak in place', async () => {
-    await db.items.bulkPut([habit('Journal')]);
+    const journal = habit('Journal');
+    await db.items.bulkPut([journal]);
     const mounted = await mount(<TodayView />);
 
-    const before = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
+    const before = await waitForHabitToggle(mounted.host, `Complete ${journal.title} for today`);
     expect(before.getAttribute('aria-pressed')).toBe('false');
     expect(before.classList.contains('h-11')).toBe(true);
     expect(before.classList.contains('w-11')).toBe(true);
@@ -131,7 +136,7 @@ describe('TodayView habit completion', () => {
       before.click();
     });
 
-    const after = await waitForHabitToggle(mounted.host, 'Undo Journal for today');
+    const after = await waitForHabitToggle(mounted.host, `Undo ${journal.title} for today`);
     expect(after.getAttribute('aria-pressed')).toBe('true');
     expect(mounted.host.textContent).toContain('✓');
     expect(mounted.host.textContent).toContain('1 day streak');
@@ -143,17 +148,18 @@ describe('TodayView habit completion', () => {
   });
 
   it('reverts the ring when a completed habit is toggled off', async () => {
-    await db.items.bulkPut([habit('Journal', 'done')]);
+    const journal = habit('Journal', 'done');
+    await db.items.bulkPut([journal]);
     const mounted = await mount(<TodayView />);
 
-    const before = await waitForHabitToggle(mounted.host, 'Undo Journal for today');
+    const before = await waitForHabitToggle(mounted.host, `Undo ${journal.title} for today`);
     expect(before.getAttribute('aria-pressed')).toBe('true');
 
     await act(async () => {
       before.click();
     });
 
-    const after = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
+    const after = await waitForHabitToggle(mounted.host, `Complete ${journal.title} for today`);
     expect(after.getAttribute('aria-pressed')).toBe('false');
     expect(mounted.host.textContent).not.toContain('✓');
 
@@ -180,10 +186,11 @@ describe('TodayView progress semantics', () => {
   });
 
   it('hides the habit ring because its toggle button is already labelled', async () => {
-    await db.items.bulkPut([habit('Journal')]);
+    const journal = habit('Journal');
+    await db.items.bulkPut([journal]);
     const mounted = await mount(<TodayView />);
 
-    const toggle = await waitForHabitToggle(mounted.host, 'Complete Journal for today');
+    const toggle = await waitForHabitToggle(mounted.host, `Complete ${journal.title} for today`);
     expect(toggle.querySelector('[role="progressbar"]')).toBeNull();
     expect(toggle.querySelector('[aria-hidden="true"]')).not.toBeNull();
 
