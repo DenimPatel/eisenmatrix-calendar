@@ -71,3 +71,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-086 · Undelivered reminders are recorded and surfaced once instead of dropped silently; digest no longer rebuilt each tick; notifications show retitled occurrence
 - 2026-10-18 · IMP-094 · Closing a top overlay no longer unlocks scroll behind a remaining modal
 - 2026-10-18 · IMP-092 · Blocked storage no longer produces unhandled prune rejections every tick
+- 2026-10-18 · IMP-096 · Habit status and streak persist in one transaction; concurrent toggles stay consistent

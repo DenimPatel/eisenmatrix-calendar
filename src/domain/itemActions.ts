@@ -191,6 +191,26 @@ function occurrenceStateFor(
   };
 }
 
+/**
+ * The derived `data.streak` for a habit after a status write, or `null` when it is
+ * unchanged. `item` is the candidate state the same write is about to persist, so the
+ * streak is computed from the post-write occurrences rather than a separate re-read.
+ */
+function streakPatch(item: Item): ItemPatch | null {
+  if (item.kind !== 'habit') return null;
+  const streak = habitStreak(item);
+  const current = item.data.streak;
+  if (
+    current &&
+    current.current === streak.current &&
+    current.best === streak.best &&
+    current.lastAt === streak.lastAt
+  ) {
+    return null;
+  }
+  return { data: { ...item.data, streak } };
+}
+
 /** Rule with a legacy override status erased, so `item.occurrences` stays authoritative. */
 function withoutOverrideStatus(item: Item, occKey: string): RecurrenceRule | null {
   const rule = item.recurrence;
@@ -212,15 +232,21 @@ export async function setStatus(
   const timestamp = Date.now();
   if (occKey) {
     // One occurrence's status lives in `item.occurrences` — the map `toggleDone` writes — so
-    // the card checkbox, `resolveOccurrenceStatus` and the stored state always agree.
+    // the card checkbox, `resolveOccurrenceStatus` and the stored state always agree. A habit's
+    // derived streak is computed from that same candidate state inside the one transaction, so
+    // concurrent toggles cannot persist a streak derived from a stale snapshot.
     await patchItemAtomic(
       item.id,
       (stored) => {
         const occurrences = occurrenceStateFor(stored, occKey, status, timestamp);
         const rule = withoutOverrideStatus(stored, occKey);
-        if (!occurrences && rule === stored.recurrence) return null;
-        const patch: ItemPatch = { occurrences: occurrences ?? stored.occurrences };
+        const changed = occurrences !== null || rule !== stored.recurrence;
+        if (!changed) return null;
+        const patch: ItemPatch = {};
+        if (occurrences) patch.occurrences = occurrences;
         if (rule !== stored.recurrence) patch.recurrence = rule;
+        const derived = streakPatch({ ...stored, occurrences: occurrences ?? stored.occurrences });
+        if (derived) Object.assign(patch, derived);
         return patch;
       },
       { silent: true },
@@ -232,7 +258,10 @@ export async function setStatus(
     (stored) => {
       const completedAt = status === 'done' ? (stored.completedAt ?? timestamp) : null;
       if (stored.status === status && stored.completedAt === completedAt) return null;
-      return { status, completedAt };
+      const patch: ItemPatch = { status, completedAt };
+      const derived = streakPatch({ ...stored, status, completedAt });
+      if (derived) Object.assign(patch, derived);
+      return patch;
     },
     { silent: true },
   );
@@ -244,22 +273,6 @@ export async function toggleDone(item: Item, occKey?: string | null): Promise<vo
     : item.status === 'done';
   const nextStatus: ItemStatus = isDone ? 'todo' : 'done';
   await setStatus(item, nextStatus, occKey);
-
-  if (item.kind !== 'habit') return;
-
-  // Re-read: the caller's prop can be stale, and the streak is derived from the
-  // occurrence state that `setStatus` just persisted.
-  const persisted = await itemRepo.get(item.id);
-  if (persisted?.kind !== 'habit') return;
-  const streak = habitStreak(persisted);
-  // Derived state only: the occurrence write already pushed the undo entry, whose
-  // snapshot carries the pre-toggle streak, so a second entry would leave the first
-  // undo restoring a stale streak.
-  await patchItem(
-    item.id,
-    { data: { ...persisted.data, streak } },
-    { silent: true, trackUndo: false },
-  );
 }
 
 export async function setPriority(

@@ -17,6 +17,7 @@ import {
 } from './itemActions';
 import { expandOccurrences } from './recurrence';
 import { upcomingReminders } from './reminders';
+import { habitStreak } from './stats';
 import { formatISODate, parseLocalDate } from '@/lib/date';
 import { addDays } from 'date-fns';
 import type { HabitItem, Item, Occurrence, Reminder, TaskItem } from '@/types';
@@ -471,6 +472,46 @@ describe('toggleDone (habit)', () => {
       best: 2,
       lastAt: dayOffset(-1),
     });
+  });
+
+  it('derives the streak atomically so concurrent toggles match the final state', async () => {
+    const yesterday = dayOffset(-1);
+    const today = todayOccKey();
+    await itemRepo.create(habit('h', yesterday));
+    const before = await storedHabit('h');
+
+    await Promise.all([toggleDone(before, yesterday), toggleDone(before, today)]);
+
+    const after = await storedHabit('h');
+    expect(after.occurrences[yesterday]?.status).toBe('done');
+    expect(after.occurrences[today]?.status).toBe('done');
+    // The persisted streak must describe the final occurrence state, not a stale snapshot.
+    expect(after.data.streak).toEqual(habitStreak(after));
+    expect(after.data.streak.current).toBe(2);
+    expect(useUiStore.getState().undoStack).toHaveLength(2);
+  });
+
+  it('writes the occurrence and the derived streak in a single row write', async () => {
+    await itemRepo.create(habit('h', today));
+    const before = await storedHabit('h');
+
+    let writes = 0;
+    const count = () => {
+      writes++;
+    };
+    const updating = db.items.hook('updating');
+    const creating = db.items.hook('creating');
+    updating.subscribe(count);
+    creating.subscribe(count);
+    try {
+      await toggleDone(before, today);
+    } finally {
+      updating.unsubscribe(count);
+      creating.unsubscribe(count);
+    }
+
+    expect(writes).toBe(1);
+    expect((await storedHabit('h')).data.streak.current).toBe(1);
   });
 });
 

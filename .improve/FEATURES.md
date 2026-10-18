@@ -1526,7 +1526,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Found by the IMP-087 verifier (2026-10-17). Exact question for the human: "When a user adds subtasks in the editor and cancels without saving the parent, should those subtasks be discarded, kept as orphans, or should the app warn before closing?" Also noted: a subsumed child undo entry stays on the stack after IMP-087's whole-tree undo (no visible corruption).
 
 ### IMP-096 — Make habit streak derivation atomic with the occurrence toggle
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / concurrency
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemActions.ts` (`toggleDone` habit branch), `src/db/repository.ts` (`updateAtomic`)
