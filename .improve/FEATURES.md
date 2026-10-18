@@ -1447,7 +1447,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). `mergeDefaults` recursively fills nested object defaults in `normalizeItem` (and `createItem`), so `{target:null}`, `{target:{count:2}}` and `{metric:null}` yield complete `target`/`streak`/`metric`; merge is pure and read-only. +7 tests across itemFactory, repository read shape, Habits/Goals mounts and stats. Gates: typecheck/lint/test (42 files / 471) / format:check all PASS. Reports: impl-IMP-090.md, discovered-IMP-090.md. Follow-up: `itemRepo` write-return values remain unnormalized.
 
 ### IMP-091 — Keep column context when the mobile List header is hidden
-- **Status:** DONE
+- **Status:** TODO
 - **Category:** accessibility
 - **Type:** improvement
 - **Area / files:** `src/features/list/ListView.tsx` (header row, responsive classes), `src/features/list/ListView.test.tsx`
@@ -1694,7 +1694,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V5, S3, Impact 2/Reach 3/Confidence 5).
 
 ### IMP-106 — Stop Matrix quadrants reserving dead space that detaches the Add button
-- **Status:** DONE
+- **Status:** TODO
 - **Category:** visual / spacing
 - **Type:** improvement
 - **Area / files:** `src/features/matrix/MatrixView.tsx` (`:65` `min-h-[16rem] flex-col`, `:81` `flex-1`)
@@ -1725,7 +1725,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (U4, S3, Impact 2/Reach 3/Confidence 5).
 
 ### IMP-108 — Use the shared empty-state pattern in Today's sidebar sections
-- **Status:** DONE
+- **Status:** TODO
 - **Category:** visual / consistency
 - **Type:** improvement
 - **Area / files:** `src/features/today/TodayView.tsx` (`:221`, `:241`, `:265`)
@@ -1740,7 +1740,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V7, S3, Impact 2/Reach 3/Confidence 4).
 
 ### IMP-109 — Enforce a documented minimum size for badges, pills and calendar chips
-- **Status:** DONE
+- **Status:** TODO
 - **Category:** visual / legibility
 - **Type:** improvement
 - **Area / files:** `src/features/list/ListView.tsx` (`:361`, `:383`), `src/features/habits/HabitsView.tsx` (`:145`), `src/features/calendar/CalendarView.tsx` (`:222`, `:239`, `:354`, `:366`), `src/features/item/ItemCard.tsx` (`:129`, `:134`)

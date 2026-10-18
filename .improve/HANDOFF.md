@@ -1,45 +1,27 @@
 # Handoff — eisenmatrix-calendar
 
 ## State
-Session 2 on `improve/auto-20261017` completed 25 improvement items (commits `cc609a4..be7edc1`,
-plus state/format checkpoints). All four gates are green at the tip: typecheck, lint, 42 files /
-455 tests, format:check and build. Three regression sweeps were CLEAN (60, 70 and final): 40/40
-route/viewport/theme checks, all critical interactions, zero console errors and zero failed
-requests (`reports/regression-60.md`, `regression-70.md`, `regression-final.md`).
+Session 3 on `improve/auto-20261017` completed 51 items in 39 commits (`ded0f53..57faf4d`), after a
+discovery round that added IMP-098..135. Gates at tip: typecheck, lint, 707 tests (2x), format:check,
+build all green. Final regression sweep CLEAN (`reports/regression-s3.md`): 52 route/viewport/theme
+captures, zero console errors/failed requests/overflow; critical flows and offline load pass.
+Nothing pushed (pre-push hook blocks; merging to main deploys Pages).
 
-Backlog: 93 items — **68 DONE**, 19 TODO, 5 NEEDS-HUMAN, 1 BLOCKED (`FEATURES.md`). Open TODOs
-fell below the refill threshold (20), so the next session should start with a discovery round
-before selecting more implementation work.
+Backlog (`FEATURES.md`, canonical): 0 open TODO except IMP-091, 106, 108, 109 (see below), 7
+NEEDS-HUMAN (034, 047, 048, 067, 095, 127, 128), 1 BLOCKED (017).
 
-## In flight
-None. Nothing pushed; the pre-push hook still blocks pushes.
-
-## Recommended next (top by score / user impact)
-1. IMP-038 (8) — validate imported JSON/CSV item shape before persisting (data integrity).
-2. IMP-036 (8) — make reminder dedupe race-safe (duplicate/none delivery under races).
-3. IMP-037 (8) — "This and future" editing of past occurrences + undo.
-4. IMP-090 (8) — deep-normalize nested `target`/`metric` payloads (follow-up to IMP-088).
-5. IMP-043 (8) — re-enable `no-explicit-any` (then IMP-046 docs rename, IMP-091 mobile headers).
-Also schedule a discovery round (19 open TODOs < REFILL_THRESHOLD=20) and a visual audit.
-
-## Most neglected dimension
-Visual (health 3): no dedicated visual audit or visual item was completed; the sweeps show no
-regressions but only cover existing layouts. UX and A11y are healthy after this session.
+## Recommended next
+1. Run a discovery round (open TODOs < refill threshold).
+2. IMP-091 (mobile List column context), IMP-106 (Matrix dead space), IMP-108 (Today empty states), IMP-109 (min badge size).
+3. Follow-ups in `reports/discovered-IMP-*.md` not yet itemized: bills/drag-overlay occurrence titles (085),
+   recurrenceToRRule count+until over-expansion on import (113), archived-only Lists empty state (101),
+   toast Undo pops newest entry (129), Goals/Calendar elevated tokens (099), toggle/title hit overlap (100).
 
 ## Warnings
-- IMP-094 is a known reachable gap: closing the top overlay unlocks body scroll behind the
-  remaining modal (reproduced in every sweep; not a regression).
-- IMP-096/097 are structural concurrency follow-ups from IMP-089 (habit streak derivation and
-  the remaining read-then-write occurrence paths); no current UI repro.
-- IMP-017 remains BLOCKED (quick-add particle trimming) pending a product decision.
-- Dependabot major PRs for TypeScript 7 and @vitest/coverage-v8 5 still fail CI; pre-existing.
-- `npm run test` runs twice in CI by design (IMP-083); locally once is enough.
-- Preview browser checks must reset the service worker/caches first (documented in `agents.md`).
-- `.improve/FEATURES.md` is the canonical backlog (legacy layout); there is no `BACKLOG.md`.
+- Verifiers repeatedly caught real defects on first attempt (037, 098, 116, 122, 124, 133, 042): keep independent verification.
+- Status flips: do not use a lazy regex across items (it flipped 091/106/108/109 wrongly; reverted).
+- IMP-017 BLOCKED on product decision; Dependabot TS7 / coverage-v8 5 PRs fail CI (pre-existing).
+- Preview checks must reset service worker/caches first (AGENTS.md).
 
 ## Commands
-```bash
-npm install
 npm run typecheck && npm run lint && npm run test && npm run format:check && npm run build
-npm run preview   # http://localhost:4173/eisenmatrix-calendar/
-```
