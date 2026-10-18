@@ -79,17 +79,24 @@ export function ItemCard({
             void toggleDone(item, occurrenceKey);
           }}
           className={cn(
-            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors',
-            done
-              ? 'border-emerald-500 bg-emerald-500 text-white'
-              : 'border-border hover:border-accent',
+            // 44x44 target; the negative margins keep the card's original 16px footprint.
+            'group/toggle -mb-3.5 -ml-3.5 -mr-3.5 -mt-3 flex h-11 w-11 shrink-0 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:ring-accent',
           )}
         >
-          {done && (
-            <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 fill-none stroke-current stroke-[2]">
-              <path d="M2 6l3 3 5-6" />
-            </svg>
-          )}
+          <span
+            className={cn(
+              'flex h-4 w-4 items-center justify-center rounded-full border transition-colors',
+              done
+                ? 'border-emerald-500 bg-emerald-500 text-white'
+                : 'border-border group-hover/toggle:border-accent',
+            )}
+          >
+            {done && (
+              <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 fill-none stroke-current stroke-[2]">
+                <path d="M2 6l3 3 5-6" />
+              </svg>
+            )}
+          </span>
         </button>
 
         <button

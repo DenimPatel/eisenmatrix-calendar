@@ -6,6 +6,7 @@ import { QUADRANT_IDS, QUADRANTS, itemsInQuadrant, priorityScore } from '@/domai
 import { Droppable } from '@/features/shell/Droppable';
 import { ItemCard } from '@/features/item/ItemCard';
 import { Button } from '@/components/ui/Button';
+import { Checkbox } from '@/components/ui/Form';
 import { createItem } from '@/domain/itemFactory';
 import { cn } from '@/lib/cn';
 import type { QuadrantId } from '@/domain/eisenhower';
@@ -44,11 +45,7 @@ export function MatrixView() {
           <p className="text-sm text-muted">Drag items between quadrants to reprioritise.</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-muted">
-          <input
-            type="checkbox"
-            checked={hideDone}
-            onChange={(e) => setHideDone(e.target.checked)}
-          />
+          <Checkbox checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} />
           Hide completed
         </label>
       </div>

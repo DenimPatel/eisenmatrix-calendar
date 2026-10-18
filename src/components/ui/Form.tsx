@@ -69,7 +69,8 @@ export function Checkbox({ className, ...props }: React.InputHTMLAttributes<HTML
     <input
       type="checkbox"
       className={cn(
-        'h-4 w-4 cursor-pointer rounded border-border bg-surface text-accent accent-[rgb(var(--accent))] focus:ring-accent',
+        // 24x24 meets the WCAG 2.2 target-size minimum; native checkboxes ignore padding.
+        'h-6 w-6 shrink-0 cursor-pointer rounded border-border bg-surface text-accent accent-[rgb(var(--accent))] focus:ring-accent',
         className,
       )}
       {...props}

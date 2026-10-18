@@ -138,6 +138,25 @@ async function waitForOccurrences(host: HTMLElement, titles: string[]): Promise<
   throw new Error('calendar did not render the seeded items');
 }
 
+describe('CalendarView target sizes', () => {
+  it('gives the day add a 44x44 hit area and the Today control a 24px minimum height', async () => {
+    const mounted = await mountCalendar(1);
+
+    const add = mounted.host.querySelector<HTMLElement>('[aria-label^="Add item on "]');
+    expect(add).not.toBeNull();
+    expect(add!.className).toContain('h-11');
+    expect(add!.className).toContain('w-11');
+
+    const today = Array.from(mounted.host.querySelectorAll('button')).find(
+      (el) => el.textContent === 'Today',
+    );
+    expect(today).toBeDefined();
+    expect(today!.className).toContain('min-h-6');
+
+    await unmount(mounted);
+  });
+});
+
 describe('CalendarView overflow affordance', () => {
   beforeEach(async () => {
     await itemRepo.replaceAll([]);

@@ -1600,7 +1600,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V2, S2, Impact 4/Reach 3/Confidence 5).
 
 ### IMP-100 — Enlarge the item completion toggle and calendar day "add" to accessible tap targets
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility / UX
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemCard.tsx` (`:82` `h-4 w-4`), `src/features/calendar/CalendarView.tsx` (`:205-212`), `src/components/ui/Button.tsx` (`:24` `icon: 'h-9 w-9'`)
@@ -1648,7 +1648,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (U2, S2, Impact 4/Reach 4/Confidence 4).
 
 ### IMP-103 — Add a "+N more" affordance to truncated Today sidebar sections
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / information loss
 - **Type:** improvement
 - **Area / files:** `src/features/today/TodayView.tsx` (`:75`, `:126`, `:248`)

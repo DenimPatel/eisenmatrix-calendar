@@ -120,7 +120,7 @@ export function CalendarView() {
             <button
               type="button"
               onClick={() => setCurrentDate(new Date())}
-              className="px-2 text-xs font-medium text-muted hover:text-fg"
+              className="min-h-6 px-2 text-xs font-medium text-muted hover:text-fg"
             >
               Today
             </button>
@@ -206,9 +206,11 @@ export function CalendarView() {
                       type="button"
                       onClick={() => addOn(day)}
                       aria-label={`Add item on ${key}`}
-                      className="rounded p-0.5 text-muted hover:bg-elevated hover:text-fg"
+                      className="group/add -mx-3.5 -my-2.5 flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted focus-visible:ring-2 focus-visible:ring-accent"
                     >
-                      <Plus size={12} />
+                      <span className="flex h-6 w-6 items-center justify-center rounded group-hover/add:bg-elevated group-hover/add:text-fg">
+                        <Plus size={12} />
+                      </span>
                     </button>
                   </div>
                   <div className="space-y-1">
@@ -219,7 +221,7 @@ export function CalendarView() {
                         onClick={() => openEditor(occ.item, occ.occKey)}
                         title={occ.title}
                         className={cn(
-                          'block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px]',
+                          'block w-full truncate rounded px-1.5 py-1 text-left text-[11px] leading-4',
                           occ.status === 'done'
                             ? 'bg-elevated text-muted line-through'
                             : 'bg-accent-soft text-accent hover:opacity-80',
@@ -236,7 +238,7 @@ export function CalendarView() {
                         type="button"
                         aria-expanded={expanded}
                         onClick={() => setExpandedDay((prev) => (prev === key ? null : key))}
-                        className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] text-muted hover:bg-elevated hover:text-accent"
+                        className="block w-full truncate rounded px-1 py-1 text-left text-[10px] leading-4 text-muted hover:bg-elevated hover:text-accent"
                       >
                         {expanded
                           ? 'Show less'
@@ -349,7 +351,7 @@ function YearMonthCard({
             key={`${occ.item.id}-${occ.occKey}`}
             type="button"
             onClick={() => onOpen(occ.item, occ.occKey)}
-            className="block w-full truncate text-left text-xs text-muted hover:text-accent"
+            className="block w-full truncate py-1 text-left text-xs text-muted hover:text-accent"
           >
             <span className="mr-1 font-mono text-[10px]">
               {parseLocalDate(occ.occKey)?.getDate()}
@@ -363,7 +365,7 @@ function YearMonthCard({
             type="button"
             aria-expanded={expanded}
             onClick={() => setExpanded((prev) => !prev)}
-            className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] text-muted hover:bg-elevated hover:text-accent"
+            className="block w-full truncate rounded px-1 py-1 text-left text-[10px] leading-4 text-muted hover:bg-elevated hover:text-accent"
           >
             {expanded ? 'Show less' : `+${occurrences.length - YEAR_CARD_LIMIT} more`}
           </button>

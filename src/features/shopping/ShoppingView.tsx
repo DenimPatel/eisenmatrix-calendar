@@ -184,7 +184,7 @@ export function ShoppingView() {
                         type="button"
                         onClick={() => openEditor(item)}
                         className={cn(
-                          'min-w-0 flex-1 truncate text-left text-sm',
+                          'min-w-0 flex-1 truncate py-0.5 text-left text-sm',
                           data.purchased ? 'text-muted line-through' : 'text-fg',
                         )}
                       >

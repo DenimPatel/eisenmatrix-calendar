@@ -60,7 +60,7 @@ export function ToastHost() {
             type="button"
             onClick={() => dismissToast(toast.id)}
             aria-label="Dismiss notification"
-            className="text-muted hover:text-fg"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted hover:text-fg"
           >
             <X size={14} />
           </button>

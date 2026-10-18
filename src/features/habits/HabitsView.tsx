@@ -157,7 +157,7 @@ export function HabitsView() {
                       <button
                         type="button"
                         onClick={() => openEditor(habit)}
-                        className="text-left text-sm font-semibold text-fg hover:text-accent"
+                        className="py-0.5 text-left text-sm font-semibold text-fg hover:text-accent"
                       >
                         {habit.title || 'Untitled habit'}
                       </button>

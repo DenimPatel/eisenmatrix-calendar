@@ -98,7 +98,7 @@ export function GoalsView() {
                     <button
                       type="button"
                       onClick={() => openEditor(goal)}
-                      className="truncate text-left text-sm font-semibold text-fg hover:text-accent"
+                      className="truncate py-0.5 text-left text-sm font-semibold text-fg hover:text-accent"
                     >
                       {goal.title || 'Untitled goal'}
                     </button>

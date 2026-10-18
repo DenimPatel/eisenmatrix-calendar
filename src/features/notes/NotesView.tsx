@@ -119,7 +119,7 @@ function NoteGrid({
             <button
               type="button"
               onClick={() => onOpen(note)}
-              className="min-w-0 flex-1 text-left text-sm font-semibold text-fg hover:text-accent"
+              className="min-w-0 flex-1 py-0.5 text-left text-sm font-semibold text-fg hover:text-accent"
             >
               {note.title || 'Untitled note'}
             </button>
@@ -129,7 +129,7 @@ function NoteGrid({
               aria-label="Toggle pin"
               aria-pressed={(note as Item & { kind: 'note' }).data.pinned}
               className={cn(
-                'rounded p-1 text-muted hover:text-accent',
+                'flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted hover:text-accent',
                 (note as Item & { kind: 'note' }).data.pinned && 'text-accent',
               )}
             >

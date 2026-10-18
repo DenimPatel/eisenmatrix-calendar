@@ -112,6 +112,26 @@ describe('ItemCard time label', () => {
   });
 });
 
+describe('ItemCard completion toggle target', () => {
+  it('wraps the 16px circle in a 44x44 hit area without changing the visual size', async () => {
+    const item = makeItem('2026-10-01T09:00');
+    const mounted = await render(<ItemCard item={item} />);
+
+    const toggle = mounted.host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Mark as done"]',
+    );
+    expect(toggle).not.toBeNull();
+    expect(toggle!.className).toContain('h-11');
+    expect(toggle!.className).toContain('w-11');
+
+    const circle = toggle!.querySelector('span');
+    expect(circle?.className).toContain('h-4');
+    expect(circle?.className).toContain('w-4');
+
+    await unmount(mounted);
+  });
+});
+
 describe('ItemCard occurrence title', () => {
   it('renders a retitled occurrence and leaves its siblings on the series title', async () => {
     const item = makeItem('2026-10-01T09:00', {
