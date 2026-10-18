@@ -130,6 +130,78 @@ describe('HabitsView empty heatmap cells', () => {
   });
 });
 
+function heatmapTable(host: HTMLElement): HTMLTableElement | null {
+  return host.querySelector('table');
+}
+
+describe('HabitsView heatmap legend and text summary', () => {
+  it('renders a visible less-to-more legend matching the grid shades', async () => {
+    const mounted = await mountHabits(1);
+    const legend = Array.from(mounted.host.querySelectorAll('div')).find(
+      (el) => el.textContent?.includes('Less') && el.textContent?.includes('More'),
+    );
+    expect(legend).toBeDefined();
+    expect(legend!.textContent).toContain('Less');
+    expect(legend!.textContent).toContain('More');
+
+    const swatches = legend!.querySelectorAll('span[class*="h-3.5"]');
+    expect(swatches).toHaveLength(5);
+    expect(swatches[0].classList.contains('bg-border')).toBe(true);
+    expect(swatches[4].className).toContain('bg-emerald-600');
+    await unmount(mounted);
+  });
+
+  it('exposes every day as text in an accessible table', async () => {
+    const mounted = await mountHabits(1);
+    const table = heatmapTable(mounted.host);
+    expect(table).not.toBeNull();
+    // The wrapper, not the table, is the clipped 1px box: `sr-only` on the table itself would
+    // still let its min-content width push the document scroll width past the viewport.
+    const wrapper = table!.parentElement;
+    expect(wrapper?.className).toContain('sr-only');
+    expect(wrapper?.className).toContain('overflow-hidden');
+    expect(table!.querySelector('caption')?.textContent).toContain('Stretch');
+
+    expect(table!.querySelectorAll('thead th')).toHaveLength(DAYS / 7 + 1);
+    const rows = table!.querySelectorAll('tbody tr');
+    expect(rows).toHaveLength(7);
+    expect(Array.from(rows).map((row) => row.querySelector('th')?.textContent)).toEqual([
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ]);
+
+    const cells = Array.from(table!.querySelectorAll('tbody td'));
+    expect(cells).toHaveLength(DAYS);
+    expect(cells.every((cell) => cell.textContent === '0')).toBe(true);
+    await unmount(mounted);
+  });
+
+  it('reports completed occurrences in the table, not just as colour', async () => {
+    const mounted = await mountHabits(1);
+    const complete = await waitForMarkToday(mounted.host, 'Complete today');
+    await act(async () => {
+      complete.click();
+    });
+
+    let ones = 0;
+    for (let attempt = 0; attempt < 200; attempt++) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+      });
+      const cells = Array.from(mounted.host.querySelectorAll('table tbody td'));
+      ones = cells.filter((cell) => cell.textContent === '1').length;
+      if (ones === 1) break;
+    }
+    expect(ones).toBe(1);
+    await unmount(mounted);
+  });
+});
+
 describe('HabitsView weekStartsOn', () => {
   it('renders a Sunday-first heatmap when weekStartsOn is 0', async () => {
     const mounted = await mountHabits(0);

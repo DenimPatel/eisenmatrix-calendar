@@ -98,4 +98,30 @@ describe('AppShell', () => {
 
     await shell.unmount();
   });
+
+  it('exposes an addressable main landmark that the skip link can focus', async () => {
+    const shell = await mountShell();
+    const main = shell.main();
+
+    expect(main.id).toBe('main');
+    expect(main.getAttribute('tabindex')).toBe('-1');
+
+    // HashRouter owns the fragment, so the bypass must be a button, never `#main`.
+    expect(shell.host.querySelector('a[href="#main"]')).toBeNull();
+    const skip = shell.host.querySelector('button');
+    expect(skip?.textContent).toBe('Skip to content');
+    expect(skip?.getAttribute('type')).toBe('button');
+
+    // Visually hidden until focused.
+    expect(skip?.classList.contains('sr-only')).toBe(true);
+    expect(skip?.className).toContain('focus:not-sr-only');
+
+    main.scrollIntoView = () => {};
+    await act(async () => {
+      skip!.click();
+    });
+    expect(document.activeElement).toBe(main);
+
+    await shell.unmount();
+  });
 });

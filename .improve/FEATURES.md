@@ -1992,7 +1992,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** M    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 18
-- **Notes:** Source: `.improve/reports/discover3-features.md` (F4, S3, Impact 3/Reach 3/Confidence 4). Complements the IMP-099 light-mode fix.
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F4, S3, Impact 3/Reach 3/Confidence 4). Complements the IMP-099 light-mode fix. DONE 2026-10-18: shared `intensityClass()`; visible `Less → More` legend (`0–4+ completions per day`); per-habit `sr-only` table (caption + 12 week columns + full-weekday rows) exposing each day's count as text; new `weekdayFullLabels()`. Tests added; 563 green. Report: `.improve/reports/impl-IMP-124.md`.
 
 ### IMP-125 — Add a skip-to-content link and an addressable `<main>`
 - **Status:** DONE
@@ -2007,7 +2007,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 25
-- **Notes:** Source: `.improve/reports/discover3-features.md` (F5, S3, Impact 2/Reach 4/Confidence 5).
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F5, S3, Impact 2/Reach 4/Confidence 5). DONE 2026-10-18: `<main id="main" tabIndex={-1}>`; first focusable `Skip to content` button, `sr-only` until focused, `onClick` focuses `<main>` (no `#main` href, so the HashRouter route is preserved). jsdom focus test added; 563 green. Report: `.improve/reports/impl-IMP-124.md`.
 
 ### IMP-126 — Let habits be completed from the Today dashboard
 - **Status:** DONE
@@ -2055,7 +2055,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F8, S2, Impact 3/Reach 3/Confidence 4). NEEDS-HUMAN per instruction (product decision).
 
 ### IMP-129 — Replace `window.prompt` for a new shopping list with the app Dialog
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / consistency
 - **Type:** improvement
 - **Area / files:** `src/features/shopping/ShoppingView.tsx` (`:94-110`); contrast `src/features/settings/SettingsView.tsx` (`:365-389`)
@@ -2070,7 +2070,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-features.md` (F9, S2, Impact 3/Reach 3/Confidence 5).
 
 ### IMP-130 — Confirm destructive bulk and shopping actions before deleting
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / data safety
 - **Type:** improvement
 - **Area / files:** `src/features/list/ListView.tsx` (`:95-98`), `src/features/shopping/ShoppingView.tsx` (`:87-92`); contrast `src/features/settings/SettingsView.tsx` (`:381-389`)

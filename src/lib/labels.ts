@@ -69,6 +69,11 @@ export function weekdayLabels(weekStartsOn: 0 | 1): string[] {
   return [...WEEKDAY_LABELS.slice(weekStartsOn), ...WEEKDAY_LABELS.slice(0, weekStartsOn)];
 }
 
+/** Full weekday names rotated to the configured week start (0 = Sunday, 1 = Monday). */
+export function weekdayFullLabels(weekStartsOn: 0 | 1): string[] {
+  return [...WEEKDAY_FULL.slice(weekStartsOn), ...WEEKDAY_FULL.slice(0, weekStartsOn)];
+}
+
 export function statusClasses(status: ItemStatus): string {
   switch (status) {
     case 'done':

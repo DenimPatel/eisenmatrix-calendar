@@ -9,14 +9,47 @@ import { createItem } from '@/domain/itemFactory';
 import { expandOccurrences } from '@/domain/recurrence';
 import { habitStreak } from '@/domain/stats';
 import { toggleHabitOccurrence } from '@/domain/itemActions';
-import { addDays, endOfDay, formatISODate, startOfWeek, todayKey } from '@/lib/date';
+import {
+  addDays,
+  endOfDay,
+  formatDisplayDate,
+  formatISODate,
+  startOfWeek,
+  todayKey,
+} from '@/lib/date';
 import { cn } from '@/lib/cn';
-import { weekdayLabels } from '@/lib/labels';
+import { weekdayFullLabels, weekdayLabels } from '@/lib/labels';
 import { DEFAULT_SETTINGS } from '@/types/settings';
 import type { AppSettings, HabitItem, Item } from '@/types';
 
 const WEEKS = 12;
 const DAYS = WEEKS * 7;
+
+/** Shared shade mapping so the legend and the heatmap can never drift apart. */
+function intensityClass(intensity: number): string {
+  if (intensity <= 0) return 'bg-border';
+  if (intensity === 1) return 'bg-emerald-200 dark:bg-emerald-900';
+  if (intensity === 2) return 'bg-emerald-300 dark:bg-emerald-800';
+  if (intensity === 3) return 'bg-emerald-500 dark:bg-emerald-600';
+  return 'bg-emerald-600 dark:bg-emerald-400';
+}
+
+const INTENSITY_LEVELS = [0, 1, 2, 3, 4] as const;
+
+function HeatmapLegend() {
+  return (
+    <div className="mt-2 flex items-center gap-1.5 text-[10px] text-muted">
+      <span>Less</span>
+      <div className="flex items-center gap-0.5" aria-hidden="true">
+        {INTENSITY_LEVELS.map((level) => (
+          <span key={level} className={cn('h-3.5 w-3.5 rounded-sm', intensityClass(level))} />
+        ))}
+      </div>
+      <span>More</span>
+      <span className="ml-1">0&ndash;4+ completions per day</span>
+    </div>
+  );
+}
 
 export function HabitsView() {
   const items = useItems();
@@ -41,6 +74,11 @@ export function HabitsView() {
     for (let i = 0; i < DAYS; i++) out.push(addDays(windowStart, i));
     return out;
   }, [windowStart]);
+
+  const weekStarts = useMemo(
+    () => Array.from({ length: WEEKS }, (_, week) => days[week * 7]),
+    [days],
+  );
 
   const habitData = useMemo(
     () =>
@@ -136,41 +174,70 @@ export function HabitsView() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 overflow-x-auto">
-                  <div className="grid shrink-0 grid-rows-7 gap-1" aria-hidden="true">
-                    {weekdayLabels(weekStartsOn).map((label) => (
-                      <div
-                        key={label}
-                        className="flex h-3.5 w-5 items-center text-[10px] leading-none text-muted"
-                      >
-                        {label}
-                      </div>
-                    ))}
-                  </div>
-                  <div
-                    className="grid w-max grid-flow-col grid-rows-7 gap-1"
-                    role="img"
-                    aria-label={`${habit.title} completion heatmap`}
-                  >
-                    {days.map((day) => {
-                      const key = formatISODate(day);
-                      const count = doneByDay.get(key) ?? 0;
-                      const intensity = Math.min(4, count);
-                      return (
+                <div className="mt-4">
+                  <div className="flex items-start gap-2 overflow-x-auto">
+                    <div className="grid shrink-0 grid-rows-7 gap-1" aria-hidden="true">
+                      {weekdayLabels(weekStartsOn).map((label) => (
                         <div
-                          key={key}
-                          title={`${key}: ${count}`}
-                          className={cn(
-                            'h-3.5 w-3.5 rounded-sm',
-                            intensity === 0 && 'bg-border',
-                            intensity === 1 && 'bg-emerald-200 dark:bg-emerald-900',
-                            intensity === 2 && 'bg-emerald-300 dark:bg-emerald-800',
-                            intensity === 3 && 'bg-emerald-500 dark:bg-emerald-600',
-                            intensity >= 4 && 'bg-emerald-600 dark:bg-emerald-400',
-                          )}
-                        />
-                      );
-                    })}
+                          key={label}
+                          className="flex h-3.5 w-5 items-center text-[10px] leading-none text-muted"
+                        >
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                    <div
+                      className="grid w-max grid-flow-col grid-rows-7 gap-1"
+                      role="img"
+                      aria-label={`${habit.title} completion heatmap`}
+                    >
+                      {days.map((day) => {
+                        const key = formatISODate(day);
+                        const count = doneByDay.get(key) ?? 0;
+                        return (
+                          <div
+                            key={key}
+                            title={`${key}: ${count}`}
+                            className={cn('h-3.5 w-3.5 rounded-sm', intensityClass(count))}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <HeatmapLegend />
+
+                  {/* Same data as the shaded grid, exposed as text so colour is never the
+                      only encoding. The wrapper (not the table) is the clipped 1px box: a
+                      table's used width is its min-content width, so `sr-only` on the table
+                      itself would still push the document scroll width past the viewport. */}
+                  <div className="sr-only overflow-hidden">
+                    <table>
+                      <caption>
+                        {`${habit.title} completion heatmap. One column per week for the last ${WEEKS} weeks, one row per weekday. Each cell is the number of completed occurrences that day (0 to 4 or more).`}
+                      </caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Weekday</th>
+                          {weekStarts.map((week) => (
+                            <th key={formatISODate(week)} scope="col">
+                              {formatDisplayDate(week, 'MMM d')}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weekdayFullLabels(weekStartsOn).map((label, row) => (
+                          <tr key={label}>
+                            <th scope="row">{label}</th>
+                            {weekStarts.map((_, week) => {
+                              const key = formatISODate(days[week * 7 + row]);
+                              return <td key={key}>{doneByDay.get(key) ?? 0}</td>;
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>

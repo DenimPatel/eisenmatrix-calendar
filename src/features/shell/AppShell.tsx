@@ -95,6 +95,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setTheme(next);
   };
 
+  // HashRouter owns the fragment, so a `href="#main"` bypass link would clobber the
+  // active route. Move focus with a button instead and leave the hash untouched.
+  const focusMain = () => {
+    const main = document.getElementById('main');
+    if (!main) return;
+    main.focus();
+    main.scrollIntoView({ block: 'start' });
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -103,6 +112,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       onDragCancel={() => setActiveDrag(null)}
     >
       <div className="flex min-h-screen bg-bg text-fg">
+        <button
+          type="button"
+          onClick={focusMain}
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-accent-fg focus:shadow-lg"
+        >
+          Skip to content
+        </button>
         {/* Desktop nav rail */}
         <aside
           className={cn(
@@ -209,7 +225,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Bottom padding tracks the mobile bar's measured grid height and the home-indicator
               inset it reserves, so the last content never ends up under the bar. */}
-          <main className="mx-auto w-full max-w-[1600px] flex-1 p-3 pb-[calc(var(--mobile-nav-h,7rem)+env(safe-area-inset-bottom)+1.75rem)] sm:p-5 sm:pb-6">
+          <main
+            id="main"
+            tabIndex={-1}
+            className="mx-auto w-full max-w-[1600px] flex-1 p-3 pb-[calc(var(--mobile-nav-h,7rem)+env(safe-area-inset-bottom)+1.75rem)] sm:p-5 sm:pb-6"
+          >
             {children}
           </main>
         </div>
