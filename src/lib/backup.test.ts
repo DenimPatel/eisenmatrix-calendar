@@ -8,6 +8,7 @@ import {
   timestampedName,
 } from './backup';
 import { createItem, normalizeItem } from '@/domain/itemFactory';
+import { expandOccurrences } from '@/domain/recurrence';
 import type { Item } from '@/types';
 
 function item(id: string, title: string): Item {
@@ -106,6 +107,52 @@ describe('backup', () => {
   it('counts an item without an id as invalid', () => {
     const parsed = parseBackup(
       JSON.stringify({ app: 'eisenmatrix', version: 2, items: [{ kind: 'task', title: 'No id' }] }),
+    );
+
+    expect(parsed.invalid).toBe(1);
+    expect(parsed.items).toEqual([]);
+  });
+
+  it('coerces a malformed recurrence rule into a complete rule that expands without throwing', () => {
+    const parsed = parseBackup(
+      JSON.stringify({
+        app: 'eisenmatrix',
+        version: 2,
+        items: [
+          {
+            id: 'rec-1',
+            kind: 'task',
+            title: 'Weekly',
+            start: '2024-01-01',
+            recurrence: { freq: 'weekly' },
+          },
+        ],
+      }),
+    );
+
+    expect(parsed.invalid).toBe(0);
+    const [item] = parsed.items.map(normalizeItem);
+    expect(item.recurrence).toEqual({
+      freq: 'weekly',
+      interval: 1,
+      weekStartsOn: 1,
+      exceptions: [],
+      overrides: {},
+    });
+
+    const from = new Date('2024-01-01T00:00:00');
+    const to = new Date('2024-01-07T23:59:59');
+    expect(() => expandOccurrences(item, from, to)).not.toThrow();
+    expect(expandOccurrences(item, from, to).map((o) => o.occKey)).toEqual(['2024-01-01']);
+  });
+
+  it('counts an item whose recurrence has an unknown frequency as invalid', () => {
+    const parsed = parseBackup(
+      JSON.stringify({
+        app: 'eisenmatrix',
+        version: 2,
+        items: [{ id: 'rec-2', kind: 'task', title: 'Hourly', recurrence: { freq: 'hourly' } }],
+      }),
     );
 
     expect(parsed.invalid).toBe(1);

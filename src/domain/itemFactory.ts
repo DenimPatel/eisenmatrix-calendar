@@ -1,5 +1,5 @@
 import { newId } from '@/lib/id';
-import { coerceItemShape, isPlainObject } from '@/lib/itemValidation';
+import { coerceItemShape, coerceRecurrence, isPlainObject } from '@/lib/itemValidation';
 import type { BaseItem, Item, ItemKind, Priority } from '@/types';
 
 export function defaultDataFor(kind: ItemKind): Item['data'] {
@@ -112,7 +112,8 @@ export function isRecurringKind(kind: ItemKind): boolean {
 }
 
 function normalizeRecurrence(value: unknown): BaseItem['recurrence'] {
-  return isPlainObject(value) ? (value as unknown as BaseItem['recurrence']) : null;
+  const result = coerceRecurrence(value);
+  return result.ok ? result.rule : null;
 }
 
 /** Coerce a partial/imported item into a fully-formed Item without losing fields. */

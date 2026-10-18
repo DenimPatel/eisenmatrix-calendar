@@ -1772,7 +1772,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#1, S2, Impact 3/Reach 3/Confidence 5).
 
 ### IMP-111 — Validate recurrence rules at the import/normalize seam
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / import
 - **Type:** bug-fix
 - **Area / files:** `src/domain/itemFactory.ts` (`:114-116`), `src/lib/itemValidation.ts` (`:46-58`), `src/domain/recurrence.ts` (`:42-43,57-68,96-119,195,267`), `src/lib/csv.ts` (`:168`), `src/lib/backup.ts` (`:76`)

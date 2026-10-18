@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { csvToItems, itemsToCSV, parseCSV, toCSV } from './csv';
 import { createItem } from '@/domain/itemFactory';
 import { normalizeItem } from '@/domain/itemFactory';
+import { expandOccurrences } from '@/domain/recurrence';
 
 describe('csv', () => {
   it('parses multi-line quoted fields without corrupting records', () => {
@@ -114,5 +115,50 @@ describe('csv', () => {
     const result = csvToItems(itemsToCSV([]));
     expect(result.items).toEqual([]);
     expect(result.skippedBlank).toBe(0);
+  });
+
+  it('coerces an imported recurrence rule into a complete rule that expands without burning the guard', () => {
+    const csv = toCSV([
+      {
+        id: 'rec-1',
+        kind: 'task',
+        title: 'Weekly standup',
+        start: '2024-01-01',
+        recurrence: { freq: 'weekly' },
+      },
+    ]);
+
+    const result = csvToItems(csv);
+    expect(result.invalid).toBe(0);
+    const [item] = result.items.map(normalizeItem);
+
+    expect(item.recurrence).toEqual({
+      freq: 'weekly',
+      interval: 1,
+      weekStartsOn: 1,
+      exceptions: [],
+      overrides: {},
+    });
+
+    const from = new Date('2024-01-01T00:00:00');
+    const to = new Date('2024-01-07T23:59:59');
+    expect(() => expandOccurrences(item, from, to)).not.toThrow();
+    expect(expandOccurrences(item, from, to).map((o) => o.occKey)).toEqual(['2024-01-01']);
+  });
+
+  it('rejects an imported row whose recurrence has an unknown frequency', () => {
+    const csv = toCSV([
+      {
+        id: 'rec-2',
+        kind: 'task',
+        title: 'Hourly',
+        start: '2024-01-01',
+        recurrence: { freq: 'hourly' },
+      },
+    ]);
+
+    const result = csvToItems(csv);
+    expect(result.invalid).toBe(1);
+    expect(result.items).toEqual([]);
   });
 });

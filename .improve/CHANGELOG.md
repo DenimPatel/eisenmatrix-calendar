@@ -75,3 +75,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-097 · Concurrent occurrence skip/edit no longer drop sibling edits
 - 2026-10-18 · IMP-046 · Agent guide is tracked as AGENTS.md and README links to it
 - 2026-10-18 · IMP-110 · Reminders set 'N before' crossing midnight now fire at their true time
+- 2026-10-18 · IMP-111 · Malformed imported recurrence rules are coerced or rejected instead of throwing or expanding wrongly

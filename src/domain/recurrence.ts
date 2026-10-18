@@ -54,16 +54,17 @@ function* candidateDates(rule: RecurrenceRule, seriesStart: Date): Generator<Dat
   }
 
   if (rule.freq === 'weekly') {
+    const weekStartsOn = rule.weekStartsOn ?? 1;
     const weekdays = (
       rule.byWeekday && rule.byWeekday.length ? [...rule.byWeekday] : [seriesStart.getDay()]
     )
       .map((d) => ((d % 7) + 7) % 7)
       .sort((a, b) => a - b);
-    let weekStart = startOfWeek(base, rule.weekStartsOn);
+    let weekStart = startOfWeek(base, weekStartsOn);
     while (guard++ < MAX_ITERATIONS) {
       const dates: Date[] = [];
       for (const wd of weekdays) {
-        const offset = (wd - rule.weekStartsOn + 7) % 7;
+        const offset = (wd - weekStartsOn + 7) % 7;
         const candidate = addDays(weekStart, offset);
         if (candidate.getTime() >= base.getTime()) dates.push(candidate);
       }
@@ -93,7 +94,8 @@ function* candidateDates(rule: RecurrenceRule, seriesStart: Date): Generator<Dat
     return;
   }
 
-  // yearly
+  // yearly — only for an explicit `yearly` freq; an unknown value must not fall through here.
+  if (rule.freq !== 'yearly') return;
   const months = (
     rule.byMonth && rule.byMonth.length ? [...rule.byMonth] : [seriesStart.getMonth() + 1]
   )
@@ -192,7 +194,7 @@ export interface ResolvedOccurrenceStatus {
  * has no state of its own, and every status write erases it (`setStatus`).
  */
 export function resolveOccurrenceStatus(item: Item, occKey: string): ResolvedOccurrenceStatus {
-  const override = item.recurrence?.overrides[occKey];
+  const override = item.recurrence?.overrides?.[occKey];
   const isOverride = override !== undefined;
   const state = item.occurrences[occKey];
   if (state) return { status: state.status, completedAt: state.completedAt, isOverride };
@@ -204,13 +206,13 @@ export function resolveOccurrenceStatus(item: Item, occKey: string): ResolvedOcc
 
 /** Effective title of one occurrence: its retitle override when present, else the series title. */
 export function resolveOccurrenceTitle(item: Item, occKey: string): string {
-  return item.recurrence?.overrides[occKey]?.title ?? item.title;
+  return item.recurrence?.overrides?.[occKey]?.title ?? item.title;
 }
 
 function buildOccurrence(item: Item, date: Date): Occurrence {
   const rule = item.recurrence;
   const occKey = toOccKey(date);
-  const override: OccurrenceOverride | undefined = rule?.overrides[occKey];
+  const override: OccurrenceOverride | undefined = rule?.overrides?.[occKey];
   const start = occurrenceStart(item, date, override?.start);
   const allDay = override?.allDay ?? (item.allDay || !hasTimeComponent(start));
   const end = occurrenceEnd(item, start, allDay, override?.end);
@@ -264,7 +266,7 @@ export function expandOccurrences(item: Item, from: Date, to: Date): Occurrence[
     if (day > toDay) break;
     if (day < fromDay) continue;
     const occKey = toOccKey(candidate);
-    if (rule.exceptions.includes(occKey)) continue;
+    if ((rule.exceptions ?? []).includes(occKey)) continue;
     results.push(buildOccurrence(item, candidate));
   }
 

@@ -1,5 +1,17 @@
 import { ITEM_KINDS, ITEM_STATUSES } from '@/types';
-import type { ChecklistEntry, Item, ItemKind, ItemStatus, Priority, Reminder } from '@/types';
+import type {
+  ChecklistEntry,
+  Frequency,
+  Item,
+  ItemKind,
+  ItemStatus,
+  OccurrenceOverride,
+  Priority,
+  RecurrenceRule,
+  Reminder,
+} from '@/types';
+
+const RECURRENCE_FREQUENCIES: Frequency[] = ['daily', 'weekly', 'monthly', 'yearly'];
 
 export function isItemKind(value: unknown): value is ItemKind {
   return typeof value === 'string' && (ITEM_KINDS as string[]).includes(value);
@@ -31,6 +43,61 @@ function asOccurrences(value: unknown): Item['occurrences'] {
   return isPlainObject(value) ? (value as Item['occurrences']) : {};
 }
 
+function asNumberArray(value: unknown): number[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is number => typeof entry === 'number' && Number.isFinite(entry))
+    : [];
+}
+
+function asOverrides(value: unknown): Record<string, OccurrenceOverride> {
+  if (!isPlainObject(value)) return {};
+  const out: Record<string, OccurrenceOverride> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (isPlainObject(entry)) out[key] = entry as OccurrenceOverride;
+  }
+  return out;
+}
+
+function isFrequency(value: unknown): value is Frequency {
+  return typeof value === 'string' && (RECURRENCE_FREQUENCIES as string[]).includes(value);
+}
+
+export type RecurrenceCoercion =
+  { ok: true; rule: RecurrenceRule | null } | { ok: false; reason: string };
+
+/**
+ * Coerce an untrusted value into a complete `RecurrenceRule`. An absent or non-object value
+ * becomes `null` (no recurrence); a rule with an unknown/missing `freq` is flagged so the
+ * importing seam can reject the row instead of letting it fall through to the yearly branch.
+ */
+export function coerceRecurrence(value: unknown): RecurrenceCoercion {
+  if (value === undefined || value === null || !isPlainObject(value)) {
+    return { ok: true, rule: null };
+  }
+  if (!isFrequency(value.freq)) {
+    return { ok: false, reason: `invalid recurrence frequency "${String(value.freq)}"` };
+  }
+  const interval = typeof value.interval === 'number' ? value.interval : Number(value.interval);
+  const rule: RecurrenceRule = {
+    freq: value.freq,
+    interval: Number.isFinite(interval) && interval >= 1 ? Math.floor(interval) : 1,
+    weekStartsOn: value.weekStartsOn === 0 ? 0 : 1,
+    exceptions: asStringArray(value.exceptions),
+    overrides: asOverrides(value.overrides),
+  };
+  const byWeekday = asNumberArray(value.byWeekday);
+  if (byWeekday.length) rule.byWeekday = byWeekday;
+  const byMonthDay = asNumberArray(value.byMonthDay);
+  if (byMonthDay.length) rule.byMonthDay = byMonthDay;
+  const byMonth = asNumberArray(value.byMonth);
+  if (byMonth.length) rule.byMonth = byMonth;
+  if (typeof value.count === 'number' && Number.isFinite(value.count) && value.count >= 0) {
+    rule.count = Math.floor(value.count);
+  }
+  if (typeof value.until === 'string' || value.until === null) rule.until = value.until;
+  return { ok: true, rule };
+}
+
 export interface ItemShape {
   kind: ItemKind;
   status: ItemStatus;
@@ -40,11 +107,13 @@ export interface ItemShape {
   tags: string[];
   checklist: ChecklistEntry[];
   occurrences: Item['occurrences'];
+  recurrence: RecurrenceRule | null;
 }
 
 /** Coerce the untrusted parts of an item into their expected runtime types. */
 export function coerceItemShape(input: unknown): ItemShape {
   const source = isPlainObject(input) ? input : {};
+  const recurrence = coerceRecurrence(source.recurrence);
   return {
     kind: isItemKind(source.kind) ? source.kind : 'task',
     status: isItemStatus(source.status) ? source.status : 'todo',
@@ -54,6 +123,7 @@ export function coerceItemShape(input: unknown): ItemShape {
     tags: asStringArray(source.tags),
     checklist: asObjectArray<ChecklistEntry>(source.checklist),
     occurrences: asOccurrences(source.occurrences),
+    recurrence: recurrence.ok ? recurrence.rule : null,
   };
 }
 
@@ -65,5 +135,7 @@ export function validateItem(input: unknown): ItemValidation {
   if (typeof input.id !== 'string' || input.id.trim() === '') {
     return { ok: false, reason: 'missing id' };
   }
+  const recurrence = coerceRecurrence(input.recurrence);
+  if (!recurrence.ok) return { ok: false, reason: recurrence.reason };
   return { ok: true, shape: coerceItemShape(input) };
 }

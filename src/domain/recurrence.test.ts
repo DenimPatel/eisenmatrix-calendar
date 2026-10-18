@@ -102,6 +102,48 @@ describe('expandOccurrences', () => {
     expect(keys(item, '2024-01-01', '2024-01-03')).toEqual(['2024-01-01', '2024-01-03']);
   });
 
+  it('expands a weekly rule without weekStartsOn using the Monday default', () => {
+    const item = makeItem('2024-01-01');
+    item.recurrence = {
+      freq: 'weekly',
+      interval: 1,
+      byWeekday: [1, 3],
+      exceptions: [],
+      overrides: {},
+    } as unknown as RecurrenceRule;
+
+    expect(keys(item, '2024-01-01', '2024-01-07')).toEqual(['2024-01-01', '2024-01-03']);
+  });
+
+  it('does not throw for a rule lacking exceptions and overrides', () => {
+    const item = makeItem('2024-01-01');
+    item.recurrence = {
+      freq: 'daily',
+      interval: 1,
+      weekStartsOn: 1,
+    } as unknown as RecurrenceRule;
+
+    expect(() => keys(item, '2024-01-01', '2024-01-03')).not.toThrow();
+    expect(keys(item, '2024-01-01', '2024-01-03')).toEqual([
+      '2024-01-01',
+      '2024-01-02',
+      '2024-01-03',
+    ]);
+  });
+
+  it('never expands an unknown frequency as yearly', () => {
+    const item = makeItem('2024-01-01');
+    item.recurrence = {
+      freq: 'hourly',
+      interval: 1,
+      weekStartsOn: 1,
+      exceptions: [],
+      overrides: {},
+    } as unknown as RecurrenceRule;
+
+    expect(keys(item, '2024-01-01', '2026-12-31')).toEqual([]);
+  });
+
   it('applies overrides for a single occurrence', () => {
     const item = makeItem('2024-01-01', {
       freq: 'daily',
