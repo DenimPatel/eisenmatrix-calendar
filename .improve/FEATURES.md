@@ -1566,3 +1566,580 @@ _Second pass (absorbed from `.improve/reports/discovered-IMP-*.md`, promoted as 
 _Third pass (2026-10-05, re-read of all 27 `discovered-IMP-*.md` reports against the current source; promoted as IMP-069…IMP-086, 18 items, no new NEEDS-HUMAN): editor-created items missing undo; habits created outside quick add still rule-less; a missing `data` payload crashing the editor; unrecognized JSON/CSV imports reporting success; leftover `every`/second weekday/eager lone-weekday consumption in quick add; floating-vs-UTC `UNTIL` and the `dateOnlyStart` default in ICS; multi-day all-day export without `DTEND`; `setStatus` read-modify-write on the caller's occurrence map; the editor seeding occurrence fields from the series row and writing the override with the series date; a daily habit listed twice on Today; one Escape closing every stacked overlay; the uncaught `rerunMigration` rejection; full-SHA pinning of GitHub Actions; empty/inverted split tails; a smoke test that cannot see boot effects plus a doubled CI test run; `parentId` remapping for non-colliding incoming children; the unrendered occurrence `title` override; and undelivered reminders being dropped silently while the digest re-expands each tick. Findings from those reports already fixed by DONE items were **not** re-proposed: the preview service-worker/hash-navigation trap (IMP-065), `pickFile` outside the `try` (fixed by IMP-015's implementation), the `overrides[key].status` shadowing the card checkbox (fixed by IMP-016's `withoutOverrideStatus`), the no-op "Occurrence updated" toast (fixed in `handleSave`), the already-noted "Nothing to update" path, the shared-SW observation of `data.streak` (an IMP-050 criterion), and IMP-017's phrasal-particle trimming, which stays BLOCKED and was not re-proposed in any form. Still below the cut from the same reports: the quick-add anchor/`dueAt` mismatch for `byWeekday`/`byMonthDay` rules (superseded by IMP-077's editor-display finding), `on the 0th`/`45th` tokens surviving in the title (IMP-011 AC3 makes that intended), the ambiguous month-day-plus-weekday input, `data.streak` as a write-only denormalized field (removing it would revert IMP-050 AC2), `buildHistory`'s whole-`data` diffs, the tail's wholesale copy of `exceptions`/`overrides`, same-id rows collapsing under `duplicate`, `lists` being unvalidated on import (IMP-038), a raw-IndexedDB write being invisible to `useLiveQuery` and Node 25's `localStorage` stub (both verification notes), the headless-Chromium `requestPermission` trap, and the one-frame settings default render seen by Sunday-start users (cosmetic, and the fix is architectural)._
 
 _Rejected during critic review (not checkable / premise false / not a defect): the former history-blob item (`buildHistory` already skips `occurrences` at `itemActions.ts:32`), the former hardcoded-color item (badge classes in `labels.ts` already carry `dark:` variants; `bg-white` is a cosmetic knob only), and the former "reset all data" item (the confirm copy already enumerates exactly the tables it clears). The former standalone `npm ci` item was merged into IMP-005._
+
+### IMP-098 — Give the Lists table a dedicated status/date column so neither wraps
+- **Status:** TODO
+- **Category:** visual / layout
+- **Type:** bug-fix
+- **Area / files:** `src/features/list/ListView.tsx` (header grid `:274`, row grid `:337`, status+date cell `:380-390`)
+- **Intent:** The desktop header declares `grid-cols-[2rem_1fr_7rem_7rem_6rem]` with only four labelled columns, while every body row renders the status pill and the date together in the 96px fifth cell, so at 1280px "To Do" wraps to `To`/`Do`, the date wraps, and an "In Progress" pill overflows into the date.
+- **Acceptance criteria:**
+  1. Every header cell has a matching, equally wide body cell in the desktop table.
+  2. The status pill and the date each own a grid track and neither wraps at 1280px, in light and dark.
+  3. No cell's content exceeds its track width.
+- **Verification method:** Playwright at 1280×800 on Lists with a seeded `doing` item; assert the row `gridTemplateColumns` matches the header and each cell's `scrollWidth <= clientWidth`; screenshot both themes. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V1, S2, Impact 3/Reach 5/Confidence 5).
+
+### IMP-099 — Make empty habit-heatmap cells visible in light mode
+- **Status:** TODO
+- **Category:** visual / contrast
+- **Type:** bug-fix
+- **Area / files:** `src/features/habits/HabitsView.tsx` (`:166` `intensity === 0 && 'bg-elevated'`, heatmap `:140-175`), `src/styles/index.css` (`--elevated`/`--surface`)
+- **Intent:** In light mode `--elevated` and `--surface` are both `255 255 255`, so all 84 heatmap cells match the surrounding card and the 12-week grid is invisible on a habit with no completions.
+- **Acceptance criteria:**
+  1. In light mode an empty heatmap cell is visually distinguishable from the card background (measurably different computed background, or a border).
+  2. The full 12×7 grid is visible in both themes for a habit with no completions.
+  3. Dark-mode appearance is unchanged.
+- **Verification method:** Playwright measure the computed `backgroundColor` of a cell versus the card in light and dark (or assert a border); screenshot both themes. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V2, S2, Impact 4/Reach 3/Confidence 5).
+
+### IMP-100 — Enlarge the item completion toggle and calendar day "add" to accessible tap targets
+- **Status:** TODO
+- **Category:** accessibility / UX
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemCard.tsx` (`:82` `h-4 w-4`), `src/features/calendar/CalendarView.tsx` (`:205-212`), `src/components/ui/Button.tsx` (`:24` `icon: 'h-9 w-9'`)
+- **Intent:** At 390×844 the item-card completion toggle and the calendar day add both measure 16×16, below the WCAG 2.5.8 AA 24×24 minimum and far below the 44×44 guideline; header icons are 36×36 and the `Today`/segments are shorter still.
+- **Acceptance criteria:**
+  1. Every interactive control in the ten routes has a hit area ≥24×24 at 390px.
+  2. The item-card completion toggle and the calendar day add each measure ≥44×44 including padding.
+  3. A target-size probe reports no control under 24px.
+- **Verification method:** Playwright target-size probe at 390×844 across routes; assert the minimums. Run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V3, S2, Impact 4/Reach 5/Confidence 5).
+
+### IMP-101 — Show a first-run create CTA in the Lists empty state instead of "No items match"
+- **Status:** TODO
+- **Category:** UX / onboarding
+- **Type:** bug-fix
+- **Area / files:** `src/features/list/ListView.tsx` (`:395-418`)
+- **Intent:** The single `filtered.length === 0` branch renders "No items match / Reset filters" even on a zero-data first run with no filters, where Reset does nothing; every other first-run view offers a create-first-item CTA.
+- **Acceptance criteria:**
+  1. With zero items and no active filter, Lists shows a first-run empty state whose primary action creates an item.
+  2. "No items match / Reset filters" appears only when at least one filter is active.
+  3. Both states are covered by a test.
+- **Verification method:** Extend `ListView` tests for the zero-data and filtered-empty cases; Playwright on a fresh DB asserts the create CTA. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (U1, S2, Impact 4/Reach 4/Confidence 5).
+
+### IMP-102 — Make "What's next" prefer timed, actionable occurrences
+- **Status:** TODO
+- **Category:** UX / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/features/today/TodayView.tsx` (`:79-81`)
+- **Intent:** `nextUp` sorts today's occurrences by `(a.start ?? a.occKey).localeCompare(...)`, so an all-day item (date-only) sorts before any timed item and a non-actionable note can win the banner while a 09:00 task sits in the agenda below.
+- **Acceptance criteria:**
+  1. The banner never promotes an untimed item while a timed occurrence is still pending today.
+  2. Non-actionable kinds (`note`) are excluded or explicitly labelled.
+  3. When only all-day items remain, the banner shows the item without implying a time.
+- **Verification method:** Unit-test the `nextUp` selection with an all-day note plus a 09:00 task; Playwright with the same seeded data. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (U2, S2, Impact 4/Reach 4/Confidence 4).
+
+### IMP-103 — Add a "+N more" affordance to truncated Today sidebar sections
+- **Status:** TODO
+- **Category:** UX / information loss
+- **Type:** improvement
+- **Area / files:** `src/features/today/TodayView.tsx` (`:75`, `:126`, `:248`)
+- **Intent:** Sidebar sections slice to 6/6/4 rows with no "+N more" control, so the badge count (e.g. "Overdue 7") disagrees with the rendered rows (6); the calendar already solved this with IMP-053, so Today is inconsistent.
+- **Acceptance criteria:**
+  1. A section that hides rows shows a "+N more" control that reveals them or navigates to the full view.
+  2. The badge count always equals the number of reachable items.
+  3. Verified for Overdue, Bills due soon and Goal progress.
+- **Verification method:** Playwright with more than the cap of seeded items; assert badge versus rows and the more-control. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-053
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (U3, S3, Impact 3/Reach 3/Confidence 5).
+
+### IMP-104 — Widen the daily-digest time input so the AM/PM indicator is not clipped
+- **Status:** TODO
+- **Category:** visual / accessibility
+- **Type:** bug-fix
+- **Area / files:** `src/features/settings/SettingsView.tsx` (`:283-288` `className="input w-28"`)
+- **Intent:** `w-28` leaves ~88px after `px-3` for a native `<input type="time">`, so Chromium renders `08:00 A` with the clock icon overlapping the truncated `M` at both 1280px and 390px.
+- **Acceptance criteria:**
+  1. The digest time input renders the full `HH:mm AM/PM` string with no clipping or icon overlap at 1280px and 390px, light and dark.
+  2. The input has an explicit accessible label.
+- **Verification method:** Playwright assert the input's `scrollWidth <= clientWidth` at both widths and its accessible name. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V4, S3, Impact 2/Reach 3/Confidence 5). Overlaps IMP-121 for the label half.
+
+### IMP-105 — Keep header CTAs on one line at 390px across Goals/Bills/Habits/Notes
+- **Status:** TODO
+- **Category:** visual / responsive
+- **Type:** improvement
+- **Area / files:** `src/features/goals/GoalsView.tsx` (`:49`); compare `src/features/today/TodayView.tsx` (`:88`)
+- **Intent:** At 390px the long Goals subtitle squeezes the CTA so "New goal" wraps to two lines inside a 97×32 button; Today already guards this with `flex-wrap … gap-3`, and the same pattern is needed on the other list views.
+- **Acceptance criteria:**
+  1. At 390px the Goals CTA label stays on one line (no wrap or shrink below its content).
+  2. The same guard is applied consistently to the Bills, Habits and Notes headers.
+- **Verification method:** Playwright at 390px asserts a single-line CTA label on all four views. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V5, S3, Impact 2/Reach 3/Confidence 5).
+
+### IMP-106 — Stop Matrix quadrants reserving dead space that detaches the Add button
+- **Status:** TODO
+- **Category:** visual / spacing
+- **Type:** improvement
+- **Area / files:** `src/features/matrix/MatrixView.tsx` (`:65` `min-h-[16rem] flex-col`, `:81` `flex-1`)
+- **Intent:** Each quadrant is `min-h-[16rem]` with a `flex-1` list, so with one item the `+ Add` button is pushed ~100px below the last card, leaving a large empty gap and inconsistent spacing between quadrants.
+- **Acceptance criteria:**
+  1. The Add control sits directly after the last item regardless of item count, or the reserved space is visually filled.
+  2. Quadrant spacing is consistent across all four quadrants at 1280px and 390px.
+- **Verification method:** Playwright measure the gap between the last card and the Add control in each quadrant at both widths. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V6, S3, Impact 2/Reach 4/Confidence 4).
+
+### IMP-107 — Name the local database, not "local storage", in the boot failure toast
+- **Status:** TODO
+- **Category:** UX / error copy
+- **Type:** bug-fix
+- **Area / files:** `src/App.tsx` (`:48-50`), `src/lib/bootFailure.ts` (`:5-6`)
+- **Intent:** A database-open failure reuses `STORAGE_UNAVAILABLE_MESSAGE`, so a user with blocked/unavailable IndexedDB (private mode, storage partitioning) is told "Local storage is unavailable" and told to fix the wrong API.
+- **Acceptance criteria:**
+  1. A database-open failure produces a message that names the local database (not "local storage").
+  2. The message is shown only when persistence is genuinely unavailable.
+  3. The copy is asserted by a test on the `reportBootFailure` call sites.
+- **Verification method:** Unit-test the boot-failure mapping; Playwright with IndexedDB unavailable but localStorage working asserts the toast text. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (U4, S3, Impact 2/Reach 3/Confidence 5).
+
+### IMP-108 — Use the shared empty-state pattern in Today's sidebar sections
+- **Status:** TODO
+- **Category:** visual / consistency
+- **Type:** improvement
+- **Area / files:** `src/features/today/TodayView.tsx` (`:221`, `:241`, `:265`)
+- **Intent:** First-run Today shows "No habits yet." / "No bills due this week." / "No goals yet." as bare `text-sm text-muted` paragraphs, while the same features use the shared `EmptyState` (icon + title + description + CTA) on their own routes.
+- **Acceptance criteria:**
+  1. The three Today sidebar sections use the same empty-state pattern as their feature routes (or a documented compact variant).
+  2. At least the Habits and Goals empty states offer a create action.
+- **Verification method:** Extend the Today tests; Playwright first-run screenshots compared against the feature routes. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V7, S3, Impact 2/Reach 3/Confidence 4).
+
+### IMP-109 — Enforce a documented minimum size for badges, pills and calendar chips
+- **Status:** TODO
+- **Category:** visual / legibility
+- **Type:** improvement
+- **Area / files:** `src/features/list/ListView.tsx` (`:361`, `:383`), `src/features/habits/HabitsView.tsx` (`:145`), `src/features/calendar/CalendarView.tsx` (`:222`, `:239`, `:354`, `:366`), `src/features/item/ItemCard.tsx` (`:129`, `:134`)
+- **Intent:** Badges, status pills, weekday labels and calendar chips render at 10–11px with no documented minimum; combined with the cramped status column the pill is unreadable and month chips shrink to `Ov…`/`14:…` at 390px.
+- **Acceptance criteria:**
+  1. A documented minimum label size (≥11px, ideally ≥12px) is applied to kind badges, status pills, weekday labels and calendar chips.
+  2. Status/kind labels remain on one line at 1280px.
+  3. Contrast of the smallest text passes AA against its background.
+- **Verification method:** Playwright measure computed font sizes and contrast ratios and assert the documented minimum. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-visual.md` (V8, S3, Impact 2/Reach 5/Confidence 4).
+
+### IMP-110 — Evaluate a reminder's fire time outside the occurrence's own day window
+- **Status:** TODO
+- **Category:** correctness / reminders
+- **Type:** bug-fix
+- **Area / files:** `src/domain/reminders.ts` (`:48-68`, esp. `:56`, `:61`), `src/pwa/ReminderRuntime.tsx` (`:101-105`)
+- **Intent:** `upcomingReminders` expands occurrences only inside the fire-time window `[from,to]` and `expandOccurrences` floors `from` to midnight, so a negative offset whose fire time lands on an earlier calendar day is never computed and is delivered at 00:00 of the occurrence day (the "1 day before" preset fires ~15h late).
+- **Acceptance criteria:**
+  1. A reminder's fire time is evaluated for every occurrence whose fire time falls in `[from,to]`, including fire times on days before the occurrence day.
+  2. The `-1440` repro is returned by the window whose `to` is the fire time (Jan 4 09:00:30) and is not first returned at Jan 5 00:00.
+  3. Same-day offsets and `timeOfDay` reminders keep their current timing; the returned list stays sorted by `fireAt`.
+- **Verification method:** Add a fake-timer test using `LOOKBACK_MS` from `src/pwa/delivery.ts` asserting the `-1440`/`-600` repros and unchanged same-day cases. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#1, S2, Impact 3/Reach 3/Confidence 5).
+
+### IMP-111 — Validate recurrence rules at the import/normalize seam
+- **Status:** TODO
+- **Category:** correctness / import
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemFactory.ts` (`:114-116`), `src/lib/itemValidation.ts` (`:46-58`), `src/domain/recurrence.ts` (`:42-43,57-68,96-119,195,267`), `src/lib/csv.ts` (`:168`), `src/lib/backup.ts` (`:76`)
+- **Intent:** `normalizeRecurrence` is a passthrough, so an imported rule can throw (`rule.exceptions.includes`), silently expand to nothing (missing `weekStartsOn` → `NaN` plus a 200k-iteration burn), or fall through to yearly for an unknown `freq`.
+- **Acceptance criteria:**
+  1. A rule crossing the import/normalize seam is coerced to a complete `RecurrenceRule` (`freq` ∈ the four known values, numeric `interval ≥ 1`, `weekStartsOn ∈ {0,1}`, `exceptions: []`, `overrides: {}`), or the row is rejected/flagged like an invalid item.
+  2. `expandOccurrences` does not throw for a rule lacking `exceptions`/`overrides`.
+  3. A weekly rule without `weekStartsOn` expands using the default (Monday) instead of returning `[]`.
+  4. An unknown `freq` never silently expands as yearly.
+- **Verification method:** Unit tests importing malformed rules through `csvToItems`/`parseBackup`; assert the coerced shape, no throw, and no iteration burn. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#2, S2, Impact 4/Reach 2/Confidence 5).
+
+### IMP-112 — Never emit COUNT and UNTIL in the same RRULE after a "this and future" split
+- **Status:** TODO
+- **Category:** correctness / ICS
+- **Type:** bug-fix
+- **Area / files:** `src/lib/ics.ts` (`:74-79`), `src/domain/recurrence.ts` (`:424-428`)
+- **Intent:** `splitSeries` stops the head with `until` while keeping the original `count`, so `recurrenceToRRule` writes `COUNT=5;UNTIL=…` into one RRULE, which RFC 5545 §3.3.10 forbids; importers reject or misread it, and a split is the normal "This and future" flow.
+- **Acceptance criteria:**
+  1. `recurrenceToRRule` never emits `COUNT` and `UNTIL` together (emit the tighter bound, or drop `UNTIL` when `count` is present).
+  2. A split head's `count`/`until` combination survives the ICS round trip as one bound.
+  3. A test asserts the head RRULE contains at most one of `COUNT=`/`UNTIL=`.
+- **Verification method:** Unit-test `splitSeries` + `recurrenceToRRule` with a count-limited series; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#3, S2, Impact 3/Reach 3/Confidence 5).
+
+### IMP-113 — Persist a recurrence-rule edit when scope is "This and future"
+- **Status:** TODO
+- **Category:** correctness / editor
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`:67-84`, `:210-231`), `src/domain/itemActions.ts` (`:411-421`)
+- **Intent:** `seriesPatch()` omits `recurrence`, so a rule edit made in the editor is dropped on both head and tail when scope is "This and future", while the toast still reports "Series split".
+- **Acceptance criteria:**
+  1. A rule edit is persisted when scope is "This and future" (the tail carries the edited rule; the head keeps the pre-split rule with its anchor fields).
+  2. A rule edit made while scope is "This occurrence" still does not touch the series.
+  3. A test covers an edited rule on "This and future" and asserts the persisted tail rule.
+- **Verification method:** Extend the editor and `itemActions` tests with an edit→future flow asserting the stored tail rule. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#4, S2, Impact 4/Reach 2/Confidence 5); promoted from `discovered-IMP-037` #3.
+
+### IMP-114 — Escape carriage returns in ICS text so CRLF notes do not corrupt content lines
+- **Status:** TODO
+- **Category:** correctness / ICS
+- **Type:** bug-fix
+- **Area / files:** `src/lib/ics.ts` (`:35-41` `escapeText`, used at `:105`, `:128-131`)
+- **Intent:** `escapeText` escapes `\`, `;`, `,` and `\n` but not `\r`, so a note pasted from Windows leaves a raw CR inside a content line, which RFC 5545 §3.3.11/§3.1 forbids.
+- **Acceptance criteria:**
+  1. `escapeText` normalises `\r\n`/`\r` to a single escaped `\n` before escaping, so no raw CR can reach the output.
+  2. A test exports an item whose `notes`/`title`/`location` contain CRLF and asserts the result has no CR other than the CRLF record separators.
+  3. No long-line folding regression (IMP-052 stays green).
+- **Verification method:** Unit-test `escapeText` and `itemsToICS` with CRLF payloads; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#5, S3, Impact 3/Reach 2/Confidence 5).
+
+### IMP-115 — Never export a DTEND earlier than DTSTART for a timed item
+- **Status:** TODO
+- **Category:** correctness / ICS
+- **Type:** bug-fix
+- **Area / files:** `src/lib/ics.ts` (`:133-144`), `src/features/item/ItemEditorSheet.tsx` (`:642-655`), `src/domain/recurrence.ts` (`:122-128`)
+- **Intent:** The End field is a free `datetime-local` input with no `> Start` validation and `itemsToICS` writes the stored end verbatim, so a VEVENT can carry `DTEND <= DTSTART` (RFC 5545 §3.8.2.2 violation) while the occurrence engine silently substitutes the start, so the card and the file disagree.
+- **Acceptance criteria:**
+  1. `itemsToICS` omits `DTEND` (or clamps it) when the resolved end is not later than the start, so no VEVENT has `DTEND <= DTSTART`.
+  2. The editor prevents or flags an end earlier than the start for timed items (or the export is documented as the single source of truth).
+  3. A test asserts every emitted `DTEND` is strictly after its `DTSTART`.
+- **Verification method:** Unit-test `itemsToICS` with an inverted timed range; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#6, S3, Impact 3/Reach 2/Confidence 4).
+
+### IMP-116 — Preserve a recurring item's wall-clock end across DST transitions
+- **Status:** TODO
+- **Category:** correctness / recurrence
+- **Type:** bug-fix
+- **Area / files:** `src/domain/recurrence.ts` (`:122-128` `durationMs`, `:159-167` `deriveOccurrenceEnd`)
+- **Intent:** `durationMs` subtracts two local wall-clock instants (real elapsed time) and `deriveOccurrenceEnd` adds that elapsed time to a fresh local start, so a recurring timed item's wall-clock end shifts across a DST transition in both directions.
+- **Acceptance criteria:**
+  1. A recurring timed item's occurrence end preserves the series' wall-clock end time (start clock time plus the series' wall-clock length), including on DST transition days.
+  2. Both repro cases (a weekly series crossing 2026-03-08, and a series starting on it) yield `end === '…T04:00'` for every occurrence.
+  3. Non-DST days and all-day items are unchanged; existing recurrence tests stay green.
+- **Verification method:** Add America/New_York recurrence tests with the two repro fixtures; run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 8
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#7, S3, Impact 2/Reach 2/Confidence 4).
+
+### IMP-117 — Catch rejections in the delivery tick on blocked storage
+- **Status:** TODO
+- **Category:** error handling / reliability
+- **Type:** bug-fix
+- **Area / files:** `src/pwa/ReminderRuntime.tsx` (`:150-152`, `:163`), `src/pwa/delivery.ts` (`:89`, `:92-93`, `:108-109`)
+- **Intent:** The tick is fire-and-forget (`void tick().finally(...)` with no `catch`), so with a reminder due and storage unavailable the first `wasFired` rejection escapes as an unhandled rejection; the `notificationclick` message path has the same gap. IMP-092 hardened only the prune passes.
+- **Acceptance criteria:**
+  1. No `ReminderRuntime` async path can produce an unhandled rejection when IndexedDB is unavailable (tick, `deliver`, and the SW message handler each settle).
+  2. The existing blocked-storage test is extended with a due reminder and asserts zero unhandled rejections.
+  3. Happy-path delivery and the boot storage toast are unchanged.
+- **Verification method:** Extend the blocked-storage test with a due reminder; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-092
+- **Priority score:** 24
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#8, S3, Impact 3/Reach 2/Confidence 4); promoted from `discovered-IMP-092` D1. Kept separate from the IMP-118 test item.
+
+### IMP-118 — Add tests for the notification and service-worker boundary
+- **Status:** TODO
+- **Category:** tests / tooling
+- **Type:** test
+- **Area / files:** `src/pwa/notifications.ts` (`:9-58`), `src/pwa/register.ts` (`:9-27`), `src/pwa/sw.ts` (`:6-40`)
+- **Intent:** Coverage is `notifications.ts` 13.6% statements / 15.4% branches, `register.ts` 28.6%, `sw.ts` 0% — the exact boundary where the IMP-019/021/036/086/092 bug classes live, with no direct test.
+- **Acceptance criteria:**
+  1. `showAppNotification` is tested for: permission ≠ granted → `false` and no call; registration present → `registration.showNotification` with the payload; no registration → `new Notification`; a throwing API → `false` (never throws).
+  2. `sendSkipWaiting` is tested for a missing `serviceWorker`, a registration without `waiting`, and a `waiting` worker (posts `SKIP_WAITING`).
+  3. The `notificationclick` handler is exercised (client present → focus + `postMessage`; no client → `openWindow`), by unit-testing the handler body or extracting it.
+- **Verification method:** Add the tests and record the coverage delta; run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 18
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#9, S3, Impact 3/Reach 3/Confidence 4). Kept separate from the IMP-117 fix.
+
+### IMP-119 — Test the reminder helpers `fireTimesForOccurrence`, `formatReminderLabel` and the `timeOfDay` path
+- **Status:** TODO
+- **Category:** tests / tooling
+- **Type:** test
+- **Area / files:** `src/domain/reminders.ts` (`:24-29`, `:31-41`, `:135-152`)
+- **Intent:** `fireTimesForOccurrence` (0%) has no reference outside its module and no test, so its de-dup/sort contract is unverified; `formatReminderLabel` branches and the `timeOfDay` fire path are uncovered.
+- **Acceptance criteria:**
+  1. `fireTimesForOccurrence` is tested with mixed reminders (absolute + offset + `timeOfDay` + duplicate offsets + a reminder with no trigger) asserting sorted, de-duplicated epoch values.
+  2. `formatReminderLabel` is tested for `absolute`, `timeOfDay`, `0`, `±1440`, `±60`, `±30` and the no-trigger fallback.
+  3. `reminderFireTime` is tested for the `timeOfDay`-on-a-timed-occurrence case and for `null` when no trigger is present.
+- **Verification method:** Add the reminder tests; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#10, S3, Impact 2/Reach 3/Confidence 5).
+
+### IMP-120 — Test `labels.ts` weekday helpers, `date.ts` helpers and the backup glue
+- **Status:** TODO
+- **Category:** tests / tooling
+- **Type:** test
+- **Area / files:** `src/lib/labels.ts` (`:64-77`), `src/lib/date.ts` (`:61-67`, `:130-141`), `src/lib/backup.ts` (`:146-176`), `src/db/repository.ts` (`:159-165`, `:296`, `:302-311`)
+- **Intent:** `labels.ts` has 0% branch coverage (`weekdayLabels` is the single shared helper for the week-start setting, reused by two views), `date.ts`/`backup.ts` helpers are partly uncovered, `backupRepo.prune` (the migration-backup retention guard) is never exercised, and `withTime` is untested dead code.
+- **Acceptance criteria:**
+  1. `weekdayLabels(0)` === `['Sun','Mon',…,'Sat']` and `weekdayLabels(1)` === `['Mon',…,'Sun']` are asserted; `statusClasses` is distinct for each of `done`/`doing`/`cancelled`/`todo` with a `dark:` class on every variant; `priorityBadgeClasses('high')`/`('low')` are distinct and dark-safe.
+  2. `dateKeyOf` is tested for a date-only value, a datetime value, a non-ISO parseable value and an unparseable value (`null`); `setTimeOnDateString`/`stripTime`/`withTime` are tested (or `withTime` is removed and the others covered).
+  3. `backupRepo.prune(keep)` is tested with more rows than `keep` asserting the newest `keep` survive; `replaceAll` is tested to clear then bulk-put inside one transaction.
+  4. `readTextFile` is tested with a stubbed `FileReader` (resolve + `onerror` reject).
+- **Verification method:** Add the tests (merging quality #11 and #12); run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 15
+- **Notes:** Source: `.improve/reports/discover3-quality.md` (#11 + #12, S3). Merged into one test item per instruction.
+
+### IMP-121 — Give every form control an accessible name
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** bug-fix
+- **Area / files:** `src/components/ui/Form.tsx` (`:28-40`), `src/features/item/ItemEditorSheet.tsx` (`:385-447`, `:467-478`, `:594-670`), `src/features/item/KindFields.tsx` (`:17-305`), `src/features/item/RecurrenceEditor.tsx` (`:54-165`), `src/features/item/ReminderEditor.tsx` (`:56-73`), `src/features/settings/SettingsView.tsx` (`:226-254`, `:283-288`, `:321-331`), `src/features/shopping/ShoppingView.tsx` (`:122-130`, `:146-152`), `src/features/list/ListView.tsx` (`:191-196`), `src/features/notes/NotesView.tsx` (`:54-62`), `src/features/quickadd/QuickAdd.tsx` (`:116-128`), `src/features/command/CommandPalette.tsx` (`:93-115`)
+- **Intent:** `Field` renders a sibling `<label>` but no call site passes `htmlFor`/`id`, and several controls rely on `placeholder` alone, so nearly every editor/settings/quick-add control is programmatically unlabelled and `getByLabelText` cannot find it.
+- **Acceptance criteria:**
+  1. Every `<input>`/`<select>`/`<textarea>` in the editor, settings, quick add, command palette and the shopping/list/notes capture resolves to an accessible name (axe `label` clean; `getByLabelText` works in tests).
+  2. No visual change; existing tests pass.
+- **Verification method:** Add `getByLabelText`/axe assertions across the listed views; run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F1, S2, Impact 4/Reach 5/Confidence 5).
+
+### IMP-122 — Expose progress semantics on `ProgressRing`
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** bug-fix
+- **Area / files:** `src/components/ui/ProgressRing.tsx` (`:32-59`); consumers `src/features/today/TodayView.tsx` (`:159`, `:202-208`, `:257`), `src/features/goals/GoalsView.tsx` (`:88`)
+- **Intent:** The ring renders a raw `<svg>` plus a text node with no `role`, `aria-label` or `aria-valuenow`; a custom `label` (e.g. `✓`/`0`) replaces the percentage, so goal/habit progress is invisible to assistive tech.
+- **Acceptance criteria:**
+  1. The ring exposes `role="progressbar"` (or `img`) with an accessible name including its value and the surrounding item context.
+  2. Today and Goals snapshots show it; tests pass.
+- **Verification method:** Add component tests asserting role/name/value for the ring in Today and Goals. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F2, S2, Impact 3/Reach 4/Confidence 5).
+
+### IMP-123 — Add ARIA state and keyboard semantics to Tabs and the recurrence weekday picker
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** bug-fix
+- **Area / files:** `src/components/ui/Tabs.tsx` (`:16-36`), `src/features/item/ItemEditorSheet.tsx` (`:371-381`), `src/features/item/RecurrenceEditor.tsx` (`:75-92`)
+- **Intent:** IMP-033 fixed toggles in Settings/Notes/Bills/Habits but the shared `Tabs` (no `tabpanel`, `aria-controls`, roving `tabIndex` or `type="button"`) and the recurrence weekday picker (no `aria-pressed`, single-letter labels) were not in its file list, so the active state is conveyed by colour only and cannot be arrow-navigated.
+- **Acceptance criteria:**
+  1. Tabs are arrow-key operable, only the active tab is tabbable, and panels are associated via `aria-controls`/`aria-labelledby`.
+  2. Weekday buttons expose `aria-pressed` and a full weekday name.
+  3. No visual change; tests pass.
+- **Verification method:** Add keyboard/ARIA tests for `Tabs` and the weekday picker; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-033
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F3, S2, Impact 3/Reach 4/Confidence 5).
+
+### IMP-124 — Add a legend and a non-colour summary to the habit heatmap
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/habits/HabitsView.tsx` (`:151-175`)
+- **Intent:** Four green intensities are the sole encoding; `title` tooltips are not keyboard-reachable or exposed under `role="img"`, and there is no legend, so colour-blind and screen-reader users cannot recover per-day values.
+- **Acceptance criteria:**
+  1. A visible "less → more" legend and an accessible per-day/per-week summary (grid/table or `aria-describedby` text) expose the data without colour.
+  2. Tests pass.
+- **Verification method:** Add tests asserting the legend and the accessible summary; run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 18
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F4, S3, Impact 3/Reach 3/Confidence 4). Complements the IMP-099 light-mode fix.
+
+### IMP-125 — Add a skip-to-content link and an addressable `<main>`
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/shell/AppShell.tsx` (`:212`; nav landmarks `:122`), `src/features/shell/MobileBottomNav.tsx` (`:43`)
+- **Intent:** `<main>` has no `id`/`tabIndex` and there is no bypass link, so keyboard users tab through the full nav rail (10 links plus actions) on every view before reaching content.
+- **Acceptance criteria:**
+  1. The first Tab reveals a "Skip to content" link that moves focus to `<main id="main" tabIndex={-1}>`.
+  2. The link is visually hidden until focused; tests pass.
+- **Verification method:** Add a jsdom focus test for the skip link; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F5, S3, Impact 2/Reach 4/Confidence 5).
+
+### IMP-126 — Let habits be completed from the Today dashboard
+- **Status:** TODO
+- **Category:** UX / missing feature
+- **Type:** feature-improvement
+- **Area / files:** `src/features/today/TodayView.tsx` (`:196-220`); contrast `src/features/habits/HabitsView.tsx` (`:60-63`, `:104-117`)
+- **Intent:** README promises "habit rings" on Today, but the ring is display-only and checking a habit requires navigating to Habits; `toggleDone` and `expandOccurrences` already exist for this.
+- **Acceptance criteria:**
+  1. Clicking a Today habit ring/row toggles today's occurrence through the same path as `HabitsView.markToday`, updating the ring and streak in place without leaving Today.
+  2. Tests pass.
+- **Verification method:** Extend the Today tests plus a Playwright click on the ring; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F6, S2, Impact 4/Reach 4/Confidence 5).
+
+### IMP-127 — Decide how notes attach to an item (NEEDS-HUMAN)
+- **Status:** NEEDS-HUMAN
+- **Category:** UX / product decision
+- **Type:** new-feature
+- **Area / files:** `src/features/item/KindFields.tsx` (`:296-305`), `src/types/item.ts` (`:51`), `src/domain/itemFactory.ts` (`:90`, `:134`), `src/features/notes/NotesView.tsx`
+- **Intent:** README states notes are "attachable to any item", but no UI sets a note's `parentId` and nothing surfaces an attached note; the model already honours `parentId`, so this is a product/UX decision, not just wiring.
+- **Acceptance criteria (proposed):**
+  1. A product decision records the attachment UX (selector vs. attach-from-item, one vs. many notes per item, discoverability on the parent).
+  2. The chosen behavior is implemented with set/clear tests and survives the JSON/CSV round trip.
+- **Verification method:** To be defined after the decision.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F7, S2, Impact 3/Reach 3/Confidence 4). NEEDS-HUMAN per instruction (product decision).
+
+### IMP-128 — Decide how absolute one-off reminders are created (NEEDS-HUMAN)
+- **Status:** NEEDS-HUMAN
+- **Category:** UX / product decision
+- **Type:** new-feature
+- **Area / files:** `src/types/item.ts` (`:13-14`), `src/features/item/ReminderEditor.tsx` (`:24-74`), `src/pwa/ReminderRuntime.tsx` (`:171-175`)
+- **Intent:** README promises reminders "relative or absolute"; the type and engine support `absolute`, but the editor only offers offset presets (timed) or a time-of-day (all-day), and `absolute` is written only by snooze, so this needs a UX decision on entry and labelling.
+- **Acceptance criteria (proposed):**
+  1. A product decision records the absolute-reminder UX (explicit date/time entry, interaction with the offset presets, labelling in the editor).
+  2. The chosen behavior persists `absolute` and fires once through `upcomingReminders`, with tests.
+- **Verification method:** To be defined after the decision.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F8, S2, Impact 3/Reach 3/Confidence 4). NEEDS-HUMAN per instruction (product decision).
+
+### IMP-129 — Replace `window.prompt` for a new shopping list with the app Dialog
+- **Status:** TODO
+- **Category:** UX / consistency
+- **Type:** improvement
+- **Area / files:** `src/features/shopping/ShoppingView.tsx` (`:94-110`); contrast `src/features/settings/SettingsView.tsx` (`:365-389`)
+- **Intent:** "New shopping list" uses `window.prompt`, which is unstyled, blocks the main thread, and is neither focus-trapped nor announced by the app, while every other capture uses `Dialog`/`Field`.
+- **Acceptance criteria:**
+  1. "List" opens the app `Dialog` with a labelled input; Enter/OK creates the list and selects it, Esc/Cancel is a no-op, and no `window.prompt` remains.
+  2. Tests cover both paths.
+- **Verification method:** Replace with `Dialog` and add tests for create and cancel; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F9, S2, Impact 3/Reach 3/Confidence 5).
+
+### IMP-130 — Confirm destructive bulk and shopping actions before deleting
+- **Status:** TODO
+- **Category:** UX / data safety
+- **Type:** improvement
+- **Area / files:** `src/features/list/ListView.tsx` (`:95-98`), `src/features/shopping/ShoppingView.tsx` (`:87-92`); contrast `src/features/settings/SettingsView.tsx` (`:381-389`)
+- **Intent:** One click deletes every selected item or every purchased row with no confirmation or undo, while Settings already routes its destructive reset through `ConfirmDialog`, so the safe pattern exists.
+- **Acceptance criteria:**
+  1. Both actions route through `ConfirmDialog` (or produce a toast with an Undo action) before deleting; Cancel leaves data untouched.
+  2. Tests cover confirm and cancel for both actions.
+- **Verification method:** Add tests for confirm + cancel on both actions; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F10, S2, Impact 3/Reach 3/Confidence 5).
+
+### IMP-131 — Expand occurrences once per year view instead of twelve times
+- **Status:** TODO
+- **Category:** performance
+- **Type:** improvement
+- **Area / files:** `src/features/calendar/CalendarView.tsx` (`:328-341`), `src/hooks/useOccurrences.ts` (`:8-18`)
+- **Intent:** Year mode runs `expandOccurrences` over all items once per month (12 full passes) instead of one pass over the year, a visible jank hotspot on the least-optimised view.
+- **Acceptance criteria:**
+  1. Year view computes occurrences once for the year and buckets them by month; instrumentation shows ≤1 expansion pass.
+  2. Rendered output is unchanged; tests pass.
+- **Verification method:** Add an instrumentation test counting expansions for a year render plus a Playwright year-view check; run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F11, S2, Impact 3/Reach 3/Confidence 4).
+
+### IMP-132 — Compute editor analytics only when the Analytics tab is open
+- **Status:** TODO
+- **Category:** performance
+- **Type:** improvement
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`:146-154`)
+- **Intent:** The `analytics` `useMemo` depends on `draft` and runs `itemCompletionStats` plus a 120-day `expandOccurrences` on every keystroke, even when the Analytics tab is closed.
+- **Acceptance criteria:**
+  1. Analytics are computed only when `tab === 'analytics'` (or memoized on `draft.id`/`draft.recurrence`), with identical output.
+  2. Typing stays responsive; tests pass.
+- **Verification method:** Add a test asserting no expansion runs while typing on a non-analytics tab; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F12, S3, Impact 3/Reach 3/Confidence 5).
+
+### IMP-133 — Split the ten views out of the single 384 KB entry chunk
+- **Status:** TODO
+- **Category:** performance
+- **Type:** improvement
+- **Area / files:** `src/App.tsx` (`:4-19`), `vite.config.ts` (`:61-72`), `dist/assets/index-*.js`
+- **Intent:** All ten views are statically imported, so Calendar/List/Command and their icons are in the first-load 384 KB (raw, ~115 KB gzip) entry chunk even when the user opens Today; vendor chunks are already separated.
+- **Acceptance criteria:**
+  1. Views load via `React.lazy` behind a `Suspense` fallback; the entry chunk shrinks materially.
+  2. First paint of Today is unchanged; `npm run build` and tests pass.
+- **Verification method:** Compare `dist` chunk sizes before/after and measure Today first paint; run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 18
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F13, S3, Impact 3/Reach 4/Confidence 3).
+
+### IMP-134 — Add an in-app Help entry point for quick-add syntax and export formats
+- **Status:** TODO
+- **Category:** docs / onboarding
+- **Type:** new-feature
+- **Area / files:** `src/features/shell/ShortcutSheet.tsx` (`:5-14`), `src/features/settings/SettingsView.tsx` (`:357-363`), `src/features/quickadd/QuickAdd.tsx` (`:17-21`)
+- **Intent:** README documents quick-add syntax, recurrence and export formats, but the app exposes only the shortcut list, so a first-run user has no discoverable place to learn `pay electricity $120 every month on the 5th`.
+- **Acceptance criteria:**
+  1. A reachable "Help" surface (e.g. Settings → About and/or the shortcut sheet) lists quick-add syntax examples, the keyboard shortcuts, and a one-line note on JSON vs CSV vs ICS.
+  2. It is reachable by keyboard; tests assert the entry point opens it.
+- **Verification method:** Add tests for the entry point; run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 25
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F14, S3, Impact 3/Reach 3/Confidence 4).
