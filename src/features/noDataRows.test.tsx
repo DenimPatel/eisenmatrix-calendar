@@ -19,9 +19,9 @@ function rawItem(kind: Item['kind']): Item {
   return raw as Item;
 }
 
-function rawWithData(kind: Item['kind'], data: unknown, id?: string): Item {
+function rawWithData(kind: Item['kind'], data: unknown, id?: string, title?: string): Item {
   const raw = rawItem(kind);
-  return { ...raw, ...(id ? { id } : {}), data } as unknown as Item;
+  return { ...raw, ...(id ? { id } : {}), ...(title ? { title } : {}), data } as unknown as Item;
 }
 
 async function seedRawRows(): Promise<void> {
@@ -93,12 +93,12 @@ describe('views with raw no-data rows', () => {
 describe('views with nested partial payloads', () => {
   it('renders habits with a null target and a partial target', async () => {
     await db.items.bulkPut([
-      rawWithData('habit', { target: null }, 'null-target'),
-      rawWithData('habit', { target: { count: 2 } }, 'partial-target'),
+      rawWithData('habit', { target: null }, 'null-target', 'Habit without target'),
+      rawWithData('habit', { target: { count: 2 } }, 'partial-target', 'Habit with partial target'),
     ]);
     const mounted = await mount(<HabitsView />);
 
-    await waitForText(mounted.host, 'Raw habit');
+    await waitForText(mounted.host, 'Habit with partial target');
     expect(mounted.host.textContent).toContain('1× per day');
     expect(mounted.host.textContent).toContain('2× per day');
 
