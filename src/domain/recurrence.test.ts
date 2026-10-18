@@ -345,6 +345,29 @@ describe('occurrence ranges', () => {
     expect(occ.end).toBe('2026-07-20T12:00');
   });
 
+  it('derives an end from midnight for a date-only start with a timed end', () => {
+    const item = createItem({
+      kind: 'event',
+      title: 'Odd range',
+      start: '2026-01-05',
+      end: '2026-01-05T10:00',
+      allDay: false,
+    });
+    item.recurrence = {
+      freq: 'daily',
+      interval: 1,
+      weekStartsOn: 1,
+      exceptions: [],
+      overrides: { '2026-01-06': { start: '2026-01-06T18:30' } },
+    };
+
+    // 10 h after the override start, matching the pre-DST real-elapsed behaviour.
+    expect(only(item, '2026-01-06')).toMatchObject({
+      start: '2026-01-06T18:30',
+      end: '2026-01-07T04:30',
+    });
+  });
+
   it('never resolves a range that ends before it starts across a whole series', () => {
     const item = createItem({
       kind: 'event',

@@ -121,12 +121,25 @@ function* candidateDates(rule: RecurrenceRule, seriesStart: Date): Generator<Dat
   }
 }
 
-function durationMs(item: Item): number | null {
+/**
+ * Wall-clock length of the series in minutes: the clock distance from start to end plus any
+ * whole calendar days between them. Using wall-clock minutes rather than real elapsed time
+ * keeps the series' clock length stable across a DST transition. A date-only endpoint counts
+ * as midnight, so an inconsistent series matches the previous real-elapsed behaviour outside
+ * DST. Returns null for a non-forward range, matching the old fallback of substituting the start.
+ */
+function wallClockLengthMinutes(item: Item): number | null {
   const start = parseLocalDate(item.start);
   const end = parseLocalDate(item.end);
   if (!start || !end) return null;
-  const diff = end.getTime() - start.getTime();
-  return diff > 0 ? diff : null;
+  const clockMinutes = (value: string): number => {
+    const [h, m] = value.slice(11, 16).split(':').map(Number);
+    return (h || 0) * 60 + (m || 0);
+  };
+  const minutes =
+    differenceInCalendarDays(end, start) * 1440 +
+    (clockMinutes(item.end as string) - clockMinutes(item.start as string));
+  return minutes > 0 ? minutes : null;
 }
 
 function occurrenceStart(item: Item, date: Date, overrideStart?: string): string {
@@ -163,9 +176,17 @@ function deriveOccurrenceEnd(item: Item, startStr: string, allDay: boolean): str
   const start = parseLocalDate(startStr);
   if (!start) return null;
   if (allDay || !hasTimeComponent(startStr)) return formatISODate(start);
-  const dur = durationMs(item);
-  if (!dur) return startStr;
-  return formatISODateTime(new Date(start.getTime() + dur));
+  const minutes = wallClockLengthMinutes(item);
+  if (!minutes) return startStr;
+  return formatISODateTime(
+    new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+      start.getHours(),
+      start.getMinutes() + minutes,
+    ),
+  );
 }
 
 function occurrenceEnd(

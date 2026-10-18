@@ -1853,7 +1853,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#6, S3, Impact 3/Reach 2/Confidence 4).
 
 ### IMP-116 — Preserve a recurring item's wall-clock end across DST transitions
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / recurrence
 - **Type:** bug-fix
 - **Area / files:** `src/domain/recurrence.ts` (`:122-128` `durationMs`, `:159-167` `deriveOccurrenceEnd`)
