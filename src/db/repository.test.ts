@@ -1,5 +1,6 @@
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
-import { db } from './schema';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import Dexie, { type Table } from 'dexie';
+import { db, EisenMatrixDB, type ReminderLogEntry } from './schema';
 import { itemRepo, listRepo, reminderLogRepo, settingsRepo } from './repository';
 import { createItem, defaultDataFor, normalizeItem } from '@/domain/itemFactory';
 import {
@@ -191,10 +192,62 @@ describe('reminderLogRepo', () => {
     expect(await reminderLogRepo.wasFired('item-1', '2024-01-02')).toBe(false);
   });
 
+  it('records exactly one of two concurrent inserts for the same key', async () => {
+    const [first, second] = await Promise.all([
+      reminderLogRepo.record('item-1', '2024-01-01'),
+      reminderLogRepo.record('item-1', '2024-01-01'),
+    ]);
+
+    expect([first, second].filter(Boolean)).toHaveLength(1);
+    expect(
+      await db.reminderLog.where('[itemId+occKey]').equals(['item-1', '2024-01-01']).count(),
+    ).toBe(1);
+  });
+
   it('prunes old log entries', async () => {
     await reminderLogRepo.record('a', 'k', 1000);
     await reminderLogRepo.record('b', 'k', Date.now());
     const deleted = await reminderLogRepo.pruneBefore(5000);
     expect(deleted).toBe(1);
+  });
+});
+
+/** The pre-IMP-036 schema, kept so the upgrade path can be exercised. */
+class LegacyReminderLogDB extends Dexie {
+  reminderLog!: Table<ReminderLogEntry, number>;
+
+  constructor(name: string) {
+    super(name);
+    this.version(1).stores({ reminderLog: '++id, [itemId+occKey], firedAt' });
+  }
+}
+
+describe('reminderLog unique index migration', () => {
+  let seq = 0;
+  const opened: EisenMatrixDB[] = [];
+
+  afterEach(async () => {
+    while (opened.length) await opened.pop()!.delete();
+  });
+
+  it('dedupes existing rows before enforcing the unique compound index', async () => {
+    seq += 1;
+    const name = `test-reminderlog-${seq}`;
+    const legacy = new LegacyReminderLogDB(name);
+    await legacy.reminderLog.bulkAdd([
+      { itemId: 'a', occKey: 'k', firedAt: 1 },
+      { itemId: 'a', occKey: 'k', firedAt: 2 },
+      { itemId: 'b', occKey: 'k', firedAt: 3 },
+    ]);
+    legacy.close();
+
+    const upgraded = new EisenMatrixDB(name);
+    opened.push(upgraded);
+    await upgraded.open();
+
+    expect(await upgraded.reminderLog.count()).toBe(2);
+    await expect(
+      upgraded.reminderLog.add({ itemId: 'a', occKey: 'k', firedAt: 4 }),
+    ).rejects.toBeInstanceOf(Dexie.ConstraintError);
   });
 });

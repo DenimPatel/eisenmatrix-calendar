@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import { normalizeItem } from '@/domain/itemFactory';
 import type { BaseItem, Item, ItemData, ItemKind, List } from '@/types';
 import { getDb, type BackupEntry } from './schema';
@@ -222,8 +223,14 @@ export const reminderLogRepo = {
       .count();
     return count > 0;
   },
-  async record(itemId: string, occKey: string, firedAt = Date.now()): Promise<void> {
-    await getDb().reminderLog.add({ itemId, occKey, firedAt });
+  async record(itemId: string, occKey: string, firedAt = Date.now()): Promise<boolean> {
+    try {
+      await getDb().reminderLog.add({ itemId, occKey, firedAt });
+      return true;
+    } catch (error) {
+      if (error instanceof Dexie.ConstraintError) return false;
+      throw error;
+    }
   },
   async clear(): Promise<void> {
     await getDb().reminderLog.clear();

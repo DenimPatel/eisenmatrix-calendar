@@ -1076,7 +1076,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** DONE (attempt 1). settingsRepo.merge does read+merge+put in one rw transaction; theme and Settings merge only changed keys; interleaved write test fails under old semantics. +3 tests (450). Verified PASS (typecheck/lint, build, format). Reports: impl-IMP-035.md, verify-IMP-035.md. Keep the public `settingsRepo.get("app")` shape.
 
 ### IMP-036 — Make reminder dedupe race-safe
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / concurrency
 - **Type:** bug-fix
 - **Area / files:** `src/db/repository.ts` (`reminderLogRepo.wasFired`/`record`, `:147-157`); `src/db/schema.ts` (`:36`); `src/pwa/ReminderRuntime.tsx`

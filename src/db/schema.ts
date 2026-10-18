@@ -36,6 +36,27 @@ export class EisenMatrixDB extends Dexie {
       reminderLog: '++id, [itemId+occKey], firedAt',
       backups: '++id, createdAt',
     });
+
+    // A unique index cannot be built over an existing table that already holds duplicate
+    // keys, and Dexie applies index changes before the version's `upgrade`, so the dedupe
+    // has to land in its own version before v3 makes `[itemId+occKey]` unique.
+    this.version(2)
+      .stores({ reminderLog: '++id, [itemId+occKey], firedAt' })
+      .upgrade(async (tx) => {
+        const rows = await tx.table<ReminderLogEntry, number>('reminderLog').toArray();
+        const seen = new Set<string>();
+        const duplicates: number[] = [];
+        for (const row of rows) {
+          const key = `${row.itemId}\u0000${row.occKey}`;
+          if (seen.has(key)) duplicates.push(row.id!);
+          else seen.add(key);
+        }
+        if (duplicates.length > 0) await tx.table('reminderLog').bulkDelete(duplicates);
+      });
+
+    this.version(3).stores({
+      reminderLog: '++id, &[itemId+occKey], firedAt',
+    });
   }
 }
 

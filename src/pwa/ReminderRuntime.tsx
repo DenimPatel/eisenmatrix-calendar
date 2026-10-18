@@ -45,45 +45,53 @@ export function ReminderRuntime() {
   // Holds the boot prune back until a tick that can actually deliver something has settled.
   const bootGate = useRef(createTickGate());
   const tickedItems = useRef<Item[] | null>(null);
+  // An in-flight tick and an effect rebuild (StrictMode, or a live-query emission) can
+  // otherwise both pass `deliver`'s dedupe check before either has recorded, notifying twice.
+  const ticking = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     const tick = async () => {
-      if (cancelled) return;
-      const now = new Date();
-      const nowMs = now.getTime();
+      if (cancelled || ticking.current) return;
+      ticking.current = true;
+      try {
+        const now = new Date();
+        const nowMs = now.getTime();
 
-      const due = upcomingReminders(
-        items,
-        new Date(nowMs - LOOKBACK_MS),
-        new Date(nowMs + 30_000),
-      ).filter((scheduled) => scheduled.fireAt <= nowMs + 30_000);
+        const due = upcomingReminders(
+          items,
+          new Date(nowMs - LOOKBACK_MS),
+          new Date(nowMs + 30_000),
+        ).filter((scheduled) => scheduled.fireAt <= nowMs + 30_000);
 
-      for (const scheduled of due) {
-        const title = scheduled.item.title || 'Reminder';
-        const timeLabel = scheduled.occurrence.start?.includes('T')
-          ? scheduled.occurrence.start.slice(11, 16)
-          : scheduled.occurrence.occKey;
-        await deliver(
-          title,
-          `${timeLabel} · ${scheduled.occKey}`,
-          scheduled.item.id,
-          `${scheduled.occKey}::${scheduled.reminder.id}`,
-          scheduled.occKey,
-          'info',
-          { notifyEnabled },
-        );
-      }
-
-      // Daily digest
-      if (settings.digestEnabled) {
-        const [h, m] = settings.digestTime.split(':').map(Number);
-        const digestAt = new Date(now);
-        digestAt.setHours(h || 8, m || 0, 0, 0);
-        if (nowMs >= digestAt.getTime() && nowMs - digestAt.getTime() < LOOKBACK_MS) {
-          await deliverDigest(items, now, { notifyEnabled });
+        for (const scheduled of due) {
+          const title = scheduled.item.title || 'Reminder';
+          const timeLabel = scheduled.occurrence.start?.includes('T')
+            ? scheduled.occurrence.start.slice(11, 16)
+            : scheduled.occurrence.occKey;
+          await deliver(
+            title,
+            `${timeLabel} · ${scheduled.occKey}`,
+            scheduled.item.id,
+            `${scheduled.occKey}::${scheduled.reminder.id}`,
+            scheduled.occKey,
+            'info',
+            { notifyEnabled },
+          );
         }
+
+        // Daily digest
+        if (settings.digestEnabled) {
+          const [h, m] = settings.digestTime.split(':').map(Number);
+          const digestAt = new Date(now);
+          digestAt.setHours(h || 8, m || 0, 0, 0);
+          if (nowMs >= digestAt.getTime() && nowMs - digestAt.getTime() < LOOKBACK_MS) {
+            await deliverDigest(items, now, { notifyEnabled });
+          }
+        }
+      } finally {
+        ticking.current = false;
       }
     };
 
