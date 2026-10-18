@@ -26,9 +26,9 @@ import {
 } from '@/db/migrations/notificationGate';
 import { ensureDbOpen } from '@/db/repository';
 import {
+  DATABASE_UNAVAILABLE_MESSAGE,
   OFFLINE_UNAVAILABLE_MESSAGE,
   reportBootFailure,
-  STORAGE_UNAVAILABLE_MESSAGE,
 } from '@/lib/bootFailure';
 
 export interface BootEffects {
@@ -46,7 +46,7 @@ export default function App({ onBootEffects }: AppProps = {}) {
 
   useEffect(() => {
     void ensureDbOpen().catch((error: unknown) => {
-      reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+      reportBootFailure(DATABASE_UNAVAILABLE_MESSAGE, error);
     });
     // Import any v1 localStorage data (with a safety backup) on first boot.
     const legacy = runLegacyMigration();

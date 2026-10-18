@@ -54,7 +54,7 @@ export function BillsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-fg">Bills</h1>
           <p className="text-sm text-muted">Track what's due and what's already paid.</p>
@@ -62,6 +62,7 @@ export function BillsView() {
         <Button
           variant="primary"
           size="sm"
+          className="whitespace-nowrap"
           onClick={() => openEditor(createItem({ kind: 'bill', start: formatISODate(now) }))}
         >
           <Plus size={14} /> New bill

@@ -1664,7 +1664,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (U3, S3, Impact 3/Reach 3/Confidence 5).
 
 ### IMP-104 — Widen the daily-digest time input so the AM/PM indicator is not clipped
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / accessibility
 - **Type:** bug-fix
 - **Area / files:** `src/features/settings/SettingsView.tsx` (`:283-288` `className="input w-28"`)
@@ -1679,7 +1679,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V4, S3, Impact 2/Reach 3/Confidence 5). Overlaps IMP-121 for the label half.
 
 ### IMP-105 — Keep header CTAs on one line at 390px across Goals/Bills/Habits/Notes
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / responsive
 - **Type:** improvement
 - **Area / files:** `src/features/goals/GoalsView.tsx` (`:49`); compare `src/features/today/TodayView.tsx` (`:88`)
@@ -1694,7 +1694,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V5, S3, Impact 2/Reach 3/Confidence 5).
 
 ### IMP-106 — Stop Matrix quadrants reserving dead space that detaches the Add button
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / spacing
 - **Type:** improvement
 - **Area / files:** `src/features/matrix/MatrixView.tsx` (`:65` `min-h-[16rem] flex-col`, `:81` `flex-1`)
@@ -1709,7 +1709,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V6, S3, Impact 2/Reach 4/Confidence 4).
 
 ### IMP-107 — Name the local database, not "local storage", in the boot failure toast
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / error copy
 - **Type:** bug-fix
 - **Area / files:** `src/App.tsx` (`:48-50`), `src/lib/bootFailure.ts` (`:5-6`)
@@ -1725,7 +1725,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (U4, S3, Impact 2/Reach 3/Confidence 5).
 
 ### IMP-108 — Use the shared empty-state pattern in Today's sidebar sections
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / consistency
 - **Type:** improvement
 - **Area / files:** `src/features/today/TodayView.tsx` (`:221`, `:241`, `:265`)
@@ -1740,7 +1740,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V7, S3, Impact 2/Reach 3/Confidence 4).
 
 ### IMP-109 — Enforce a documented minimum size for badges, pills and calendar chips
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / legibility
 - **Type:** improvement
 - **Area / files:** `src/features/list/ListView.tsx` (`:361`, `:383`), `src/features/habits/HabitsView.tsx` (`:145`), `src/features/calendar/CalendarView.tsx` (`:222`, `:239`, `:354`, `:366`), `src/features/item/ItemCard.tsx` (`:129`, `:134`)

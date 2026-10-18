@@ -282,7 +282,7 @@ export function SettingsView() {
           <div className="flex items-center gap-2">
             <input
               type="time"
-              className="input w-28"
+              className="input w-36"
               aria-label="Daily digest time"
               value={settings.digestTime}
               onChange={(e) => void persist({ digestTime: e.target.value })}

@@ -2,8 +2,8 @@ import { useUiStore } from '@/store/useUiStore';
 
 const reported = new Set<string>();
 
-export const STORAGE_UNAVAILABLE_MESSAGE =
-  'Local storage is unavailable — changes may not be saved.';
+export const DATABASE_UNAVAILABLE_MESSAGE =
+  'The local database is unavailable — changes may not be saved.';
 
 export const OFFLINE_UNAVAILABLE_MESSAGE = 'Offline support could not start.';
 

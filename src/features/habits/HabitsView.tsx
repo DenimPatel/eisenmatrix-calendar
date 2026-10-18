@@ -101,7 +101,7 @@ export function HabitsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-fg">Habits</h1>
           <p className="text-sm text-muted">Don't break the chain.</p>
@@ -109,6 +109,7 @@ export function HabitsView() {
         <Button
           variant="primary"
           size="sm"
+          className="whitespace-nowrap"
           onClick={() => openEditor(createItem({ kind: 'habit', start: today }))}
         >
           <Plus size={14} /> New habit

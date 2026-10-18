@@ -229,6 +229,22 @@ describe('SettingsView CSV import', () => {
   });
 });
 
+describe('SettingsView daily digest control', () => {
+  it('labels the digest time input and sizes it to fit the AM/PM indicator', async () => {
+    const mounted = await mountSettings();
+    await drain();
+
+    const input = mounted.host.querySelector<HTMLInputElement>('input[type="time"]');
+    expect(input).not.toBeNull();
+    expect(input!.getAttribute('aria-label')).toBe('Daily digest time');
+    // `w-28` clipped the native AM/PM indicator; the control needs a wider box.
+    expect(input!.className).not.toContain('w-28');
+    expect(input!.className).toMatch(/\bw-3[2-9]\b/);
+
+    await unmount(mounted);
+  });
+});
+
 describe('SettingsView legacy migration', () => {
   function rerunButton(host: HTMLElement): HTMLButtonElement {
     const button = Array.from(host.querySelectorAll('button')).find(

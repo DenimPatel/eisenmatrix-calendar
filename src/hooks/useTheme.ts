@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { settingsRepo } from '@/db/repository';
 import { useUiStore } from '@/store/useUiStore';
 import { DEFAULT_SETTINGS, type AppSettings } from '@/types';
-import { reportBootFailure, STORAGE_UNAVAILABLE_MESSAGE } from '@/lib/bootFailure';
+import { reportBootFailure, DATABASE_UNAVAILABLE_MESSAGE } from '@/lib/bootFailure';
 
 export function useTheme() {
   const theme = useUiStore((s) => s.theme);
@@ -17,7 +17,7 @@ export function useTheme() {
         setTheme(settings.theme ?? 'system');
       })
       .catch((error: unknown) => {
-        reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+        reportBootFailure(DATABASE_UNAVAILABLE_MESSAGE, error);
       });
   }, [setTheme]);
 
@@ -36,7 +36,7 @@ export function useTheme() {
   useEffect(() => {
     if (!loaded.current) return;
     void settingsRepo.merge<AppSettings>('app', { theme }, DEFAULT_SETTINGS).catch((error) => {
-      reportBootFailure(STORAGE_UNAVAILABLE_MESSAGE, error);
+      reportBootFailure(DATABASE_UNAVAILABLE_MESSAGE, error);
     });
   }, [theme]);
 }
