@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Archive, ArrowUpDown, CheckCircle2, Plus, Search, Trash2 } from 'lucide-react';
+import { Archive, ArrowUpDown, CheckCircle2, ListTodo, Plus, Search, Trash2 } from 'lucide-react';
 import { useItems, useLists } from '@/hooks/useData';
 import { useUiStore } from '@/store/useUiStore';
 import { Droppable } from '@/features/shell/Droppable';
@@ -132,6 +132,16 @@ export function ListView() {
 
   const allSelected = filtered.length > 0 && filtered.every((i) => selection.has(i.id));
 
+  const hasActiveFilter =
+    filters.search.trim() !== '' ||
+    filters.kinds.length > 0 ||
+    filters.statuses.length > 0 ||
+    filters.listId !== null ||
+    filters.tags.length > 0;
+
+  const createFirstItem = () =>
+    openEditor(createItem({ kind: 'task', start: formatISODate(new Date()) }));
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[15rem_1fr]">
       <aside className="card h-fit p-2">
@@ -233,13 +243,7 @@ export function ListView() {
             <Checkbox checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             Archived
           </label>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() =>
-              openEditor(createItem({ kind: 'task', start: formatISODate(new Date()) }))
-            }
-          >
+          <Button variant="primary" size="sm" onClick={createFirstItem}>
             <Plus size={14} /> Add
           </Button>
         </div>
@@ -411,31 +415,44 @@ export function ListView() {
                 );
               })}
             </div>
-            {filtered.length === 0 && (
-              <EmptyState
-                className="m-4"
-                icon={<Search size={20} />}
-                title="No items match"
-                description="Adjust filters or add a new item."
-                action={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setFilters({
-                        search: '',
-                        kinds: [],
-                        statuses: [],
-                        listId: null,
-                        tags: [],
-                      })
-                    }
-                  >
-                    Reset filters
-                  </Button>
-                }
-              />
-            )}
+            {filtered.length === 0 &&
+              (hasActiveFilter ? (
+                <EmptyState
+                  className="m-4"
+                  icon={<Search size={20} />}
+                  title="No items match"
+                  description="Adjust filters or add a new item."
+                  action={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setFilters({
+                          search: '',
+                          kinds: [],
+                          statuses: [],
+                          listId: null,
+                          tags: [],
+                        })
+                      }
+                    >
+                      Reset filters
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  className="m-4"
+                  icon={<ListTodo size={20} />}
+                  title="No items yet"
+                  description="Add your first task, event or note to get started."
+                  action={
+                    <Button variant="outline" size="sm" onClick={createFirstItem}>
+                      <Plus size={14} /> Add item
+                    </Button>
+                  }
+                />
+              ))}
           </div>
         </div>
       </div>

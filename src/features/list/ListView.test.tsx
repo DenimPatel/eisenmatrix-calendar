@@ -30,15 +30,26 @@ async function unmount({ host, root }: Mounted): Promise<void> {
   host.remove();
 }
 
-/** Items arrive through a Dexie live query, so the first body row lands asynchronously. */
-async function waitForRow(host: HTMLElement, text: string): Promise<void> {
+/** Data arrives through a Dexie live query, so the first render is empty and fills in later. */
+async function waitFor(check: () => boolean, message: string): Promise<void> {
   for (let attempt = 0; attempt < 200; attempt++) {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 5));
     });
-    if (bodyRows(host).some((row) => row.textContent?.includes(text))) return;
+    if (check()) return;
   }
-  throw new Error(`row containing "${text}" did not render`);
+  throw new Error(message);
+}
+
+async function waitForRow(host: HTMLElement, text: string): Promise<void> {
+  await waitFor(
+    () => bodyRows(host).some((row) => row.textContent?.includes(text)),
+    `row containing "${text}" did not render`,
+  );
+}
+
+async function waitForText(host: HTMLElement, text: string): Promise<void> {
+  await waitFor(() => (host.textContent ?? '').includes(text), `text "${text}" did not render`);
 }
 
 function columnHeader(host: HTMLElement, label: string): HTMLElement {
@@ -64,7 +75,12 @@ function sortButton(host: HTMLElement, label: string): HTMLButtonElement {
 beforeEach(async () => {
   await db.items.clear();
   await db.lists.clear();
-  useUiStore.setState({ toasts: [], undoStack: [] });
+  useUiStore.setState({
+    toasts: [],
+    undoStack: [],
+    filters: { search: '', kinds: [], statuses: [], listId: null, tags: [] },
+    editor: { open: false, item: null, occurrenceKey: null, splitMode: 'all' },
+  });
 });
 
 afterAll(async () => {
@@ -121,6 +137,12 @@ function bodyRows(host: HTMLElement): HTMLElement[] {
   );
 }
 
+function buttonByText(host: HTMLElement, text: string): HTMLButtonElement | undefined {
+  return Array.from(host.querySelectorAll('button')).find(
+    (button) => button.textContent?.trim() === text,
+  );
+}
+
 describe('ListView status/date columns', () => {
   it('gives the status pill and the date their own matching tracks', async () => {
     await itemRepo.create(
@@ -154,6 +176,53 @@ describe('ListView status/date columns', () => {
     expect(statusCell).not.toBe(dateCell);
     expect(statusCell!.querySelector('span')?.className).toContain('whitespace-nowrap');
     expect(dateCell!.className).toContain('whitespace-nowrap');
+
+    await unmount(mounted);
+  });
+});
+
+describe('ListView empty states', () => {
+  it('offers a create-first-item CTA on a zero-data first run', async () => {
+    const mounted = await mountList();
+    await waitForText(mounted.host, 'No items yet');
+
+    expect(mounted.host.textContent).not.toContain('No items match');
+    expect(mounted.host.textContent).not.toContain('Reset filters');
+
+    const addButton = buttonByText(mounted.host, 'Add item');
+    expect(addButton).toBeDefined();
+    await act(async () => {
+      addButton!.click();
+    });
+
+    const { editor } = useUiStore.getState();
+    expect(editor.open).toBe(true);
+    expect(editor.item?.kind).toBe('task');
+
+    await unmount(mounted);
+  });
+
+  it('shows the reset-filters state only when a filter is active', async () => {
+    await itemRepo.create(
+      createItem({ kind: 'task', title: 'Ship the release', start: '2026-10-18' }),
+    );
+    useUiStore.setState({
+      filters: { search: 'zzz-no-match', kinds: [], statuses: [], listId: null, tags: [] },
+    });
+
+    const mounted = await mountList();
+    await waitForText(mounted.host, 'No items match');
+
+    expect(mounted.host.textContent).not.toContain('No items yet');
+
+    const resetButton = buttonByText(mounted.host, 'Reset filters');
+    expect(resetButton).toBeDefined();
+    await act(async () => {
+      resetButton!.click();
+    });
+
+    expect(useUiStore.getState().filters.search).toBe('');
+    await waitForRow(mounted.host, 'Ship the release');
 
     await unmount(mounted);
   });

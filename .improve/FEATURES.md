@@ -1616,7 +1616,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V3, S2, Impact 4/Reach 5/Confidence 5).
 
 ### IMP-101 — Show a first-run create CTA in the Lists empty state instead of "No items match"
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / onboarding
 - **Type:** bug-fix
 - **Area / files:** `src/features/list/ListView.tsx` (`:395-418`)
@@ -1632,7 +1632,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (U1, S2, Impact 4/Reach 4/Confidence 5).
 
 ### IMP-102 — Make "What's next" prefer timed, actionable occurrences
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / correctness
 - **Type:** bug-fix
 - **Area / files:** `src/features/today/TodayView.tsx` (`:79-81`)
