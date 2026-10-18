@@ -103,7 +103,7 @@ All reads and writes go through repositories in `src/db/repository.ts`, and ever
 mutation goes through `src/domain/itemActions.ts` (history + undo + toast). That boundary
 is the seam a future sync adapter plugs into.
 
-See [agents.md](./agents.md) for a deeper architecture and contribution guide.
+See [AGENTS.md](./AGENTS.md) for a deeper architecture and contribution guide.
 
 ---
 

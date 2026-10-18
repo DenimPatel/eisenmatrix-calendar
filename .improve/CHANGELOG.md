@@ -73,3 +73,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-092 · Blocked storage no longer produces unhandled prune rejections every tick
 - 2026-10-18 · IMP-096 · Habit status and streak persist in one transaction; concurrent toggles stay consistent
 - 2026-10-18 · IMP-097 · Concurrent occurrence skip/edit no longer drop sibling edits
+- 2026-10-18 · IMP-046 · Agent guide is tracked as AGENTS.md and README links to it

@@ -1309,7 +1309,7 @@ dependencies appear earlier in the file. Items needing human judgment/design/leg
 - **Notes:** Source: `discovered-IMP-019.md` §1–3. Scored 6 because the "surface it" half is a small product choice (toast vs. Settings row, left to the implementation) and the honest fix is mostly plumbing. IMP-056 prunes expired absolute reminders in the same component, so the two can share a pass.
 
 ### IMP-046 — Rename the agent guide to `AGENTS.md` and fix the README link
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** documentation / interop
 - **Type:** docs
 - **Area / files:** `agents.md` (tracked, lowercase), `README.md` (`:106`)
