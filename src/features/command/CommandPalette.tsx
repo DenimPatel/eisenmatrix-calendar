@@ -21,6 +21,7 @@ interface Command {
 export function CommandPalette() {
   const open = useUiStore((s) => s.commandOpen);
   const setOpen = useUiStore((s) => s.setCommandOpen);
+  const setHelpOpen = useUiStore((s) => s.setHelpOpen);
   const openEditor = useUiStore((s) => s.openEditor);
   const setTheme = useUiStore((s) => s.setTheme);
   const navigate = useNavigate();
@@ -54,14 +55,22 @@ export function CommandPalette() {
       { id: 'theme-dark', label: 'Theme: dark', run: () => setTheme('dark') },
       { id: 'theme-system', label: 'Theme: system', run: () => setTheme('system') },
     ];
+    const helpCommands: Command[] = [
+      {
+        id: 'help',
+        label: 'Help & syntax',
+        hint: 'Quick add, shortcuts, export',
+        run: () => setHelpOpen(true),
+      },
+    ];
     const itemCommands: Command[] = items.slice(0, 200).map((item) => ({
       id: `item-${item.id}`,
       label: item.title || 'Untitled',
       hint: ITEM_KIND_LABELS[item.kind],
       run: () => openEditor(item),
     }));
-    return [...navCommands, ...createCommands, ...themeCommands, ...itemCommands];
-  }, [items, navigate, openEditor, setTheme]);
+    return [...navCommands, ...createCommands, ...themeCommands, ...helpCommands, ...itemCommands];
+  }, [items, navigate, openEditor, setTheme, setHelpOpen]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

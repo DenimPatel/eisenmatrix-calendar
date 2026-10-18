@@ -36,6 +36,7 @@ export interface OverlayState {
   commandOpen: boolean;
   quickAddOpen: boolean;
   shortcutsOpen: boolean;
+  helpOpen: boolean;
   editor: EditorState;
 }
 
@@ -45,6 +46,7 @@ interface UiState {
   commandOpen: boolean;
   quickAddOpen: boolean;
   shortcutsOpen: boolean;
+  helpOpen: boolean;
   editor: EditorState;
   overlayStack: string[];
   filters: Filters;
@@ -56,6 +58,7 @@ interface UiState {
   setCommandOpen: (open: boolean) => void;
   setQuickAddOpen: (open: boolean) => void;
   setShortcutsOpen: (open: boolean) => void;
+  setHelpOpen: (open: boolean) => void;
   registerOverlay: (id: string) => void;
   unregisterOverlay: (id: string) => void;
   isTopOverlay: (id: string) => boolean;
@@ -87,7 +90,13 @@ export const DEFAULT_FILTERS: Filters = {
 
 /** Any modal layer that owns the screen; global shortcuts must stand down while one is up. */
 export function isOverlayOpen(state: OverlayState): boolean {
-  return state.commandOpen || state.quickAddOpen || state.shortcutsOpen || state.editor.open;
+  return (
+    state.commandOpen ||
+    state.quickAddOpen ||
+    state.shortcutsOpen ||
+    state.helpOpen ||
+    state.editor.open
+  );
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
@@ -96,6 +105,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   commandOpen: false,
   quickAddOpen: false,
   shortcutsOpen: false,
+  helpOpen: false,
   editor: { open: false, item: null, occurrenceKey: null, splitMode: 'all' },
   overlayStack: [],
   filters: { ...DEFAULT_FILTERS },
@@ -107,6 +117,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   setCommandOpen: (commandOpen) => set({ commandOpen }),
   setQuickAddOpen: (quickAddOpen) => set({ quickAddOpen }),
   setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
+  setHelpOpen: (helpOpen) => set({ helpOpen }),
 
   registerOverlay: (id) =>
     set((s) => ({

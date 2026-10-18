@@ -25,6 +25,7 @@ function baseState(): OverlayState {
     commandOpen: false,
     quickAddOpen: false,
     shortcutsOpen: false,
+    helpOpen: false,
     editor: CLOSED_EDITOR,
   };
 }
@@ -34,7 +35,7 @@ describe('isOverlayOpen', () => {
     expect(isOverlayOpen(baseState())).toBe(false);
   });
 
-  it.each(['commandOpen', 'quickAddOpen', 'shortcutsOpen'] as const)(
+  it.each(['commandOpen', 'quickAddOpen', 'shortcutsOpen', 'helpOpen'] as const)(
     'is true when %s is set',
     (flag) => {
       expect(isOverlayOpen({ ...baseState(), [flag]: true })).toBe(true);

@@ -40,7 +40,7 @@ async function mountCommandPalette() {
 
 beforeEach(async () => {
   await db.items.clear();
-  useUiStore.setState({ commandOpen: false, quickAddOpen: false });
+  useUiStore.setState({ commandOpen: false, quickAddOpen: false, helpOpen: false });
 });
 
 afterEach(() => {
@@ -81,5 +81,24 @@ describe('CommandPalette', () => {
 
     await mounted.unmount();
     opener.remove();
+  });
+
+  it('opens the help dialog from the Help command', async () => {
+    useUiStore.setState({ commandOpen: true });
+    const mounted = await mountCommandPalette();
+
+    const help = Array.from(mounted.host.querySelectorAll('[role="option"]')).find((el) =>
+      el.textContent?.includes('Help & syntax'),
+    );
+    expect(help).not.toBeUndefined();
+
+    await act(async () => {
+      (help as HTMLElement).click();
+    });
+
+    expect(useUiStore.getState().helpOpen).toBe(true);
+    expect(useUiStore.getState().commandOpen).toBe(false);
+
+    await mounted.unmount();
   });
 });

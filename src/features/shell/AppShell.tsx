@@ -14,6 +14,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import {
   Command,
+  HelpCircle,
   Keyboard,
   Moon,
   PanelLeftClose,
@@ -43,6 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const setQuickAddOpen = useUiStore((s) => s.setQuickAddOpen);
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
   const setShortcutsOpen = useUiStore((s) => s.setShortcutsOpen);
+  const setHelpOpen = useUiStore((s) => s.setHelpOpen);
   const openEditor = useUiStore((s) => s.openEditor);
   const [activeDrag, setActiveDrag] = useState<ItemDragData | null>(null);
 
@@ -208,6 +210,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 title="Keyboard shortcuts"
               >
                 <Keyboard size={18} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setHelpOpen(true)}
+                title="Help & syntax"
+              >
+                <HelpCircle size={18} />
               </Button>
               <Button
                 variant="ghost"

@@ -1,21 +1,13 @@
 import { useRef } from 'react';
 import { Dialog } from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
 import { useUiStore } from '@/store/useUiStore';
-
-const SHORTCUTS: Array<[string, string]> = [
-  ['⌘/Ctrl + K', 'Open command palette'],
-  ['C', 'Quick add'],
-  ['N', 'New task'],
-  ['/', 'Search everything'],
-  ['1 – 9', 'Jump to a view'],
-  ['⌘/Ctrl + Z', 'Undo last action'],
-  ['?', 'Show this sheet'],
-  ['Esc', 'Close panels'],
-];
+import { SHORTCUTS } from './helpContent';
 
 export function ShortcutSheet() {
   const open = useUiStore((s) => s.shortcutsOpen);
   const setOpen = useUiStore((s) => s.setShortcutsOpen);
+  const setHelpOpen = useUiStore((s) => s.setHelpOpen);
   const headingRef = useRef<HTMLHeadingElement>(null);
   return (
     <Dialog
@@ -25,9 +17,22 @@ export function ShortcutSheet() {
       size="sm"
       titleRef={headingRef}
       initialFocusRef={headingRef}
+      footer={
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(false);
+              setHelpOpen(true);
+            }}
+          >
+            Quick-add syntax & help
+          </Button>
+        </div>
+      }
     >
       <dl className="divide-y divide-border">
-        {SHORTCUTS.map(([keys, label]) => (
+        {SHORTCUTS.map(({ keys, label }) => (
           <div key={keys} className="flex items-center justify-between py-2">
             <dt className="text-sm text-fg">{label}</dt>
             <dd>

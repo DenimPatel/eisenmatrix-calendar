@@ -72,6 +72,7 @@ export function SettingsView() {
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
   const pushToast = useUiStore((s) => s.pushToast);
+  const setHelpOpen = useUiStore((s) => s.setHelpOpen);
   const [strategy, setStrategy] = useState<ImportStrategy>('skip');
   const [backupCount, setBackupCount] = useState(0);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -361,6 +362,11 @@ export function SettingsView() {
           EisenMatrix Calendar is local-first and 100% static. Everything lives in IndexedDB on this
           device; there is no account and no server. Install it from your browser to use it offline.
         </p>
+        <div className="mt-3">
+          <Button variant="outline" size="sm" onClick={() => setHelpOpen(true)}>
+            Quick-add syntax & help
+          </Button>
+        </div>
       </section>
 
       <Dialog

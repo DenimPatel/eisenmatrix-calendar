@@ -6,6 +6,7 @@ import { ItemEditorSheet } from '@/features/item/ItemEditorSheet';
 import { QuickAdd } from '@/features/quickadd/QuickAdd';
 import { CommandPalette } from '@/features/command/CommandPalette';
 import { ShortcutSheet } from '@/features/shell/ShortcutSheet';
+import { HelpDialog } from '@/features/shell/HelpDialog';
 import { ToastHost } from '@/components/ui/ToastHost';
 import { RouteErrorBoundary } from '@/components/ui/RouteErrorBoundary';
 import { RouteFallback } from '@/components/ui/RouteFallback';
@@ -129,6 +130,7 @@ export default function App({ onBootEffects }: AppProps = {}) {
       <QuickAdd />
       <CommandPalette />
       <ShortcutSheet />
+      <HelpDialog />
       <ReminderRuntime />
       <ToastHost />
     </HashRouter>

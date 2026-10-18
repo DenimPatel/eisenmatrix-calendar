@@ -2142,4 +2142,4 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 25
-- **Notes:** Source: `.improve/reports/discover3-features.md` (F14, S3, Impact 3/Reach 3/Confidence 4).
+- **Notes:** Source: `.improve/reports/discover3-features.md` (F14, S3, Impact 3/Reach 3/Confidence 4). DONE — `HelpDialog` (quick-add examples + syntax, shortcuts, export formats) mounted in `App.tsx`; opened from the header Help button, the command palette ("Help & syntax"), the shortcut sheet footer, and Settings → About. Every documented example is asserted against `parseQuickAdd` in `helpContent.test.ts`. See `.improve/reports/impl-IMP-134.md`.
