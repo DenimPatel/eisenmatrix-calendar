@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { foldLine, itemsToICS, recurrenceToRRule } from './ics';
 import { createItem } from '@/domain/itemFactory';
+import { splitSeries } from '@/domain/recurrence';
 import type { Item, RecurrenceRule } from '@/types';
 
 describe('ics', () => {
@@ -162,6 +163,31 @@ describe('ics', () => {
     // Anchored on CRLF so a `UNTIL=20240630T235959Z` suffix cannot satisfy the date-only case.
     expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630\r\n');
     expect(ics).toContain('\r\nRRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630T235959\r\n');
+  });
+
+  it('never emits COUNT and UNTIL in the same RRULE', () => {
+    const rrule = recurrenceToRRule({ ...weeklyRule, count: 5, until: '2024-06-30' }, true);
+    expect(rrule.match(/COUNT=|UNTIL=/g) ?? []).toHaveLength(1);
+    // UNTIL is the tighter bound, so it is the one that survives.
+    expect(rrule).toBe('FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20240630');
+  });
+
+  it('exports a count-limited split head with a single bound that round-trips', () => {
+    const item = createItem({ kind: 'task', title: 'Standup', start: '2026-01-01', allDay: true });
+    item.recurrence = {
+      freq: 'daily',
+      interval: 1,
+      weekStartsOn: 1,
+      count: 5,
+      exceptions: [],
+      overrides: {},
+    };
+    const { head, tail } = splitSeries(item, '2026-01-03', 'tail');
+
+    const headRule = recurrenceToRRule(head.recurrence!, true);
+    expect(headRule).toBe('FREQ=DAILY;INTERVAL=1;UNTIL=20260102');
+    expect(headRule.match(/COUNT=|UNTIL=/g) ?? []).toHaveLength(1);
+    expect(recurrenceToRRule(tail.recurrence!, true)).toBe('FREQ=DAILY;INTERVAL=1;COUNT=3');
   });
 
   describe('RFC 5545 line folding', () => {

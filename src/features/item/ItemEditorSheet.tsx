@@ -75,6 +75,7 @@ function seriesPatch(draft: Item): ItemPatch {
     dueAt: draft.dueAt,
     reminders: draft.reminders,
     data: draft.data,
+    recurrence: draft.recurrence,
   };
 }
 

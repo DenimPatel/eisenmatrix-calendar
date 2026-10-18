@@ -71,11 +71,15 @@ export function recurrenceToRRule(rule: RecurrenceRule, dateOnlyStart: boolean):
   if (rule.byMonth?.length && rule.freq === 'yearly') {
     parts.push(`BYMONTH=${rule.byMonth.join(',')}`);
   }
-  if (rule.count) parts.push(`COUNT=${rule.count}`);
-  if (rule.until) {
-    const until = parseLocalDate(rule.until);
+  const until = rule.until ? parseLocalDate(rule.until) : null;
+  // RFC 5545 §3.3.10: COUNT and UNTIL MUST NOT occur in the same RRULE. A "this and future"
+  // split leaves both on the head (the original count plus the split's UNTIL); the UNTIL is
+  // the tighter bound there, so it alone is emitted.
+  if (until) {
     // Match the floating DTSTART: a `Z` would claim a UTC instant built from local fields.
-    if (until) parts.push(`UNTIL=${dateOnly(until)}${dateOnlyStart ? '' : 'T235959'}`);
+    parts.push(`UNTIL=${dateOnly(until)}${dateOnlyStart ? '' : 'T235959'}`);
+  } else if (rule.count) {
+    parts.push(`COUNT=${rule.count}`);
   }
   return parts.join(';');
 }

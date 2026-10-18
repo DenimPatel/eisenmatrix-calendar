@@ -1805,7 +1805,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-quality.md` (#3, S2, Impact 3/Reach 3/Confidence 5).
 
 ### IMP-113 — Persist a recurrence-rule edit when scope is "This and future"
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / editor
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx` (`:67-84`, `:210-231`), `src/domain/itemActions.ts` (`:411-421`)

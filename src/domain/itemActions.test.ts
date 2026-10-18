@@ -20,7 +20,7 @@ import { upcomingReminders } from './reminders';
 import { habitStreak } from './stats';
 import { formatISODate, parseLocalDate } from '@/lib/date';
 import { addDays } from 'date-fns';
-import type { HabitItem, Item, Occurrence, Reminder, TaskItem } from '@/types';
+import type { HabitItem, Item, Occurrence, RecurrenceRule, Reminder, TaskItem } from '@/types';
 
 function task(id: string, title: string, parentId: string | null = null): Item {
   return normalizeItem({ ...createItem({ kind: 'task', title }), id, parentId });
@@ -865,6 +865,27 @@ describe('updateRecurring (scope: future)', () => {
     expect(union).toHaveLength(10);
   });
 
+  it('persists an edited recurrence rule on the tail for "this and future"', async () => {
+    await itemRepo.create(countedWeeklyTask('s'));
+    const stored = (await itemRepo.get('s'))!;
+    const edited: RecurrenceRule = {
+      freq: 'daily',
+      interval: 1,
+      weekStartsOn: 1,
+      exceptions: [],
+      overrides: {},
+    };
+
+    await updateRecurring(stored, 'future', OCC, { title: 'Standup (retro)', recurrence: edited });
+
+    const tail = await tailOf();
+    expect(tail.recurrence).toEqual(edited);
+    // The head keeps the pre-split rule, only bounded at the split.
+    const head = (await itemRepo.get('s'))!;
+    expect(head.recurrence?.freq).toBe('weekly');
+    expect(head.recurrence?.until).toBe('2026-07-19');
+  });
+
   it('applies a start the editor actually changed', async () => {
     await itemRepo.create(countedWeeklyTask('s'));
     const before = (await itemRepo.get('s'))!;
@@ -943,6 +964,7 @@ describe('updateRecurring (scope: future)', () => {
       dueAt: draft.dueAt,
       reminders: draft.reminders,
       data: draft.data,
+      recurrence: draft.recurrence,
     });
 
     await updateRecurring(stored, 'future', OCC, {
@@ -954,6 +976,8 @@ describe('updateRecurring (scope: future)', () => {
     expect(tail.start).toBe('2026-07-20T09:00');
     expect(tail.end).toBe('2026-07-20T10:00');
     expect(tail.dueAt).toBe('2026-07-20T09:00');
+    // An unchanged rule must not replace the split's count-adjusted tail rule.
+    expect(tail.recurrence?.count).toBe(9);
     const head = (await itemRepo.get('s'))!;
     expect(head.start).toBe('2026-07-13T09:00');
     expect(head.end).toBe('2026-07-13T10:00');

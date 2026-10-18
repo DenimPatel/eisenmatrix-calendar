@@ -409,6 +409,14 @@ export async function updateRecurring(
   // did not use, so a start/end/dueAt the editor left untouched must not drag the tail back
   // onto the range the head already covers.
   const tailPatch: ItemPatch = { ...patch };
+  // The editor hands the whole rule back on every save, so an unchanged rule must not replace
+  // the split's count-adjusted tail rule. Only a genuinely edited rule is applied to the tail.
+  if (
+    tailPatch.recurrence !== undefined &&
+    JSON.stringify(tailPatch.recurrence) === JSON.stringify(stored.recurrence)
+  ) {
+    delete tailPatch.recurrence;
+  }
   for (const field of ['start', 'end', 'dueAt'] as const) {
     if (tailPatch[field] === stored[field]) delete tailPatch[field];
   }
