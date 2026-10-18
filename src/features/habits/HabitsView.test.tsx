@@ -112,6 +112,24 @@ describe('HabitsView mark today', () => {
   });
 });
 
+describe('HabitsView empty heatmap cells', () => {
+  it('uses a token that differs from the card surface for empty cells', async () => {
+    const mounted = await mountHabits(1);
+    const grid = mounted.host.querySelector<HTMLElement>('[role="img"]');
+    expect(grid).not.toBeNull();
+    const emptyCells = Array.from(grid!.children).filter((el) =>
+      (el.getAttribute('title') ?? '').endsWith(': 0'),
+    );
+    expect(emptyCells).toHaveLength(DAYS);
+    for (const cell of emptyCells) {
+      expect(cell.classList.contains('bg-border')).toBe(true);
+      expect(cell.classList.contains('bg-surface')).toBe(false);
+      expect(cell.classList.contains('bg-elevated')).toBe(false);
+    }
+    await unmount(mounted);
+  });
+});
+
 describe('HabitsView weekStartsOn', () => {
   it('renders a Sunday-first heatmap when weekStartsOn is 0', async () => {
     const mounted = await mountHabits(0);

@@ -79,3 +79,4 @@ this file is appended per dimension from the resumed session onward.
 - 2026-10-18 · IMP-113 · Editing recurrence with 'This and future' now persists; ICS RRULE no longer emits both COUNT and UNTIL
 - 2026-10-18 · IMP-114 · ICS export handles CRLF notes and inverted ranges; delivery tick tolerates blocked storage
 - 2026-10-18 · IMP-116 · Recurring events keep their wall-clock end across DST transitions
+- 2026-10-18 · IMP-099 · Habit heatmap grid is visible in light mode

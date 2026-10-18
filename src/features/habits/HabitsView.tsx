@@ -163,7 +163,7 @@ export function HabitsView() {
                           title={`${key}: ${count}`}
                           className={cn(
                             'h-3.5 w-3.5 rounded-sm',
-                            intensity === 0 && 'bg-elevated',
+                            intensity === 0 && 'bg-border',
                             intensity === 1 && 'bg-emerald-200 dark:bg-emerald-900',
                             intensity === 2 && 'bg-emerald-300 dark:bg-emerald-800',
                             intensity === 3 && 'bg-emerald-500 dark:bg-emerald-600',

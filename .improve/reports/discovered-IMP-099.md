@@ -1,0 +1,1 @@
+- GoalsView.tsx:150 progress track bg-elevated invisible in light; Calendar :192 bg-elevated/50 no-op

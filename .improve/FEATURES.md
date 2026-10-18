@@ -1584,7 +1584,7 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Notes:** Source: `.improve/reports/discover3-visual.md` (V1, S2, Impact 3/Reach 5/Confidence 5).
 
 ### IMP-099 — Make empty habit-heatmap cells visible in light mode
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / contrast
 - **Type:** bug-fix
 - **Area / files:** `src/features/habits/HabitsView.tsx` (`:166` `intensity === 0 && 'bg-elevated'`, heatmap `:140-175`), `src/styles/index.css` (`--elevated`/`--surface`)
