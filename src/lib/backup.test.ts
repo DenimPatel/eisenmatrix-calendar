@@ -147,6 +147,86 @@ describe('backup', () => {
     expect(expandOccurrences(item, from, to).map((o) => o.occKey)).toEqual(['2024-01-01']);
   });
 
+  describe('malformed occurrence overrides', () => {
+    function importItem(overrides: unknown) {
+      return parseBackup(
+        JSON.stringify({
+          app: 'eisenmatrix',
+          version: 2,
+          items: [
+            {
+              id: 'ov',
+              kind: 'task',
+              title: 'Weekly',
+              start: '2026-03-02T09:00',
+              recurrence: { freq: 'weekly', overrides },
+            },
+          ],
+        }),
+      );
+    }
+
+    function expand(overrides: unknown) {
+      const parsed = importItem(overrides);
+      expect(parsed.invalid).toBe(0);
+      const [item] = parsed.items.map(normalizeItem);
+      const from = new Date('2026-03-01T00:00:00');
+      const to = new Date('2026-03-31T23:59:59');
+      return { item, occurrences: expandOccurrences(item, from, to) };
+    }
+
+    it('drops an override whose start is a number, keeping the rest of the item', () => {
+      const { item, occurrences } = expand({ '2026-03-09': { start: 5 } });
+
+      expect(item.recurrence?.overrides).toEqual({});
+      const starts = occurrences.map((o) => o.start);
+      expect(starts.every((start) => typeof start === 'string')).toBe(true);
+      expect(starts).not.toContain(5);
+    });
+
+    it('drops an override whose status is not a valid occurrence status', () => {
+      const { item } = expand({ '2026-03-09': { status: 'bogus' } });
+      expect(item.recurrence?.overrides).toEqual({});
+    });
+
+    it('drops an override whose title is not a string', () => {
+      const { item } = expand({ '2026-03-09': { title: 7 } });
+      expect(item.recurrence?.overrides).toEqual({});
+    });
+
+    it('keeps a valid override and drops its unknown fields', () => {
+      const { item } = expand({
+        '2026-03-09': { start: '2026-03-09T10:00', status: 'done', bogus: true },
+      });
+
+      expect(item.recurrence?.overrides).toEqual({
+        '2026-03-09': { start: '2026-03-09T10:00', status: 'done' },
+      });
+    });
+
+    it('drops only the malformed entry when a valid one shares the map', () => {
+      const { item } = expand({
+        '2026-03-09': { start: 5 },
+        '2026-03-16': { title: 'Moved' },
+      });
+
+      expect(item.recurrence?.overrides).toEqual({ '2026-03-16': { title: 'Moved' } });
+    });
+
+    it('never lets a non-string start reach the useOccurrences sort', () => {
+      const { occurrences } = expand({ '2026-03-09': { start: 5 } });
+
+      expect(() =>
+        occurrences.sort((a, b) => {
+          const aTime = a.start ?? a.occKey;
+          const bTime = b.start ?? b.occKey;
+          return aTime.localeCompare(bTime);
+        }),
+      ).not.toThrow();
+      expect(occurrences.every((o) => o.start === null || typeof o.start === 'string')).toBe(true);
+    });
+  });
+
   it('counts an item whose recurrence has an unknown frequency as invalid', () => {
     const parsed = parseBackup(
       JSON.stringify({

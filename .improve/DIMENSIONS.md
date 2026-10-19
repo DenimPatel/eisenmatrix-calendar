@@ -2,7 +2,7 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched (date, IMP, SHA) | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 19 | 68 | 1 blocked | 2026-10-18 IMP-143 pending | import override/reminder validation, series done | IMP-144, IMP-161/184 |
+| Bugs/Correctness | 4 | 18 | 69 | 1 blocked | 2026-10-18 IMP-144 pending | mixed reminder import, series done | IMP-184, IMP-161 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 10 | 5 | 0 | 2026-10-18 IMP-137 pending | ring label, mobile voids, empty states | IMP-145, IMP-106/108/109 |
 | UX/Interaction | 5 | 2 | 14 | 3 human | 2026-10-18 IMP-142 pending | first-occurrence preview, shopping add box | IMP-156, IMP-171 |
@@ -18,8 +18,9 @@ undo integrity). Discovery 4 found a new tier of S2 correctness bugs on normal p
 the first: "this and future" now partitions per-occurrence state instead of dropping the tail's
 done/completedAt, IMP-140 stopped reminders for done/cancelled occurrences at the single candidate
 seam, IMP-141 scoped toast Undo to its own action, and IMP-143 made reminder rows honest across the
-All-day toggle (also closing IMP-148's absolute-row defect). Import override validation, mixed
-imported reminder shapes and the series-done inconsistency remain; health stays 4 until those land.
+All-day toggle (also closing IMP-148's absolute-row defect). IMP-144 closed the malformed override
+import crash. Mixed imported reminder shapes and the series-done inconsistency remain; health stays
+4 until those land.
 
 **Content (4):** Not applicable beyond docs; only the license question is open for humans.
 

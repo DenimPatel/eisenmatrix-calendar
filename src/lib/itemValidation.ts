@@ -6,12 +6,15 @@ import type {
   ItemKind,
   ItemStatus,
   OccurrenceOverride,
+  OccurrenceStatus,
   Priority,
   RecurrenceRule,
   Reminder,
 } from '@/types';
 
 const RECURRENCE_FREQUENCIES: Frequency[] = ['daily', 'weekly', 'monthly', 'yearly'];
+
+const OCCURRENCE_STATUSES: OccurrenceStatus[] = ['todo', 'doing', 'done', 'cancelled'];
 
 export function isItemKind(value: unknown): value is ItemKind {
   return typeof value === 'string' && (ITEM_KINDS as string[]).includes(value);
@@ -49,11 +52,51 @@ function asNumberArray(value: unknown): number[] {
     : [];
 }
 
+function isOccurrenceStatus(value: unknown): value is OccurrenceStatus {
+  return typeof value === 'string' && (OCCURRENCE_STATUSES as string[]).includes(value);
+}
+
+/**
+ * Coerce one untrusted override entry, dropping unknown fields. Returns `null` when a known
+ * field carries the wrong type so the caller can drop the whole override rather than apply a
+ * partially-typed one to the occurrence engine.
+ */
+function asOccurrenceOverride(value: unknown): OccurrenceOverride | null {
+  if (!isPlainObject(value)) return null;
+  const out: OccurrenceOverride = {};
+  if ('start' in value) {
+    if (typeof value.start !== 'string') return null;
+    out.start = value.start;
+  }
+  if ('end' in value) {
+    if (value.end !== null && typeof value.end !== 'string') return null;
+    out.end = value.end;
+  }
+  if ('allDay' in value) {
+    if (typeof value.allDay !== 'boolean') return null;
+    out.allDay = value.allDay;
+  }
+  if ('title' in value) {
+    if (typeof value.title !== 'string') return null;
+    out.title = value.title;
+  }
+  if ('notes' in value) {
+    if (typeof value.notes !== 'string') return null;
+    out.notes = value.notes;
+  }
+  if ('status' in value) {
+    if (!isOccurrenceStatus(value.status)) return null;
+    out.status = value.status;
+  }
+  return out;
+}
+
 function asOverrides(value: unknown): Record<string, OccurrenceOverride> {
   if (!isPlainObject(value)) return {};
   const out: Record<string, OccurrenceOverride> = {};
   for (const [key, entry] of Object.entries(value)) {
-    if (isPlainObject(entry)) out[key] = entry as OccurrenceOverride;
+    const override = asOccurrenceOverride(entry);
+    if (override) out[key] = override;
   }
   return out;
 }

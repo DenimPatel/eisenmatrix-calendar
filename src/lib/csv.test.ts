@@ -172,6 +172,29 @@ describe('csv', () => {
     expect(result.items).toEqual([]);
   });
 
+  it('drops a malformed override so only string starts reach the occurrence engine', () => {
+    const csv = toCSV([
+      {
+        id: 'ov-1',
+        kind: 'task',
+        title: 'Weekly',
+        start: '2026-03-02T09:00',
+        recurrence: { freq: 'weekly', overrides: { '2026-03-09': { start: 5 } } },
+      },
+    ]);
+
+    const result = csvToItems(csv);
+    expect(result.invalid).toBe(0);
+    const [item] = result.items.map(normalizeItem);
+    expect(item.recurrence?.overrides).toEqual({});
+
+    const from = new Date('2026-03-01T00:00:00');
+    const to = new Date('2026-03-31T23:59:59');
+    const starts = expandOccurrences(item, from, to).map((o) => o.start);
+    expect(starts.every((start) => typeof start === 'string')).toBe(true);
+    expect(starts).not.toContain(5);
+  });
+
   it('warns and toasts, then falls back, for an unreadable JSON field', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     useUiStore.setState({ toasts: [] });

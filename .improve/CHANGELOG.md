@@ -5,6 +5,7 @@ this file is appended per dimension from the resumed session onward.
 
 ## Bugs/Correctness
 
+- 2026-10-18 · IMP-144 · Malformed imported occurrence overrides are dropped whole instead of crashing every occurrence view with a non-string start · files: `src/lib/itemValidation.ts`, `src/lib/itemValidation.test.ts`, `src/lib/backup.test.ts`, `src/lib/csv.test.ts`
 - 2026-10-18 · IMP-143 · Reminder rows now render by their stored shape, and the All-day toggle converts time-of-day/offset reminders while preserving the fire instant; cross-day offsets are kept rather than dropped (also: IMP-148 absolute snoozes are readable) · files: `src/domain/reminders.ts`, `src/features/item/ReminderEditor.tsx`, `src/features/item/ItemEditorSheet.tsx`
 - 2026-10-18 · IMP-141 · A toast's Undo now reverts the action it labels instead of the newest undo entry; expired entries no-op, and bulk delete counts descendants · files: `src/store/useUiStore.ts`, `src/domain/itemActions.ts`, `src/store/useUiStore.test.ts`, `src/domain/itemActions.test.ts`
 - 2026-10-18 · IMP-140 · Done and cancelled occurrences no longer schedule reminders, while todo/doing fire times are unchanged · files: `src/domain/reminders.ts`, `src/domain/reminders.test.ts`

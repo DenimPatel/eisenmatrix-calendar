@@ -2292,10 +2292,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 67.5
-- **Notes:** Source: `discover4-ux.md` (U11, S2, 3/3/5). DONE 2026-10-18: rows render by their stored reminder shape, and a pure `reconcileReminderMode` converts timeOfDay↔offset on the All-day toggle while preserving the fire instant (cross-day offsets are kept, not dropped). This also satisfies IMP-148. Residual (new IMP-184): a hand-crafted imported reminder carrying both timeOfDay and offsetMinutes still renders two times; no app path produces that shape. Verified PASS (typecheck/lint/76 files·775 tests/format:check/build; browser 1280/390, 0 console errors; render/reconcile mutations caught). Commit pending.
+- **Notes:** Source: `discover4-ux.md` (U11, S2, 3/3/5). DONE 2026-10-18: rows render by their stored reminder shape, and a pure `reconcileReminderMode` converts timeOfDay↔offset on the All-day toggle while preserving the fire instant (cross-day offsets are kept, not dropped). This also satisfies IMP-148. Residual (new IMP-184): a hand-crafted imported reminder carrying both timeOfDay and offsetMinutes still renders two times; no app path produces that shape. Verified PASS (typecheck/lint/76 files·775 tests/format:check/build; browser 1280/390, 0 console errors; render/reconcile mutations caught). Commit a622caf.
 
 ### IMP-144 — Reject non-string occurrence override fields on import
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / import validation
 - **Type:** bug-fix
 - **Area / files:** `src/lib/itemValidation.ts:52-59` (`asOverrides`), `src/hooks/useOccurrences.ts:13-17` (sort)
@@ -2308,7 +2308,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 60
-- **Notes:** Source: `discover4-quality.md` (C4, S2, 4/2/5).
+- **Notes:** Source: `discover4-quality.md` (C4, S2, 4/2/5). DONE 2026-10-18: `asOccurrenceOverride` rebuilds each override from typed known fields and drops the whole override on a wrong-typed field (no half-apply), keeping the item and siblings; unknown fields stripped; no numeric start reaches `expandOccurrences` or the `useOccurrences` sort. Chosen semantics: drop, invalid count unchanged (documented). Mutation bypass fails 13 tests. Verified PASS (typecheck/lint/77 files·790 tests/format:check/build; independent malformed-field matrix). Commit pending.
 
 ### IMP-145 — Keep the small ProgressRing label inside the ring
 - **Status:** TODO
