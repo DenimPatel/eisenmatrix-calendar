@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   parseQuickAdd,
   quickAddDataFor,
+  quickAddPreviewChips,
   quickAddToItem,
   splitNoteDraft,
   NOTE_TITLE_MAX,
@@ -313,6 +314,60 @@ describe('quickAddDataFor', () => {
     const parsed = parseQuickAdd('buy milk 2L #groceries');
     expect(quickAddDataFor('bill', parsed)).toMatchObject({ amount: 0, currency: 'USD' });
     expect(quickAddDataFor('shopping', parsed)).toMatchObject({ quantity: 2, unit: 'l' });
+  });
+});
+
+describe('quickAddPreviewChips', () => {
+  const SAMPLE = 'pay electricity $120 every month on the 5th !urgent';
+
+  it('is byte-identical to the parsed chips when nothing is overridden', () => {
+    const parsed = parseQuickAdd(SAMPLE);
+    expect(quickAddPreviewChips(parsed, { kind: parsed.kind })).toEqual(parsed.chips);
+  });
+
+  it('updates the kind chip and drops inapplicable chips for a Note', () => {
+    const parsed = parseQuickAdd(SAMPLE);
+    const chips = quickAddPreviewChips(parsed, { kind: 'note' });
+    expect(chips.map((c) => c.field)).toEqual(['kind', 'date', 'urgency']);
+    expect(chips.find((c) => c.field === 'kind')?.label).toBe('note');
+  });
+
+  it('drops the amount but keeps recurrence when the kind becomes a Task', () => {
+    const parsed = parseQuickAdd(SAMPLE);
+    const chips = quickAddPreviewChips(parsed, { kind: 'task' });
+    const fields = chips.map((c) => c.field);
+    expect(fields).not.toContain('amount');
+    expect(fields).toContain('recurrence');
+    expect(chips.find((c) => c.field === 'kind')?.label).toBe('task');
+  });
+
+  it('restores the parsed chips after a bill → note → bill round-trip', () => {
+    const parsed = parseQuickAdd(SAMPLE);
+    quickAddPreviewChips(parsed, { kind: 'note' });
+    expect(quickAddPreviewChips(parsed, { kind: 'bill' })).toEqual(parsed.chips);
+  });
+
+  it('reflects a date override in the date chip', () => {
+    const parsed = parseQuickAdd(SAMPLE);
+    const chips = quickAddPreviewChips(parsed, { kind: parsed.kind, date: '2026-12-25' });
+    expect(chips.find((c) => c.field === 'date')?.label).toBe('2026-12-25');
+  });
+
+  it('reflects a time override, adding a time chip where none was parsed', () => {
+    const parsed = parseQuickAdd(SAMPLE);
+    expect(parsed.chips.some((c) => c.field === 'time')).toBe(false);
+    const chips = quickAddPreviewChips(parsed, { kind: parsed.kind, time: '14:30' });
+    expect(chips.find((c) => c.field === 'time')?.label).toBe('14:30');
+  });
+
+  it('carries parsed shopping quantity only for a Shopping kind', () => {
+    const parsed = parseQuickAdd('buy milk 2L #groceries');
+    expect(quickAddPreviewChips(parsed, { kind: 'note' }).some((c) => c.field === 'quantity')).toBe(
+      false,
+    );
+    expect(
+      quickAddPreviewChips(parsed, { kind: 'shopping' }).find((c) => c.field === 'quantity')?.label,
+    ).toBe('2 l');
   });
 });
 

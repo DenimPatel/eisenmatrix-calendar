@@ -161,6 +161,181 @@ describe('QuickAdd', () => {
     opener.remove();
   });
 
+  it('tracks the Kind override in the preview chips', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'pay electricity $120 every month on the 5th !urgent');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const chips = () =>
+      Array.from(mounted.host.querySelectorAll('span.inline-flex')).map(
+        (chip) => chip.textContent?.trim() ?? '',
+      );
+
+    expect(chips()).toContain('USD 120');
+    expect(chips()).toContain('every month on the 5');
+
+    const select = mounted.host.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'note';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(chips()).toContain('note');
+    expect(chips()).not.toContain('USD 120');
+    expect(chips()).not.toContain('every month on the 5');
+    expect(chips()).toContain('Urgent');
+
+    await act(async () => {
+      select.value = 'event';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(chips()).toContain('event');
+    expect(chips()).not.toContain('USD 120');
+    expect(chips()).toContain('every month on the 5');
+
+    await mounted.unmount();
+  });
+
+  it('tracks the Date and Time overrides in the preview chips', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'pay electricity $120');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const chips = () =>
+      Array.from(mounted.host.querySelectorAll('span.inline-flex')).map(
+        (chip) => chip.textContent?.trim() ?? '',
+      );
+    expect(chips()).not.toContain('14:30');
+
+    const date = mounted.host.querySelector<HTMLInputElement>('input[type="date"]')!;
+    await act(async () => {
+      setValue.call(date, '2026-12-25');
+      date.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(chips()).toContain('2026-12-25');
+
+    const time = mounted.host.querySelector<HTMLInputElement>('input[type="time"]')!;
+    await act(async () => {
+      setValue.call(time, '14:30');
+      time.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(chips()).toContain('14:30');
+
+    await mounted.unmount();
+  });
+
+  it('drops the parsed recurrence when a bill is committed as a Note', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'pay electricity $120 every month on the 5th !urgent');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const select = mounted.host.querySelector('select') as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'note';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    const chips = Array.from(mounted.host.querySelectorAll('span.inline-flex')).map(
+      (chip) => chip.textContent?.trim() ?? '',
+    );
+    expect(chips).toEqual(['note', expect.any(String), 'Urgent']);
+
+    const add = Array.from(mounted.host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Add',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      add.click();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const items = await db.items.toArray();
+    expect(items).toHaveLength(1);
+    const item = items[0];
+    expect(item.kind).toBe('note');
+    expect(item.recurrence).toBeNull();
+    if (item.kind !== 'note') return;
+    expect(item.data).not.toHaveProperty('amount');
+
+    await mounted.unmount();
+  });
+
+  it('keeps the parsed recurrence when a Note is committed without a kind override', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'note: pay electricity every month on the 5th');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const add = Array.from(mounted.host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Add',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      add.click();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const items = await db.items.toArray();
+    expect(items).toHaveLength(1);
+    expect(items[0].kind).toBe('note');
+    expect(items[0].recurrence?.freq).toBe('monthly');
+
+    await mounted.unmount();
+  });
+
+  it('keeps an explicitly parsed recurrence on a Task commit', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'gym mon/wed/fri 7am');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const add = Array.from(mounted.host.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Add',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      add.click();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const items = await db.items.toArray();
+    expect(items).toHaveLength(1);
+    expect(items[0].kind).toBe('task');
+    expect(items[0].recurrence?.freq).toBe('weekly');
+
+    await mounted.unmount();
+  });
+
   it('never narrows the time override input below the AM/PM affordance', async () => {
     useUiStore.setState({ quickAddOpen: true });
     const mounted = await mountQuickAdd();

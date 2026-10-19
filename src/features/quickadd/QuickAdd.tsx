@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Form';
 import { Badge } from '@/components/ui/Badge';
 import { useUiStore } from '@/store/useUiStore';
-import { parseQuickAdd, quickAddDataFor, quickAddToItem } from '@/domain/quickadd';
+import {
+  parseQuickAdd,
+  quickAddDataFor,
+  quickAddPreviewChips,
+  quickAddToItem,
+} from '@/domain/quickadd';
 import { createItemPersisted } from '@/domain/itemActions';
 import { listRepo } from '@/db/repository';
 import { useLists } from '@/hooks/useData';
@@ -33,6 +38,15 @@ export function QuickAdd() {
 
   const parsed = useMemo(() => parseQuickAdd(input), [input]);
   const effectiveKind = (kindOverride || parsed.kind) as ItemKind;
+  const chips = useMemo(
+    () =>
+      quickAddPreviewChips(parsed, {
+        kind: effectiveKind,
+        date: dateOverride,
+        time: timeOverride,
+      }),
+    [parsed, effectiveKind, dateOverride, timeOverride],
+  );
 
   const reset = () => {
     setInput('');
@@ -48,6 +62,7 @@ export function QuickAdd() {
     if (effectiveKind !== item.kind) {
       item.kind = effectiveKind;
       item.data = quickAddDataFor(effectiveKind, parsed);
+      if (effectiveKind === 'note') item.recurrence = null;
     }
 
     const dateKey = dateOverride || parsed.start?.slice(0, 10) || formatISODate(new Date());
@@ -151,7 +166,7 @@ export function QuickAdd() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {parsed.chips.map((chip, index) => (
+            {chips.map((chip, index) => (
               <Badge
                 key={`${chip.field}-${index}`}
                 tone={chip.field === 'kind' ? 'accent' : 'default'}

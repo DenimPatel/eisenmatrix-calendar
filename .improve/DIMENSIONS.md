@@ -5,7 +5,7 @@
 | Bugs/Correctness | 4 | 23 | 63 | 1 blocked | 2026-10-18 discovery | split occurrence state, reminders for done/cancelled, toast-undo target | IMP-139, IMP-140, IMP-141 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 10 | 5 | 0 | 2026-10-18 IMP-137 pending | ring label, mobile voids, empty states | IMP-145, IMP-106/108/109 |
-| UX/Interaction | 5 | 4 | 12 | 3 human | 2026-10-18 discovery | preview override drift, subtask scope | IMP-138, IMP-142 |
+| UX/Interaction | 5 | 3 | 13 | 3 human | 2026-10-18 IMP-138 pending | subtask scope, first-occurrence preview | IMP-142, IMP-156 |
 | Format/Structure | 4 | 0 | 0 | 0 | 2026-10-17 IMP-064 | none known | — |
 | Delivery | 5 | 2 | 4 | 2 human | 2026-10-18 IMP-136 | social metadata, non-hash 404 | IMP-149, IMP-178 |
 | Performance | 4 | 2 | 5 | 0 | 2026-10-18 discovery | Today CLS 0.55, unbounded DOM on large DBs | IMP-151, IMP-180 |
@@ -27,8 +27,9 @@ progress ring's label still overflows, mobile Lists reserves a 111px void, and d
 read as filled. Health stays 3 (lowest) until IMP-145 and the empty-state/spacing items land.
 
 **UX/Interaction (5):** Core flows (DnD, occurrence scope actions, editor tabs, overlays, mobile
-nav) verified healthy. The remaining gaps are preview truthfulness (quick-add chips ignore the
-user's overrides) and a scope promise broken by the enabled Subtasks block.
+nav) verified healthy. IMP-138 made the quick-add preview follow the user's Kind/Date/Time
+overrides and stopped a Note override from committing a promised recurrence. The remaining gaps are
+the first-occurrence preview anchor and a scope promise broken by the enabled Subtasks block.
 
 **Format/Structure (4):** Prettier is enforced in CI and drift is cleared; no open items.
 

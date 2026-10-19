@@ -453,6 +453,68 @@ export function quickAddDataFor(kind: ItemKind, parsed: QuickAddResult): Item['d
   return data as Item['data'];
 }
 
+export interface QuickAddOverrides {
+  kind: ItemKind;
+  date?: string | null;
+  time?: string | null;
+}
+
+const NON_RECURRING_KINDS: readonly ItemKind[] = ['note'];
+
+function kindCarriesField(
+  kind: ItemKind,
+  parsed: QuickAddResult,
+  field: 'amount' | 'quantity',
+): boolean {
+  return field in (quickAddDataFor(kind, parsed) as Record<string, unknown>);
+}
+
+/**
+ * Chips describing the row a commit would create, after the Kind/Date/Time
+ * overrides. Without an override it reproduces `parsed.chips` exactly; with one
+ * it drops chips for fields the effective kind does not carry.
+ */
+export function quickAddPreviewChips(
+  parsed: QuickAddResult,
+  overrides: QuickAddOverrides,
+): QuickAddChip[] {
+  const kindChanged = overrides.kind !== parsed.kind;
+  const chips: QuickAddChip[] = [{ field: 'kind', label: overrides.kind }];
+  const dateKey = overrides.date || parsed.start?.slice(0, 10) || '';
+  chips.push({ field: 'date', label: dateKey });
+
+  const time = overrides.time || parsed.time;
+  if (time) chips.push({ field: 'time', label: time });
+
+  if (parsed.recurrence && (!kindChanged || !NON_RECURRING_KINDS.includes(overrides.kind))) {
+    const label = describeRecurrence(parsed.recurrence);
+    if (label) chips.push({ field: 'recurrence', label });
+  }
+
+  if (
+    parsed.amount !== undefined &&
+    (!kindChanged || kindCarriesField(overrides.kind, parsed, 'amount'))
+  ) {
+    chips.push({ field: 'amount', label: `${parsed.currency ?? 'USD'} ${parsed.amount}` });
+  }
+
+  if (
+    parsed.quantity !== undefined &&
+    (!kindChanged || kindCarriesField(overrides.kind, parsed, 'quantity'))
+  ) {
+    chips.push({
+      field: 'quantity',
+      label: `${parsed.quantity}${parsed.unit ? ` ${parsed.unit}` : ''}`,
+    });
+  }
+
+  if (parsed.urgency === 'high') chips.push({ field: 'urgency', label: 'Urgent' });
+  if (parsed.importance === 'high') chips.push({ field: 'importance', label: 'Important' });
+  for (const tag of parsed.tags) chips.push({ field: 'tag', label: `#${tag}` });
+
+  return chips;
+}
+
 /** Convert a parsed quick-add into a fully-formed Item. */
 export function quickAddToItem(parsed: QuickAddResult): Item {
   const data: Record<string, unknown> = {};

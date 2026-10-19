@@ -2196,10 +2196,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-visual.md` (V1, S2, 3/4/5). DONE 2026-10-18: widened the editor Start-time control to the existing `w-36` precedent; only this input had an explicit narrow width. Added shared guards that reject any `w-<32` on a time input (mutation reintroducing `w-28` fails). Verified PASS (typecheck/lint/74 files·725 tests/format:check/build; preview 1280/390 light+dark, full `12:00 AM` with 32–35px clock slack, 0 console errors). Commit pending.
+- **Notes:** Source: `discover4-visual.md` (V1, S2, 3/4/5). DONE 2026-10-18: widened the editor Start-time control to the existing `w-36` precedent; only this input had an explicit narrow width. Added shared guards that reject any `w-<32` on a time input (mutation reintroducing `w-28` fails). Verified PASS (typecheck/lint/74 files·725 tests/format:check/build; preview 1280/390 light+dark, full `12:00 AM` with 32–35px clock slack, 0 console errors). Commit 058136f.
 
 ### IMP-138 — Make the quick-add preview reflect the Kind/Date/Time overrides
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** UX / correctness
 - **Type:** bug-fix
 - **Area / files:** `src/features/quickadd/QuickAdd.tsx:35,154-190`
@@ -2212,7 +2212,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-ux.md` (U1, S2, 3/4/5).
+- **Notes:** Source: `discover4-ux.md` (U1, S2, 3/4/5). DONE 2026-10-18: `quickAddPreviewChips` derives chips from the effective kind + Date/Time overrides; a kind-overridden Note also clears the parsed recurrence so preview and stored row agree (explicit note/task rules are untouched). Verified PASS (typecheck/lint/74 files·737 tests/format:check/build; browser 1280/390, stored Note matched preview, 0 console errors); commit guard is mutation-caught. Design note: `NON_RECURRING_KINDS=['note']` is not model-backed; fold into IMP-179 if that lands. Commit pending.
 
 ### IMP-139 — Preserve per-occurrence state when splitting a series
 - **Status:** TODO
