@@ -5,6 +5,7 @@ this file is appended per dimension from the resumed session onward.
 
 ## Bugs/Correctness
 
+- 2026-10-18 · IMP-141 · A toast's Undo now reverts the action it labels instead of the newest undo entry; expired entries no-op, and bulk delete counts descendants · files: `src/store/useUiStore.ts`, `src/domain/itemActions.ts`, `src/store/useUiStore.test.ts`, `src/domain/itemActions.test.ts`
 - 2026-10-18 · IMP-140 · Done and cancelled occurrences no longer schedule reminders, while todo/doing fire times are unchanged · files: `src/domain/reminders.ts`, `src/domain/reminders.test.ts`
 - 2026-10-18 · IMP-139 · "This and future" now keeps each occurrence's done/cancelled/completedAt state on the correct side of the split instead of dropping the tail's map · files: `src/domain/recurrence.ts`, `src/domain/recurrence.test.ts`, `src/domain/itemActions.test.ts`
 - 2026-10-17 · IMP-069 · Undo now reverses an item created in the editor, not just edits · 8c5ffab · files: `src/domain/itemActions.ts`, `src/domain/itemActions.test.ts`

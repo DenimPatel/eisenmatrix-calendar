@@ -19,21 +19,27 @@ import type {
   RecurrenceRule,
 } from '@/types';
 
-function pushUndo(label: string, run: () => Promise<void> | void) {
-  useUiStore.getState().pushUndo({ label, run });
+function pushUndo(label: string, run: () => Promise<void> | void): string {
+  return useUiStore.getState().pushUndo({ label, run });
 }
 
 function toast(message: string, tone: 'info' | 'success' | 'error' = 'info') {
   useUiStore.getState().pushToast({ message, tone });
 }
 
-function toastWithUndo(message: string) {
+/**
+ * Show an undoable toast scoped to the entry its own action pushed. `undoId` pins the
+ * action to that entry, so an older toast cannot revert a newer unrelated action; if the
+ * entry is gone (evicted by the stack cap or already undone) the action is a safe no-op.
+ */
+function toastWithUndo(message: string, undoId: string) {
   useUiStore.getState().pushToast({
     message,
     tone: 'info',
     actionLabel: 'Undo',
-    onAction: () => {
-      void useUiStore.getState().undo();
+    onAction: async () => {
+      const did = await useUiStore.getState().undo(undoId);
+      if (!did) useUiStore.getState().pushToast({ message: 'Undo expired', tone: 'info' });
     },
   });
 }
@@ -150,10 +156,10 @@ async function patchItemAtomic(
 export async function deleteItem(item: Item): Promise<void> {
   const descendants = await itemRepo.collectDescendants(item.id);
   await itemRepo.removeWithChildren(item.id);
-  pushUndo(`Delete “${item.title}”`, async () => {
+  const undoId = pushUndo(`Delete “${item.title}”`, async () => {
     await itemRepo.createMany([item, ...descendants]);
   });
-  toastWithUndo('Deleted');
+  toastWithUndo('Deleted', undoId);
 }
 
 export async function deleteItems(items: Item[]): Promise<void> {
@@ -168,10 +174,12 @@ export async function deleteItems(items: Item[]): Promise<void> {
     }
   }
   await itemRepo.removeMany([...ids]);
-  pushUndo(`Delete ${items.length} items`, async () => {
+  // `deleted` is the selection plus every newly-collected descendant, so its length is the
+  // honest number of rows removed — not just the top-level selection the caller passed.
+  const undoId = pushUndo(`Delete ${deleted.length} items`, async () => {
     await itemRepo.createMany(deleted);
   });
-  toastWithUndo(`Deleted ${items.length} items`);
+  toastWithUndo(`Deleted ${deleted.length} items`, undoId);
 }
 
 export async function archiveItem(item: Item): Promise<void> {

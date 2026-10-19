@@ -75,8 +75,8 @@ interface UiState {
 
   pushToast: (toast: Omit<Toast, 'id' | 'duration'> & { duration?: number }) => string;
   dismissToast: (id: string) => void;
-  pushUndo: (entry: Omit<UndoEntry, 'id'>) => void;
-  undo: () => Promise<boolean>;
+  pushUndo: (entry: Omit<UndoEntry, 'id'>) => string;
+  undo: (id?: string) => Promise<boolean>;
   clearUndo: () => void;
 }
 
@@ -155,13 +155,19 @@ export const useUiStore = create<UiState>((set, get) => ({
   pushUndo: (entry) => {
     const full: UndoEntry = { ...entry, id: newId() };
     set((s) => ({ undoStack: [...s.undoStack.slice(-24), full] }));
+    return full.id;
   },
 
-  undo: async () => {
+  undo: async (id?: string) => {
     const stack = get().undoStack;
     if (!stack.length) return false;
-    const entry = stack[stack.length - 1];
-    set({ undoStack: stack.slice(0, -1) });
+    // A toast's Undo carries the id of the entry its own action pushed, so it reverts that
+    // entry and never whatever happens to sit on top. An id that is no longer on the stack
+    // (evicted by the 25-entry cap, or already undone) is a safe no-op.
+    const index = id === undefined ? stack.length - 1 : stack.findIndex((e) => e.id === id);
+    if (index < 0) return false;
+    const entry = stack[index];
+    set({ undoStack: stack.filter((_, i) => i !== index) });
     await entry.run();
     return true;
   },

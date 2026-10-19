@@ -2244,10 +2244,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-quality.md` (C2, S2, 3/4/5). DONE 2026-10-18: `upcomingReminders` now skips occurrences whose resolved status is done/cancelled, at the single candidate seam (no double filter in ReminderRuntime). Series-level `done` still resolves to todo (pre-existing C3, IMP-161) and is explicitly out of scope. Mutation removing the guard fails 6 new tests. Verified PASS (typecheck/lint/74 files·751 tests/format:check/build; independent repro incl. per-occurrence overrides and both reminder modes). Commit pending.
+- **Notes:** Source: `discover4-quality.md` (C2, S2, 3/4/5). DONE 2026-10-18: `upcomingReminders` now skips occurrences whose resolved status is done/cancelled, at the single candidate seam (no double filter in ReminderRuntime). Series-level `done` still resolves to todo (pre-existing C3, IMP-161) and is explicitly out of scope. Mutation removing the guard fails 6 new tests. Verified PASS (typecheck/lint/74 files·751 tests/format:check/build; independent repro incl. per-occurrence overrides and both reminder modes). Commit 383a839.
 
 ### IMP-141 — Make a toast's Undo revert the action it labels
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / undo integrity
 - **Type:** bug-fix
 - **Area / files:** `src/store/useUiStore.ts:160-167`, `src/domain/itemActions.ts:30-39,156,174`
@@ -2260,7 +2260,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 72
-- **Notes:** Source: `discover4-followups.md` (F1, S2, 3/4/4).
+- **Notes:** Source: `discover4-followups.md` (F1, S2, 3/4/4). DONE 2026-10-18: undo entries carry ids; a toast captures its own id, `undo(id)` runs exactly that entry, unknown/evicted ids no-op with an "Undo expired" notice, and ⌘Z still pops the newest. `deleteItems` now labels the actual selection+descendant count. Mutation reverting to the global pop fails 2 tests. Verified PASS (typecheck/lint/75 files·760 tests/format:check/build; browser delete-A/edit-B/Undo-A, 0 console errors). Commit pending.
 
 ### IMP-142 — Disable Subtasks while the editor scope is "This occurrence"
 - **Status:** TODO

@@ -2,7 +2,7 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched (date, IMP, SHA) | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 21 | 65 | 1 blocked | 2026-10-18 IMP-140 pending | toast-undo target, import override validation | IMP-141, IMP-144 |
+| Bugs/Correctness | 4 | 20 | 66 | 1 blocked | 2026-10-18 IMP-141 pending | import override validation, series done | IMP-144, IMP-161 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 10 | 5 | 0 | 2026-10-18 IMP-137 pending | ring label, mobile voids, empty states | IMP-145, IMP-106/108/109 |
 | UX/Interaction | 5 | 3 | 13 | 3 human | 2026-10-18 IMP-138 pending | subtask scope, first-occurrence preview | IMP-142, IMP-156 |
@@ -16,9 +16,9 @@
 **Bugs/Correctness (4):** Session 3 closed the crash/data-loss classes (import shape, concurrency,
 undo integrity). Discovery 4 found a new tier of S2 correctness bugs on normal paths. IMP-139 fixed
 the first: "this and future" now partitions per-occurrence state instead of dropping the tail's
-done/completedAt, and IMP-140 stopped reminders for done/cancelled occurrences at the single
-candidate seam. Import override validation and the toast-undo target remain; health stays 4 until
-those land.
+done/completedAt, IMP-140 stopped reminders for done/cancelled occurrences at the single candidate
+seam, and IMP-141 scoped toast Undo to its own action. Import override validation and the
+series-done inconsistency remain; health stays 4 until those land.
 
 **Content (4):** Not applicable beyond docs; only the license question is open for humans.
 

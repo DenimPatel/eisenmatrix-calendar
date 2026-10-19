@@ -305,6 +305,63 @@ describe('deleteItems', () => {
     expect(after).toHaveLength(before.length);
     expect(relationships(after)).toEqual(relationships(before));
   });
+
+  it('reports the selection plus descendants in its label and toast', async () => {
+    await itemRepo.createMany([
+      task('p', 'Parent'),
+      task('c', 'Child', 'p'),
+      task('g', 'Grandchild', 'c'),
+    ]);
+
+    await deleteItems([(await itemRepo.get('p'))!]);
+
+    expect(useUiStore.getState().undoStack.map((e) => e.label)).toEqual(['Delete 3 items']);
+    expect(useUiStore.getState().toasts.map((t) => t.message)).toEqual(['Deleted 3 items']);
+  });
+});
+
+describe('toast Undo scoping', () => {
+  async function deleteAlphaThenEditBeta() {
+    await itemRepo.createMany([task('a', 'Alpha'), task('b', 'Beta')]);
+    await deleteItem((await itemRepo.get('a'))!);
+    await saveItem({ ...(await itemRepo.get('b'))!, title: 'Beta edited' });
+    const deleteToast = useUiStore.getState().toasts.find((t) => t.actionLabel === 'Undo')!;
+    return deleteToast;
+  }
+
+  it('invokes the undo entry its own action pushed, not the newest one', async () => {
+    const deleteToast = await deleteAlphaThenEditBeta();
+
+    await deleteToast.onAction?.();
+
+    expect((await itemRepo.get('a'))?.title).toBe('Alpha');
+    expect((await itemRepo.get('b'))?.title).toBe('Beta edited');
+    expect(useUiStore.getState().undoStack.map((e) => e.label)).toEqual(['Edit “Beta edited”']);
+  });
+
+  it('still pops the newest entry when undo is called without an id', async () => {
+    await deleteAlphaThenEditBeta();
+
+    expect(await useUiStore.getState().undo()).toBe(true);
+
+    expect((await itemRepo.get('b'))?.title).toBe('Beta');
+    expect(await itemRepo.get('a')).toBeUndefined();
+  });
+
+  it('is a safe no-op when the entry was evicted by the stack cap', async () => {
+    const deleteToast = await deleteAlphaThenEditBeta();
+    for (let i = 0; i < 25; i++) {
+      useUiStore.getState().pushUndo({ label: `Filler ${i}`, run: () => {} });
+    }
+    const top = useUiStore.getState().undoStack[24];
+
+    await deleteToast.onAction?.();
+
+    expect(await itemRepo.get('a')).toBeUndefined();
+    expect(useUiStore.getState().undoStack).toHaveLength(25);
+    expect(useUiStore.getState().undoStack[24]).toBe(top);
+    expect(useUiStore.getState().toasts.map((t) => t.message)).toContain('Undo expired');
+  });
 });
 
 describe('skipOccurrence', () => {
