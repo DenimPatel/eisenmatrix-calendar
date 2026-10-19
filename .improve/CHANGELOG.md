@@ -18,6 +18,7 @@ this file is appended per dimension from the resumed session onward.
 ## Accessibility
 
 - 2026-10-17 · IMP-059 · Overlays focus their first control in the mount commit, so the first keystroke cannot land outside the dialog · 612bc4b · files: `src/hooks/useFocusTrap.ts`, `src/hooks/useFocusTrap.test.tsx`
+- 2026-10-18 · IMP-136 · Each route now sets its own document title, moves focus to the view once and announces the change; initial load stays silent · files: `src/features/shell/nav.ts`, `src/features/shell/routeChange.ts`, `src/features/shell/RouteAnnouncer.tsx`, `src/App.tsx`
 
 ## UX/Interaction
 

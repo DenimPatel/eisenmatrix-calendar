@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from '@/features/shell/AppShell';
+import { RouteAnnouncer } from '@/features/shell/RouteAnnouncer';
 import { TodayView } from '@/features/today/TodayView';
 import { ItemEditorSheet } from '@/features/item/ItemEditorSheet';
 import { QuickAdd } from '@/features/quickadd/QuickAdd';
@@ -128,6 +129,7 @@ export default function App({ onBootEffects }: AppProps = {}) {
         <RoutedViews />
       </AppShell>
 
+      <RouteAnnouncer />
       <ItemEditorSheet />
       <QuickAdd />
       <CommandPalette />

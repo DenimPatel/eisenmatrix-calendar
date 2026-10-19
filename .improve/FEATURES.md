@@ -2168,7 +2168,7 @@ Ordered by the improver priority formula. Duplicates merged: U7+F12 (archived Li
 state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 
 ### IMP-136 — Update the document title and announce the view on route change
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** accessibility / delivery
 - **Type:** improvement
 - **Area / files:** `src/App.tsx:70-92` (`RoutedViews`), `src/features/shell/AppShell.tsx:140-160`, `index.html:13`
@@ -2181,7 +2181,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 112.5
-- **Notes:** Source: `discover4-delivery.md` (IMP-A2, S2, I/R/C 3/5/5).
+- **Notes:** Source: `discover4-delivery.md` (IMP-A2, S2, I/R/C 3/5/5). DONE 2026-10-18: `routeMetaFor` + `RouteAnnouncer` set distinct titles, focus the new h1/main once and announce via a polite live region; initial load and deep links stay silent. Tests are mutation-caught. Verified PASS (typecheck/lint/74 files·722 tests/format:check/build; Playwright 10 routes + back/forward + overlay guard at 1280/390, 0 console errors). Commit pending.
 
 ### IMP-137 — Stop the item editor's Start-time control clipping its AM/PM indicator
 - **Status:** TODO

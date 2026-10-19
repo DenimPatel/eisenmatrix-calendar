@@ -31,3 +31,18 @@ export const NAV_ITEMS: NavItem[] = [
   { to: '/notes', label: 'Notes', icon: StickyNote, shortcut: '9' },
   { to: '/settings', label: 'Settings', icon: Settings, shortcut: '' },
 ];
+
+export const BASE_TITLE = 'EisenMatrix Calendar';
+
+export interface RouteMeta {
+  name: string;
+  title: string;
+}
+
+export const ROUTE_META: Record<string, RouteMeta> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.to, { name: item.label, title: `${item.label} — ${BASE_TITLE}` }]),
+);
+
+export function routeMetaFor(pathname: string): RouteMeta | null {
+  return ROUTE_META[pathname] ?? null;
+}
