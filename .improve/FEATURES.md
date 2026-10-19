@@ -2260,10 +2260,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 72
-- **Notes:** Source: `discover4-followups.md` (F1, S2, 3/4/4). DONE 2026-10-18: undo entries carry ids; a toast captures its own id, `undo(id)` runs exactly that entry, unknown/evicted ids no-op with an "Undo expired" notice, and ⌘Z still pops the newest. `deleteItems` now labels the actual selection+descendant count. Mutation reverting to the global pop fails 2 tests. Verified PASS (typecheck/lint/75 files·760 tests/format:check/build; browser delete-A/edit-B/Undo-A, 0 console errors). Commit pending.
+- **Notes:** Source: `discover4-followups.md` (F1, S2, 3/4/4). DONE 2026-10-18: undo entries carry ids; a toast captures its own id, `undo(id)` runs exactly that entry, unknown/evicted ids no-op with an "Undo expired" notice, and ⌘Z still pops the newest. `deleteItems` now labels the actual selection+descendant count. Mutation reverting to the global pop fails 2 tests. Verified PASS (typecheck/lint/75 files·760 tests/format:check/build; browser delete-A/edit-B/Undo-A, 0 console errors). Commit 25db21c.
 
 ### IMP-142 — Disable Subtasks while the editor scope is "This occurrence"
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / UX
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx:493-536` (Subtasks block), contrast Checklist `:538-591`, scope banner `:334-340`
@@ -2276,7 +2276,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 67.5
-- **Notes:** Source: `discover4-ux.md` (U3, S2, 3/3/5).
+- **Notes:** Source: `discover4-ux.md` (U3, S2, 3/3/5). DONE 2026-10-18: the Subtasks/Milestones block now uses the existing `SeriesOnlyGroup` lock and series-only hint, and `addChild` guards the programmatic/Enter path. Reverting the lock/guard fails the two new tests. Verified PASS (typecheck/lint/75 files·761 tests/format:check/build; browser 1280/390 per scope, Enter created no child, 0 console errors). Commit pending.
 
 ### IMP-143 — Keep a reminder consistent when All day is toggled
 - **Status:** TODO

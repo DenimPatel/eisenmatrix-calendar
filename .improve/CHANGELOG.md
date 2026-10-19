@@ -25,6 +25,7 @@ this file is appended per dimension from the resumed session onward.
 
 ## UX/Interaction
 
+- 2026-10-18 · IMP-142 · "This occurrence" now disables the Subtasks input and child checkboxes with the series-only hint, so a single-occurrence edit cannot create a series-wide child · files: `src/features/item/ItemEditorSheet.tsx`, `src/features/item/ItemEditorSheet.test.tsx`
 - 2026-10-18 · IMP-138 · Quick-add preview chips now follow the Kind/Date/Time controls, and a Note override no longer commits a promised recurrence · files: `src/domain/quickadd.ts`, `src/features/quickadd/QuickAdd.tsx`, `src/domain/quickadd.test.ts`, `src/features/quickadd/QuickAdd.test.tsx`
 
 ## Visual

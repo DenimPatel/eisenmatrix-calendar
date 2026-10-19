@@ -5,7 +5,7 @@
 | Bugs/Correctness | 4 | 20 | 66 | 1 blocked | 2026-10-18 IMP-141 pending | import override validation, series done | IMP-144, IMP-161 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
 | Visual | 3 | 10 | 5 | 0 | 2026-10-18 IMP-137 pending | ring label, mobile voids, empty states | IMP-145, IMP-106/108/109 |
-| UX/Interaction | 5 | 3 | 13 | 3 human | 2026-10-18 IMP-138 pending | subtask scope, first-occurrence preview | IMP-142, IMP-156 |
+| UX/Interaction | 5 | 2 | 14 | 3 human | 2026-10-18 IMP-142 pending | first-occurrence preview, shopping add box | IMP-156, IMP-171 |
 | Format/Structure | 4 | 0 | 0 | 0 | 2026-10-17 IMP-064 | none known | — |
 | Delivery | 5 | 2 | 4 | 2 human | 2026-10-18 IMP-136 | social metadata, non-hash 404 | IMP-149, IMP-178 |
 | Performance | 4 | 2 | 5 | 0 | 2026-10-18 discovery | Today CLS 0.55, unbounded DOM on large DBs | IMP-151, IMP-180 |
@@ -29,8 +29,9 @@ read as filled. Health stays 3 (lowest) until IMP-145 and the empty-state/spacin
 
 **UX/Interaction (5):** Core flows (DnD, occurrence scope actions, editor tabs, overlays, mobile
 nav) verified healthy. IMP-138 made the quick-add preview follow the user's Kind/Date/Time
-overrides and stopped a Note override from committing a promised recurrence. The remaining gaps are
-the first-occurrence preview anchor and a scope promise broken by the enabled Subtasks block.
+overrides and stopped a Note override from committing a promised recurrence. IMP-142 closed the
+scope promise by disabling Subtasks under "This occurrence". The remaining gaps are the
+first-occurrence preview anchor and the Shopping add box's unimplemented placeholder syntax.
 
 **Format/Structure (4):** Prettier is enforced in CI and drift is cleared; no open items.
 

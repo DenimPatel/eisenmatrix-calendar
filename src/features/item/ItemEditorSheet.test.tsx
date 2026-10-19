@@ -425,6 +425,45 @@ describe('ItemEditorSheet', () => {
     await mounted.unmount();
   });
 
+  it('disables the subtasks input and child checkboxes for one occurrence only', async () => {
+    const item = recurringItem();
+    await itemRepo.create(item);
+    const child = createItem({ kind: 'task', title: 'Write notes', parentId: item.id });
+    await itemRepo.create(child);
+    useUiStore.getState().openEditor(item, '2026-07-20');
+    const mounted = await mountEditor();
+
+    const addSubtask = () =>
+      mounted.host.querySelector<HTMLInputElement>('input[aria-label="Add subtask"]')!;
+    const childBox = () =>
+      mounted.host.querySelector<HTMLInputElement>('input[aria-label="Write notes"]')!;
+    expect(addSubtask()).not.toBeNull();
+    expect(childBox()).not.toBeNull();
+    expect(isFieldDisabled(addSubtask())).toBe(true);
+    expect(isFieldDisabled(childBox())).toBe(true);
+    expect(mounted.host.textContent).toContain('Subtasks · Applies to the whole series');
+
+    // Enter in the (disabled) add input must not create a child while scoped to one occurrence.
+    const input = addSubtask();
+    await act(async () => {
+      input.value = 'Sneaky child';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    expect(await itemRepo.children(item.id)).toHaveLength(1);
+
+    await clickButton(mounted.host, 'This and future');
+    expect(isFieldDisabled(addSubtask())).toBe(false);
+    expect(isFieldDisabled(childBox())).toBe(false);
+
+    await clickButton(mounted.host, 'All occurrences');
+    expect(isFieldDisabled(addSubtask())).toBe(false);
+    expect(isFieldDisabled(childBox())).toBe(false);
+
+    await mounted.unmount();
+  });
+
   it('stores an occurrence-scoped status where the card checkbox reads it', async () => {
     const item = recurringItem();
     await itemRepo.create(item);

@@ -2,17 +2,17 @@
 
 ## State
 Session 4 on `improve/auto-20261018` (from `main` @ `260551c`). Discovery round 4 added 48 items
-(IMP-136..183). Rounds 1-6 DONE: IMP-136 (route titles), IMP-137 (time input), IMP-138 (quick-add
+(IMP-136..183). Rounds 1-7 DONE: IMP-136 (route titles), IMP-137 (time input), IMP-138 (quick-add
 preview), IMP-139 (split occurrence state), IMP-140 (status-aware reminders), IMP-141 (scoped toast
-Undo). Gates at IMP-141: typecheck, lint, 75 files / 760 tests, format:check, build all green.
-Nothing pushed.
+Undo), IMP-142 (occurrence-scope subtasks). Gates at IMP-142: typecheck, lint, 75 files / 761
+tests, format:check, build all green. Nothing pushed.
 
 ## Recommended next
-1. IMP-142 (Subtasks stay enabled under occurrence scope, S2, 67.5)
-2. IMP-143 (All-day toggle leaves a contradictory reminder row, S2, 67.5)
-3. IMP-144 (non-string override fields crash occurrence views on import, S2, 60)
-4. IMP-145 (28px ProgressRing label overflows, S3, 60)
-5. IMP-146 (modal background remains in the accessibility tree, S2, 54)
+1. IMP-143 (All-day toggle leaves a contradictory reminder row, S2, 67.5)
+2. IMP-144 (non-string override fields crash occurrence views on import, S2, 60)
+3. IMP-145 (28px ProgressRing label overflows, S3, 60)
+4. IMP-146 (modal background remains in the accessibility tree, S2, 54)
+5. IMP-147 (count-limited split tails export a dishonest RRULE, S2, 54)
 
 ## Warnings
 - Preview 4173 is shared and holds seeded IndexedDB data; reset SW/caches and use a clean DB or an

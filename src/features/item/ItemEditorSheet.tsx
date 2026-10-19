@@ -258,7 +258,7 @@ export function ItemEditorSheet() {
   };
 
   const addChild = async (title: string) => {
-    if (!title.trim()) return;
+    if (occurrenceScoped || !title.trim()) return;
     await createItemsPersisted([
       createItem({
         kind: draft.kind === 'goal' ? 'task' : 'task',
@@ -491,48 +491,51 @@ export function ItemEditorSheet() {
             </Field>
 
             {(draft.kind === 'task' || draft.kind === 'goal' || draft.kind === 'event') && (
-              <div className="space-y-2">
-                <span className="text-xs font-medium text-muted">
-                  {draft.kind === 'goal' ? 'Milestones' : 'Subtasks'}
-                </span>
-                {children.map((child) => (
-                  <div
-                    key={child.id}
-                    className="flex items-center gap-2 rounded-lg border border-border p-2"
-                  >
-                    <Checkbox
-                      checked={child.status === 'done'}
-                      onChange={() => void toggleDone(child)}
-                      aria-label={child.title}
-                    />
-                    <span
-                      className={cn(
-                        'flex-1 text-sm',
-                        child.status === 'done' && 'text-muted line-through',
-                      )}
+              <SeriesOnlyGroup locked={occurrenceScoped}>
+                <div className="space-y-2">
+                  <span className="text-xs font-medium text-muted">
+                    {draft.kind === 'goal' ? 'Milestones' : 'Subtasks'}
+                    {occurrenceScoped ? ` · ${SERIES_ONLY_HINT}` : ''}
+                  </span>
+                  {children.map((child) => (
+                    <div
+                      key={child.id}
+                      className="flex items-center gap-2 rounded-lg border border-border p-2"
                     >
-                      {child.title}
-                    </span>
-                  </div>
-                ))}
-                <input
-                  className="input"
-                  aria-label={draft.kind === 'goal' ? 'Add milestone' : 'Add subtask'}
-                  placeholder={
-                    draft.kind === 'goal'
-                      ? 'Add a milestone and press Enter'
-                      : 'Add a subtask and press Enter'
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const value = e.currentTarget.value;
-                      e.currentTarget.value = '';
-                      void addChild(value);
+                      <Checkbox
+                        checked={child.status === 'done'}
+                        onChange={() => void toggleDone(child)}
+                        aria-label={child.title}
+                      />
+                      <span
+                        className={cn(
+                          'flex-1 text-sm',
+                          child.status === 'done' && 'text-muted line-through',
+                        )}
+                      >
+                        {child.title}
+                      </span>
+                    </div>
+                  ))}
+                  <input
+                    className="input"
+                    aria-label={draft.kind === 'goal' ? 'Add milestone' : 'Add subtask'}
+                    placeholder={
+                      draft.kind === 'goal'
+                        ? 'Add a milestone and press Enter'
+                        : 'Add a subtask and press Enter'
                     }
-                  }}
-                />
-              </div>
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = e.currentTarget.value;
+                        e.currentTarget.value = '';
+                        void addChild(value);
+                      }
+                    }}
+                  />
+                </div>
+              </SeriesOnlyGroup>
             )}
 
             <SeriesOnlyGroup locked={occurrenceScoped}>
