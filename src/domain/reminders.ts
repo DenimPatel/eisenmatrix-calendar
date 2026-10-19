@@ -1,5 +1,5 @@
 import { expandOccurrences } from './recurrence';
-import { parseLocalDate } from '@/lib/date';
+import { formatISODate, formatTime, hasTimeComponent, parseLocalDate } from '@/lib/date';
 import type { Item, Occurrence, Reminder } from '@/types';
 
 export interface ScheduledReminder {
@@ -153,6 +153,89 @@ export function pruneExpiredAbsolute(
  */
 export function withSnooze(reminders: Reminder[], snooze: Reminder): Reminder[] {
   return [...reminders.filter((reminder) => typeof reminder.absolute !== 'number'), snooze];
+}
+
+const DEFAULT_REMINDER_TIME = '09:00';
+
+function timeToMinutes(value: string): number {
+  const [h, m] = value.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function minutesToTime(total: number): string {
+  const wrapped = ((total % 1440) + 1440) % 1440;
+  const h = Math.floor(wrapped / 60);
+  const m = wrapped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Reconcile a reminder set with an All-day toggle so a single row never carries two meanings:
+ * the control the editor renders and `reminderFireTime`/`formatReminderLabel` must agree.
+ *
+ * Turning All day **off** needs a concrete start time. A date-only start takes the earliest
+ * `timeOfDay` in the set (else 09:00) and each `timeOfDay` becomes its offset from that start,
+ * so the fire instant is preserved while the control matches the timed item.
+ *
+ * Turning All day **on** converts an offset back to a clock time only when its fire instant
+ * lands on the same calendar day as the start. A cross-day offset has no honest clock time on
+ * the all-day day, so it is kept as an offset (never silently dropped) and rendered as an
+ * offset row. `absolute` reminders are one-off instants and are always left untouched.
+ */
+export function reconcileReminderMode(
+  reminders: Reminder[],
+  allDay: boolean,
+  start: string | null,
+): { start: string | null; reminders: Reminder[] } {
+  const base = parseLocalDate(start);
+  if (!base) return { start, reminders };
+
+  if (allDay) {
+    const dayKey = formatISODate(base);
+    const startTime = hasTimeComponent(start) ? formatTime(start) : null;
+    if (!startTime) return { start: dayKey, reminders };
+    const startMinutes = timeToMinutes(startTime);
+    return {
+      start: dayKey,
+      reminders: reminders.map((reminder) => {
+        if (
+          typeof reminder.absolute === 'number' ||
+          reminder.timeOfDay ||
+          typeof reminder.offsetMinutes !== 'number'
+        ) {
+          return reminder;
+        }
+        const fireMinutes = startMinutes + reminder.offsetMinutes;
+        const fire = new Date(base);
+        fire.setHours(0, 0, 0, 0);
+        fire.setMinutes(fireMinutes);
+        if (formatISODate(fire) !== dayKey) return reminder;
+        const next: Reminder = { ...reminder, timeOfDay: minutesToTime(fireMinutes) };
+        delete next.offsetMinutes;
+        return next;
+      }),
+    };
+  }
+
+  const times = reminders
+    .map((reminder) => (reminder.timeOfDay ? timeToMinutes(reminder.timeOfDay) : null))
+    .filter((minutes): minutes is number => minutes !== null);
+  const startTime = hasTimeComponent(start)
+    ? formatTime(start)
+    : minutesToTime(times.length ? Math.min(...times) : timeToMinutes(DEFAULT_REMINDER_TIME));
+  const startMinutes = timeToMinutes(startTime);
+  return {
+    start: `${formatISODate(base)}T${startTime}`,
+    reminders: reminders.map((reminder) => {
+      if (typeof reminder.absolute === 'number' || !reminder.timeOfDay) return reminder;
+      const next: Reminder = {
+        ...reminder,
+        offsetMinutes: timeToMinutes(reminder.timeOfDay) - startMinutes,
+      };
+      delete next.timeOfDay;
+      return next;
+    }),
+  };
 }
 
 export function formatReminderLabel(reminder: Reminder): string {

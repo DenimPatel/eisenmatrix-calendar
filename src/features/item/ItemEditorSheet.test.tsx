@@ -9,6 +9,7 @@ import { useUiStore } from '@/store/useUiStore';
 import { createItem } from '@/domain/itemFactory';
 import { expandOccurrences, resolveOccurrenceStatus } from '@/domain/recurrence';
 import { itemCompletionStats } from '@/domain/stats';
+import { formatReminderLabel } from '@/domain/reminders';
 import { hasTimeComponent, parseLocalDate } from '@/lib/date';
 import type { Item } from '@/types';
 
@@ -591,6 +592,62 @@ describe('ItemEditorSheet', () => {
       end: '2026-07-21',
       allDay: true,
     });
+
+    await mounted.unmount();
+  });
+
+  it('keeps the reminder control and label describing the same instant across the All-day toggle', async () => {
+    const item = createItem({
+      kind: 'task',
+      title: 'Water plants',
+      start: '2026-07-20',
+      allDay: true,
+    });
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item);
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    const addButton = [...mounted.host.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Add',
+    )!;
+    expect(addButton).toBeDefined();
+    await act(async () => {
+      addButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    });
+    const time = mounted.host.querySelector<HTMLInputElement>('input[aria-label="Reminder time"]');
+    expect(time?.value).toBe('09:00');
+    expect(mounted.host.textContent).toContain('At 09:00');
+
+    const allDay = mounted.host.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    const toggleAllDay = async () => {
+      await act(async () => {
+        allDay.click();
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      });
+    };
+
+    // All day off: the row becomes a real offset select whose value names the same instant.
+    await toggleAllDay();
+    const select = mounted.host.querySelector<HTMLSelectElement>(
+      'select[aria-label="Reminder offset"]',
+    );
+    expect(select).not.toBeNull();
+    expect(mounted.host.querySelector('input[type="time"][aria-label="Reminder time"]')).toBeNull();
+    expect(mounted.host.textContent).toContain(
+      formatReminderLabel({ id: 'r', offsetMinutes: Number(select!.value) }),
+    );
+    expect(mounted.host.textContent).not.toContain('At 09:00');
+
+    // All day on: the intended 09:00 instant is preserved as a time-of-day row.
+    await toggleAllDay();
+    const restored = mounted.host.querySelector<HTMLInputElement>(
+      'input[aria-label="Reminder time"]',
+    );
+    expect(restored?.value).toBe('09:00');
+    expect(mounted.host.textContent).toContain('At 09:00');
+    expect(mounted.host.querySelector('select[aria-label="Reminder offset"]')).toBeNull();
 
     await mounted.unmount();
   });

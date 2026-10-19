@@ -23,6 +23,7 @@ import {
 } from '@/domain/itemActions';
 import { itemCompletionStats } from '@/domain/stats';
 import { expandOccurrences } from '@/domain/recurrence';
+import { reconcileReminderMode } from '@/domain/reminders';
 import { DEFAULT_SETTINGS, type AppSettings, type ChecklistEntry, type Item } from '@/types';
 import { KindFields } from './KindFields';
 import { RecurrenceEditor } from './RecurrenceEditor';
@@ -590,12 +591,16 @@ export function ItemEditorSheet() {
                 checked={draft.allDay}
                 onChange={(e) => {
                   const allDay = e.target.checked;
-                  const base = (draft.start ? parseLocalDate(draft.start) : null) ?? new Date();
-                  const time =
-                    draft.start && hasTimeComponent(draft.start)
-                      ? formatTime(draft.start)
-                      : '09:00';
-                  const next = allDay ? formatISODate(base) : `${formatISODate(base)}T${time}`;
+                  // Reconcile reminders with the toggle in the same draft change, so a
+                  // time-of-day reminder becomes a real offset (and back) instead of rendering
+                  // through the wrong control with a contradictory label.
+                  const reconciled = reconcileReminderMode(
+                    draft.reminders,
+                    allDay,
+                    draft.start ?? formatISODate(new Date()),
+                  );
+                  const next = reconciled.start;
+                  const time = next && hasTimeComponent(next) ? formatTime(next) : '09:00';
                   // Keep `end` in the same shape as `start`, otherwise flipping the flag leaves
                   // a bare date ending a timed occurrence (or an instant ending an all-day one).
                   const end = draft.end
@@ -605,7 +610,13 @@ export function ItemEditorSheet() {
                         ? draft.end
                         : `${formatISODate(parseLocalDate(draft.end)!)}T${time}`
                     : null;
-                  update({ allDay, start: next, dueAt: next, end });
+                  update({
+                    allDay,
+                    start: next,
+                    dueAt: next,
+                    end,
+                    reminders: reconciled.reminders,
+                  });
                 }}
               />
               All day

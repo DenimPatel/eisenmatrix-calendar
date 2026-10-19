@@ -6,6 +6,7 @@ import {
   fireTimesForOccurrence,
   formatReminderLabel,
   pruneExpiredAbsolute,
+  reconcileReminderMode,
   reminderFireTime,
   upcomingReminders,
   withSnooze,
@@ -470,5 +471,76 @@ describe('formatReminderLabel', () => {
 
   it('falls back to a generic label when no trigger is present', () => {
     expect(formatReminderLabel({ id: 'r' })).toBe('Reminder');
+  });
+});
+
+describe('reconcileReminderMode', () => {
+  it('turning All day off converts a timeOfDay reminder to an offset from the seeded start', () => {
+    const result = reconcileReminderMode([{ id: 'r', timeOfDay: '09:00' }], false, '2026-07-20');
+    expect(result.start).toBe('2026-07-20T09:00');
+    expect(result.reminders).toEqual([{ id: 'r', offsetMinutes: 0 }]);
+  });
+
+  it('seeds a date-only start from the earliest timeOfDay and keeps the others relative', () => {
+    const result = reconcileReminderMode(
+      [
+        { id: 'a', timeOfDay: '08:00' },
+        { id: 'b', timeOfDay: '08:30' },
+      ],
+      false,
+      '2026-07-20',
+    );
+    expect(result.start).toBe('2026-07-20T08:00');
+    expect(result.reminders).toEqual([
+      { id: 'a', offsetMinutes: 0 },
+      { id: 'b', offsetMinutes: 30 },
+    ]);
+  });
+
+  it('defaults a date-only start with no reminder to a sane 09:00', () => {
+    expect(reconcileReminderMode([], false, '2026-07-20')).toEqual({
+      start: '2026-07-20T09:00',
+      reminders: [],
+    });
+  });
+
+  it('turning All day on converts a same-day offset to a clock time', () => {
+    // 09:00 start minus 10 minutes is 08:50, still on the start day.
+    expect(
+      reconcileReminderMode([{ id: 'r', offsetMinutes: -10 }], true, '2026-07-20T09:00'),
+    ).toEqual({ start: '2026-07-20', reminders: [{ id: 'r', timeOfDay: '08:50' }] });
+  });
+
+  it('keeps a cross-day offset as an offset instead of dropping it', () => {
+    // 09:00 start minus 10 hours lands on the previous day, so no honest clock time exists.
+    expect(
+      reconcileReminderMode([{ id: 'r', offsetMinutes: -600 }], true, '2026-07-20T09:00'),
+    ).toEqual({ start: '2026-07-20', reminders: [{ id: 'r', offsetMinutes: -600 }] });
+  });
+
+  it('leaves absolute reminders untouched in both directions', () => {
+    const absolute: Reminder = { id: 'abs', absolute: 1_000, label: 'Snoozed 10m' };
+    expect(reconcileReminderMode([absolute], false, '2026-07-20').reminders).toEqual([absolute]);
+    expect(reconcileReminderMode([absolute], true, '2026-07-20T09:00').reminders).toEqual([
+      absolute,
+    ]);
+  });
+
+  it('preserves the intended instant across off then on', () => {
+    const off = reconcileReminderMode([{ id: 'r', timeOfDay: '09:00' }], false, '2026-07-20');
+    const on = reconcileReminderMode(off.reminders, true, off.start);
+    expect(on).toEqual({ start: '2026-07-20', reminders: [{ id: 'r', timeOfDay: '09:00' }] });
+  });
+
+  it('keeps the fire time the select value and label both describe', () => {
+    const off = reconcileReminderMode([{ id: 'r', timeOfDay: '09:00' }], false, '2026-07-20');
+    const [occ] = expandOccurrences(
+      createItem({ kind: 'task', title: 'Water', start: off.start, allDay: false }),
+      new Date('2026-07-20T00:00:00'),
+      new Date('2026-07-20T23:59:59'),
+    );
+    // The select value (`0`) and the label ("At start") name the same 09:00 instant.
+    expect(reminderFireTime(occ, off.reminders[0])).toBe(new Date('2026-07-20T09:00').getTime());
+    expect(formatReminderLabel(off.reminders[0])).toBe('At start');
   });
 });

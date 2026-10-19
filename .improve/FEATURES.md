@@ -2276,10 +2276,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 67.5
-- **Notes:** Source: `discover4-ux.md` (U3, S2, 3/3/5). DONE 2026-10-18: the Subtasks/Milestones block now uses the existing `SeriesOnlyGroup` lock and series-only hint, and `addChild` guards the programmatic/Enter path. Reverting the lock/guard fails the two new tests. Verified PASS (typecheck/lint/75 files·761 tests/format:check/build; browser 1280/390 per scope, Enter created no child, 0 console errors). Commit pending.
+- **Notes:** Source: `discover4-ux.md` (U3, S2, 3/3/5). DONE 2026-10-18: the Subtasks/Milestones block now uses the existing `SeriesOnlyGroup` lock and series-only hint, and `addChild` guards the programmatic/Enter path. Reverting the lock/guard fails the two new tests. Verified PASS (typecheck/lint/75 files·761 tests/format:check/build; browser 1280/390 per scope, Enter created no child, 0 console errors). Commit 8d975f4.
 
 ### IMP-143 — Keep a reminder consistent when All day is toggled
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / reminders
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ReminderEditor.tsx:23-26,60-77`; `src/domain/reminders.ts:19-28,158`
@@ -2292,7 +2292,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** med
 - **Depends on:** none
 - **Priority score:** 67.5
-- **Notes:** Source: `discover4-ux.md` (U11, S2, 3/3/5). Distinct from IMP-148 (absolute rows).
+- **Notes:** Source: `discover4-ux.md` (U11, S2, 3/3/5). DONE 2026-10-18: rows render by their stored reminder shape, and a pure `reconcileReminderMode` converts timeOfDay↔offset on the All-day toggle while preserving the fire instant (cross-day offsets are kept, not dropped). This also satisfies IMP-148. Residual (new IMP-184): a hand-crafted imported reminder carrying both timeOfDay and offsetMinutes still renders two times; no app path produces that shape. Verified PASS (typecheck/lint/76 files·775 tests/format:check/build; browser 1280/390, 0 console errors; render/reconcile mutations caught). Commit pending.
 
 ### IMP-144 — Reject non-string occurrence override fields on import
 - **Status:** TODO
@@ -2359,7 +2359,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Notes:** Source: `discover4-followups.md` (F2, S2, 3/3/4).
 
 ### IMP-148 — Render an absolute (snooze) reminder as a timestamp in the editor
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / UX
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ReminderEditor.tsx:69-75`; `src/domain/reminders.ts` (`formatReminderLabel`)
@@ -2372,7 +2372,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 54
-- **Notes:** Source: `discover4-followups.md` (F3, S2, 3/3/4). Distinct from IMP-143.
+- **Notes:** Source: `discover4-followups.md` (F3, S2, 3/3/4). CLOSED 2026-10-18 by IMP-143: absolute reminders render a read-only timestamp (never the offset select), editing cannot add/remove offsetMinutes, and offset rows are unchanged. Verified in `reports/verify-IMP-143.md`; no separate commit.
 
 ### IMP-149 — Ship Open Graph and Twitter Card metadata
 - **Status:** TODO
@@ -2932,3 +2932,19 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Depends on:** none
 - **Priority score:** 6
 - **Notes:** Source: `discover4-visual.md` (V9, S3, 1/2/3).
+
+### IMP-184 — Normalize contradictory reminder shapes on import
+- **Status:** TODO
+- **Category:** correctness / import validation
+- **Type:** bug-fix
+- **Area / files:** `src/lib/itemValidation.ts` (reminder coercion within `coerceItemShape`), `src/domain/reminders.ts` (precedence/label)
+- **Intent:** A hand-crafted backup/CSV reminder carrying both `timeOfDay` and `offsetMinutes` (or `absolute` plus an offset) renders two different times and fires by one precedence; no app path produces that shape, but import accepts it.
+- **Acceptance criteria:**
+  1. Import normalization makes each reminder carry exactly one timing field (keep the one `reminderFireTime` uses, drop the contradictory ones) or rejects the reminder and counts it invalid.
+  2. An imported mixed reminder then renders a control, label and fire time that agree.
+  3. App-produced reminders (editor, snooze, migration) are unchanged.
+- **Verification method:** Add a mixed-shape fixture to `src/lib/backup.test.ts`/`itemValidation` tests; assert the normalized shape and agreement. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-143, IMP-038
+- **Priority score:** 24
+- **Notes:** Source: residual found by `reports/verify-IMP-143.md`; not reachable through the UI.

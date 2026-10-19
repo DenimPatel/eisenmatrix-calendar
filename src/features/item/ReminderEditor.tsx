@@ -15,6 +15,25 @@ const OFFSET_PRESETS = [
   { value: '-1440', label: '1 day before' },
 ];
 
+/**
+ * The preset list plus the row's own offset when it is not one of them (a cross-day offset
+ * kept by `reconcileReminderMode`). Without the extra option the select would silently display
+ * the first preset while the label showed the real offset.
+ */
+function offsetOptions(reminder: Reminder) {
+  const offset = reminder.offsetMinutes ?? -10;
+  const values = new Set(OFFSET_PRESETS.map((option) => Number(option.value)));
+  values.add(offset);
+  return [...values]
+    .sort((a, b) => a - b)
+    .map((value) => ({
+      value: String(value),
+      label:
+        OFFSET_PRESETS.find((option) => Number(option.value) === value)?.label ??
+        formatReminderLabel({ id: reminder.id, offsetMinutes: value }),
+    }));
+}
+
 export interface ReminderEditorProps {
   value: Reminder[];
   allDay: boolean;
@@ -50,43 +69,57 @@ export function ReminderEditor({ value, allDay, onChange }: ReminderEditorProps)
         <p className="text-xs text-muted">No reminders. In-app banners always work offline.</p>
       )}
 
-      {value.map((reminder) => (
-        <div key={reminder.id} className="flex items-center gap-2">
-          {allDay ? (
-            <Field className="flex-1">
-              <input
-                type="time"
-                className="input"
-                aria-label="Reminder time"
-                value={reminder.timeOfDay ?? '09:00'}
-                onChange={(e) =>
-                  update(reminder.id, { timeOfDay: e.target.value, offsetMinutes: undefined })
-                }
-              />
-            </Field>
-          ) : (
-            <Field className="flex-1">
-              <Select
-                aria-label="Reminder offset"
-                value={String(reminder.offsetMinutes ?? -10)}
-                onChange={(e) => update(reminder.id, { offsetMinutes: Number(e.target.value) })}
-                options={OFFSET_PRESETS}
-              />
-            </Field>
-          )}
-          <span className="hidden text-xs text-muted sm:block">
-            {formatReminderLabel(reminder)}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => remove(reminder.id)}
-            aria-label="Remove reminder"
-          >
-            <Trash2 size={14} />
-          </Button>
-        </div>
-      ))}
+      {value.map((reminder) => {
+        const label = formatReminderLabel(reminder);
+        // The control follows the reminder's own stored shape, never the current `allDay`, so
+        // the rendered value and `formatReminderLabel` can never describe different instants.
+        const editable = !!reminder.timeOfDay || typeof reminder.offsetMinutes === 'number';
+        return (
+          <div key={reminder.id} className="flex items-center gap-2">
+            {reminder.timeOfDay ? (
+              <Field className="flex-1">
+                <input
+                  type="time"
+                  className="input"
+                  aria-label="Reminder time"
+                  value={reminder.timeOfDay}
+                  onChange={(e) =>
+                    update(reminder.id, { timeOfDay: e.target.value, offsetMinutes: undefined })
+                  }
+                />
+              </Field>
+            ) : typeof reminder.offsetMinutes === 'number' ? (
+              <Field className="flex-1">
+                <Select
+                  aria-label="Reminder offset"
+                  value={String(reminder.offsetMinutes)}
+                  onChange={(e) => update(reminder.id, { offsetMinutes: Number(e.target.value) })}
+                  options={offsetOptions(reminder)}
+                />
+              </Field>
+            ) : (
+              <Field className="flex-1">
+                <input
+                  type="text"
+                  readOnly
+                  className="input"
+                  aria-label="Reminder time"
+                  value={label}
+                />
+              </Field>
+            )}
+            {editable && <span className="hidden text-xs text-muted sm:block">{label}</span>}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => remove(reminder.id)}
+              aria-label="Remove reminder"
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 }
