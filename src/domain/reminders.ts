@@ -74,6 +74,10 @@ export function upcomingReminders(items: Item[], from: Date, to: Date): Schedule
     const { min, max } = offsetBounds(item.reminders);
     const occurrences = expandOccurrences(item, new Date(fromMs - max), new Date(toMs - min));
     for (const occurrence of occurrences) {
+      // An occurrence the user completed or cancelled must not notify; a skipped occurrence is
+      // already absent because `expandOccurrences` drops exceptions, so the resolved status is
+      // the only signal left to honour for "skip this occurrence".
+      if (occurrence.status === 'done' || occurrence.status === 'cancelled') continue;
       for (const reminder of item.reminders) {
         const fireAt = reminderFireTime(occurrence, reminder);
         if (fireAt == null) continue;

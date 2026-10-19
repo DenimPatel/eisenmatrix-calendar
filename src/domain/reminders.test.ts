@@ -11,7 +11,7 @@ import {
   withSnooze,
 } from './reminders';
 import { expandOccurrences } from './recurrence';
-import type { Reminder } from '@/types';
+import type { Item, OccurrenceStatus, Reminder } from '@/types';
 
 describe('reminders', () => {
   it('computes relative offsets before the start', () => {
@@ -141,6 +141,66 @@ describe('upcomingReminders fire-time window', () => {
       new Date('2026-01-05T09:00').getTime(),
     ]);
   });
+});
+
+describe('upcomingReminders occurrence status', () => {
+  const DAY_START = new Date('2026-10-18T00:00:00');
+  const DAY_END = new Date('2026-10-18T23:59:59');
+  const OCC_KEY = '2026-10-18';
+
+  function dailyTask(reminder: Reminder): Item {
+    const item = createItem({
+      kind: 'task',
+      title: 'Take medicine',
+      start: '2026-10-18T09:00',
+      allDay: false,
+      recurrence: { freq: 'daily', interval: 1, weekStartsOn: 1, exceptions: [], overrides: {} },
+    });
+    item.reminders = [reminder];
+    return item;
+  }
+
+  function schedule(item: Item): number[] {
+    return upcomingReminders([item], DAY_START, DAY_END).map((r) => r.fireAt);
+  }
+
+  const relative: Reminder = { id: 'r1', offsetMinutes: 0 };
+  const timeOfDay: Reminder = { id: 'r1', timeOfDay: '09:00' };
+
+  for (const [label, reminder] of [
+    ['relative offset', relative],
+    ['time of day', timeOfDay],
+  ] as const) {
+    describe(label, () => {
+      const matrix: Array<[OccurrenceStatus, boolean]> = [
+        ['todo', true],
+        ['doing', true],
+        ['done', false],
+        ['cancelled', false],
+      ];
+
+      it.each(matrix)('status %s schedules: %s', (status, expected) => {
+        const item = dailyTask(reminder);
+        item.occurrences[OCC_KEY] = { status, completedAt: null };
+        const fire = new Date('2026-10-18T09:00').getTime();
+        expect(schedule(item)).toEqual(expected ? [fire] : []);
+      });
+
+      it('suppresses a skipped occurrence', () => {
+        const item = dailyTask(reminder);
+        item.recurrence!.exceptions = [OCC_KEY];
+        expect(schedule(item)).toEqual([]);
+      });
+
+      it('returns nothing once the occurrence is done or cancelled', () => {
+        for (const status of ['done', 'cancelled'] as const) {
+          const item = dailyTask(reminder);
+          item.occurrences[OCC_KEY] = { status, completedAt: null };
+          expect(schedule(item)).toEqual([]);
+        }
+      });
+    });
+  }
 });
 
 describe('pruneExpiredAbsolute', () => {

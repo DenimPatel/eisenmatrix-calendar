@@ -2228,10 +2228,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-quality.md` (C1, S2, 4/3/5). DONE 2026-10-18: `splitSeries` partitions `occurrences` by key (head `< K`, tail `>= K`), so done/cancelled/completedAt state survives "this and future"; the action path already persisted the split head/tail. Both partitions are load-bearing (mutation fails 3 / 2 tests); the vacuous tail-empty assertion is replaced. Verified PASS (typecheck/lint/74 files·739 tests/format:check/build; independent probe incl. key == K, empty and post-split-free maps). Commit pending.
+- **Notes:** Source: `discover4-quality.md` (C1, S2, 4/3/5). DONE 2026-10-18: `splitSeries` partitions `occurrences` by key (head `< K`, tail `>= K`), so done/cancelled/completedAt state survives "this and future"; the action path already persisted the split head/tail. Both partitions are load-bearing (mutation fails 3 / 2 tests); the vacuous tail-empty assertion is replaced. Verified PASS (typecheck/lint/74 files·739 tests/format:check/build; independent probe incl. key == K, empty and post-split-free maps). Commit 2378f61.
 
 ### IMP-140 — Stop reminders for done or cancelled occurrences
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / reminders
 - **Type:** bug-fix
 - **Area / files:** `src/domain/reminders.ts:66-87` (`upcomingReminders`)
@@ -2244,7 +2244,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-quality.md` (C2, S2, 3/4/5).
+- **Notes:** Source: `discover4-quality.md` (C2, S2, 3/4/5). DONE 2026-10-18: `upcomingReminders` now skips occurrences whose resolved status is done/cancelled, at the single candidate seam (no double filter in ReminderRuntime). Series-level `done` still resolves to todo (pre-existing C3, IMP-161) and is explicitly out of scope. Mutation removing the guard fails 6 new tests. Verified PASS (typecheck/lint/74 files·751 tests/format:check/build; independent repro incl. per-occurrence overrides and both reminder modes). Commit pending.
 
 ### IMP-141 — Make a toast's Undo revert the action it labels
 - **Status:** TODO
