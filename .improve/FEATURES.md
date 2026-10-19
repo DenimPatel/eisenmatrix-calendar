@@ -2157,3 +2157,778 @@ _Rejected during critic review (not checkable / premise false / not a defect): t
 - **Depends on:** none
 - **Priority score:** 8
 - **Notes:** Found by verifiers 2026-10-18.
+
+---
+
+# Discovery round 4 — 2026-10-18
+
+Added from `reports/discover4-visual.md`, `discover4-ux.md`, `discover4-quality.md`,
+`discover4-delivery.md` and `discover4-followups.md`, verified against HEAD `260551c`.
+Ordered by the improver priority formula. Duplicates merged: U7+F12 (archived Lists empty
+state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
+
+### IMP-136 — Update the document title and announce the view on route change
+- **Status:** TODO
+- **Category:** accessibility / delivery
+- **Type:** improvement
+- **Area / files:** `src/App.tsx:70-92` (`RoutedViews`), `src/features/shell/AppShell.tsx:140-160`, `index.html:13`
+- **Intent:** A hash-routed SPA has no document navigation, yet `document.title` is `EisenMatrix Calendar` on all 10 routes and nothing announces the view change, so AT and browser history cannot distinguish views.
+- **Acceptance criteria:**
+  1. Each of the 10 routes sets a distinct `document.title` starting with the view name (e.g. `Calendar — EisenMatrix Calendar`), restored on back/forward.
+  2. Navigating between views moves focus to the new view's `<h1>`/`<main>` once and announces the view name through a live region; the initial load does neither.
+  3. No route gains a visible UI change.
+- **Verification method:** Playwright: for each route assert `document.title`; click nav links and assert `activeElement` and live-region text. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 112.5
+- **Notes:** Source: `discover4-delivery.md` (IMP-A2, S2, I/R/C 3/5/5).
+
+### IMP-137 — Stop the item editor's Start-time control clipping its AM/PM indicator
+- **Status:** TODO
+- **Category:** visual / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx:629` (`input w-28`); precedent `src/features/settings/SettingsView.tsx:288` (`input w-36`) and `SettingsView.test.tsx:240`
+- **Intent:** The native time input renders `03:00 P` with the clock icon over the truncated `M`; the same symptom was already fixed for the digest input but not the primary scheduling surface.
+- **Acceptance criteria:**
+  1. The Start-time input renders the full `HH:mm AM/PM` with no clipping/overlap at 1280px and 390px, light and dark.
+  2. No `<input type="time">` in the app carries a width too narrow for `12:00 AM` plus the clock affordance.
+- **Verification method:** Screen the input at both widths/themes; add a unit assertion mirroring `SettingsView.test.tsx:240` that no time input uses `w-28`. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 90
+- **Notes:** Source: `discover4-visual.md` (V1, S2, 3/4/5).
+
+### IMP-138 — Make the quick-add preview reflect the Kind/Date/Time overrides
+- **Status:** TODO
+- **Category:** UX / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/features/quickadd/QuickAdd.tsx:35,154-190`
+- **Intent:** The preview promises "what will be created", but changing Kind/Date/Time leaves the chips unchanged (a Note commit still previewed as `bill · USD 120`), so the last thing the user sees is wrong.
+- **Acceptance criteria:**
+  1. Changing Kind updates the kind chip and hides chips that no longer apply before commit.
+  2. Changing Date or Time updates the corresponding chip.
+  3. With no override the chip output is byte-identical to today's.
+- **Verification method:** Playwright with the sample in the report; add a jsdom/pure test deriving chips from `effectiveKind` + overrides. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 90
+- **Notes:** Source: `discover4-ux.md` (U1, S2, 3/4/5).
+
+### IMP-139 — Preserve per-occurrence state when splitting a series
+- **Status:** TODO
+- **Category:** correctness / data integrity
+- **Type:** bug-fix
+- **Area / files:** `src/domain/recurrence.ts:447-468` (`tail.occurrences = {}`), `src/domain/itemActions.ts:429-451`, test `src/domain/recurrence.test.ts:534`
+- **Intent:** "This and future" builds the tail with an empty `occurrences` map while the head keeps the whole map, so every done/completed state at or after the split is silently lost and the head holds dead keys.
+- **Acceptance criteria:**
+  1. After `splitSeries(item, K)`, tail occurrence keys `>= K` equal the source values and keys `< K` are absent from both wrong sides; the head keeps only keys `< K`.
+  2. Re-expanding head+tail reproduces the original statuses for every occurrence key.
+  3. The vacuous tail-empty assertion is replaced by the partition assertion; existing split tests pass.
+- **Verification method:** Extend `recurrence.test.ts` and `itemActions.test.ts` with post-split `done` states; assert the partition and status equality. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 90
+- **Notes:** Source: `discover4-quality.md` (C1, S2, 4/3/5).
+
+### IMP-140 — Stop reminders for done or cancelled occurrences
+- **Status:** TODO
+- **Category:** correctness / reminders
+- **Type:** bug-fix
+- **Area / files:** `src/domain/reminders.ts:66-87` (`upcomingReminders`)
+- **Intent:** Cancelled or completed occurrences still schedule notifications; skipped occurrences are suppressed, proving the inconsistency.
+- **Acceptance criteria:**
+  1. No reminder is returned for an occurrence whose resolved status is `cancelled` or `done`.
+  2. Skipped (exception) occurrences remain suppressed and `todo` occurrences are unchanged.
+  3. Existing reminder tests pass.
+- **Verification method:** Add status matrix cases to `src/domain/reminders.test.ts`. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 90
+- **Notes:** Source: `discover4-quality.md` (C2, S2, 3/4/5).
+
+### IMP-141 — Make a toast's Undo revert the action it labels
+- **Status:** TODO
+- **Category:** correctness / undo integrity
+- **Type:** bug-fix
+- **Area / files:** `src/store/useUiStore.ts:160-167`, `src/domain/itemActions.ts:30-39,156,174`
+- **Intent:** `toastWithUndo` calls the global `undo()` which pops the stack top, so clicking an older toast's Undo can revert a newer unrelated action.
+- **Acceptance criteria:**
+  1. The toast's Undo invokes the undo entry created by that action (by entry id), not the current top.
+  2. Delete A, perform action B, click A's toast Undo → B stays applied and A is restored.
+  3. `⌘Z` still pops the newest entry; `deleteItems` reports rows actually deleted (selection + descendants) or uses unambiguous wording.
+- **Verification method:** Extend `itemActions.test.ts`/store tests with a seeded stack. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 72
+- **Notes:** Source: `discover4-followups.md` (F1, S2, 3/4/4).
+
+### IMP-142 — Disable Subtasks while the editor scope is "This occurrence"
+- **Status:** TODO
+- **Category:** correctness / UX
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx:493-536` (Subtasks block), contrast Checklist `:538-591`, scope banner `:334-340`
+- **Intent:** Under "This occurrence" the banner promises series-only fields are disabled, but the Add-subtask input and child checkboxes stay enabled and write a series-wide child.
+- **Acceptance criteria:**
+  1. Under "This occurrence" the Subtasks/Milestones input and child checkboxes are disabled and carry the series-only hint, matching Checklist.
+  2. They are enabled for "This and future" and "All occurrences".
+  3. No subtask can be created from the editor in occurrence scope.
+- **Verification method:** Playwright assert disabled state and hint per scope; add an `ItemEditorSheet.test.tsx` case. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 67.5
+- **Notes:** Source: `discover4-ux.md` (U3, S2, 3/3/5).
+
+### IMP-143 — Keep a reminder consistent when All day is toggled
+- **Status:** TODO
+- **Category:** correctness / reminders
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ReminderEditor.tsx:23-26,60-77`; `src/domain/reminders.ts:19-28,158`
+- **Intent:** Toggling All day off leaves a `timeOfDay` reminder rendered through the offset select ("10 min before") while the label says "At 09:00"; the row contradicts itself and the select's value does not match the fire time.
+- **Acceptance criteria:**
+  1. Toggling All day off converts a time-of-day reminder to a real offset (or clears it) so select value and label/fire time agree.
+  2. Toggling on performs the inverse conversion with the same agreement.
+  3. An untouched reminder keeps its intended instant across the toggle.
+- **Verification method:** Playwright reproduce the toggle and assert select/label/fire-time agreement; add a reminders test. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 67.5
+- **Notes:** Source: `discover4-ux.md` (U11, S2, 3/3/5). Distinct from IMP-148 (absolute rows).
+
+### IMP-144 — Reject non-string occurrence override fields on import
+- **Status:** TODO
+- **Category:** correctness / import validation
+- **Type:** bug-fix
+- **Area / files:** `src/lib/itemValidation.ts:52-59` (`asOverrides`), `src/hooks/useOccurrences.ts:13-17` (sort)
+- **Intent:** An imported `overrides: {"K": {"start": 5}}` passes validation, then `useOccurrences`' `localeCompare` throws, crashing every occurrence view.
+- **Acceptance criteria:**
+  1. `validateItem` rejects or drops an override whose `start`/`end` is present but non-string, or whose `status` is not a valid occurrence status.
+  2. A backup/CSV with such an override increments `invalid` or yields only string `start`s.
+  3. Existing backup/CSV validation tests pass.
+- **Verification method:** Add the malformed-override fixture to `backup.test.ts`/validation tests; assert rejection and no numeric starts. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 60
+- **Notes:** Source: `discover4-quality.md` (C4, S2, 4/2/5).
+
+### IMP-145 — Keep the small ProgressRing label inside the ring
+- **Status:** TODO
+- **Category:** visual
+- **Type:** improvement
+- **Area / files:** `src/components/ui/ProgressRing.tsx:79-80`; `src/features/today/TodayView.tsx:202-207` (`size={28}`, `strokeWidth={3}`)
+- **Intent:** At 28px the `40%` label is ~30px wide inside a 22px inner circle, so `%` crosses the stroke on the landing view.
+- **Acceptance criteria:**
+  1. For any 0–100% value at `size={28}` the label width ≤ the inner diameter, or the label is abbreviated/omitted.
+  2. No glyph overlaps the stroke at 1280px or 390px, light or dark.
+  3. Rings ≥40px keep the current appearance.
+- **Verification method:** Playwright measure label width vs `size - 2*strokeWidth` for `40%`/`100%`; screenshot both themes. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 60
+- **Notes:** Source: `discover4-visual.md` (V2, S3, 3/4/5).
+
+### IMP-146 — Remove background content from the accessibility tree while a modal is open
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/components/ui/Sheet.tsx:55-63`, `src/components/ui/Dialog.tsx:74-75`, `src/features/shell/AppShell.tsx:110-261`
+- **Intent:** With any overlay open, nav links, headings and background controls remain non-ignored siblings in the AX tree; `aria-modal` alone is honoured inconsistently, so the virtual cursor can read and activate behind the modal.
+- **Acceptance criteria:**
+  1. While any overlay is open, no background heading/link/button node is non-ignored in the AX tree.
+  2. The overlay keeps its name and remains the only interactive region.
+  3. On close the background is restored and focus returns to the opener.
+- **Verification method:** Playwright `Accessibility.getFullAXTree` with each of the six overlays; close and assert restore. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-094
+- **Priority score:** 54
+- **Notes:** Source: `discover4-delivery.md` (IMP-A1, S2, 3/4/3).
+
+### IMP-147 — Emit an honest RRULE for count-limited split tails
+- **Status:** TODO
+- **Category:** interoperability / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/lib/ics.ts:83-88`; `src/domain/recurrence.ts:283-285,425,440`
+- **Intent:** `COUNT` is gated on truthy `rule.count`, so a `count: 0` tail exports unbounded; a `count + until` tail emits UNTIL alone and can over-expand when count binds first.
+- **Acceptance criteria:**
+  1. `count: 0` exports no RRULE or a form that expands to nothing, never unbounded.
+  2. When count is the tighter bound, the export is bounded to the count.
+  3. Head until-only output and existing ICS tests are unchanged.
+- **Verification method:** Extend `src/lib/ics.test.ts` with both rules; assert the exact RRULE and re-expansion equality. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 54
+- **Notes:** Source: `discover4-followups.md` (F2, S2, 3/3/4).
+
+### IMP-148 — Render an absolute (snooze) reminder as a timestamp in the editor
+- **Status:** TODO
+- **Category:** correctness / UX
+- **Type:** bug-fix
+- **Area / files:** `src/features/item/ReminderEditor.tsx:69-75`; `src/domain/reminders.ts` (`formatReminderLabel`)
+- **Intent:** Every non-all-day row renders an offset select using `offsetMinutes ?? -10`, so an absolute snooze row shows "10 min before" beside its real timestamp and editing it persists a bogus offset.
+- **Acceptance criteria:**
+  1. A reminder with `absolute` renders a timestamp control/value, never the offset select.
+  2. Editing it cannot add or remove `offsetMinutes`.
+  3. Offset rows keep their current behaviour.
+- **Verification method:** jsdom test with an absolute reminder: assert no offset select and no `offsetMinutes` in change payloads. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 54
+- **Notes:** Source: `discover4-followups.md` (F3, S2, 3/3/4). Distinct from IMP-143.
+
+### IMP-149 — Ship Open Graph and Twitter Card metadata
+- **Status:** TODO
+- **Category:** delivery / SEO
+- **Type:** improvement
+- **Area / files:** `index.html:1-14`, `dist/index.html`
+- **Intent:** Shared links preview as a bare URL; the built head has no `og:*`, `twitter:card` or canonical tag.
+- **Acceptance criteria:**
+  1. The built `dist/index.html` contains `og:title`, `og:description`, `og:type`, `og:url` and `twitter:card`; `og:url` is the absolute Pages URL including base path.
+  2. `og:image` references a file that exists in `dist/` (existing SVG is acceptable).
+  3. `og:title`/`og:description` match `<title>`/`<meta name="description">`.
+- **Verification method:** `npm run build`; grep `dist/index.html` and resolve the image path. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 45
+- **Notes:** Source: `discover4-delivery.md` (IMP-D1, S3, 3/3/5).
+
+### IMP-150 — Expose the editor's occurrence-scope selection to assistive tech
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx:311-333`
+- **Intent:** The three scope buttons expose no pressed/selected state and no group name; the active scope is colour-only although it decides what Save writes.
+- **Acceptance criteria:**
+  1. Exactly one scope button reports `aria-pressed="true"` (or an equivalent radio/selected state), the others false.
+  2. A group label names the control ("Apply changes to").
+  3. No visual change; keyboard activation still switches scope.
+- **Verification method:** Playwright assert pressed state after open and each click plus the group name; screenshot diff. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 45
+- **Notes:** Source: `discover4-ux.md` (U4, S3, 3/3/5).
+
+### IMP-151 — Eliminate the ~0.55 layout shift on Today's first paint with data
+- **Status:** TODO
+- **Category:** performance
+- **Type:** improvement
+- **Area / files:** `src/features/today/TodayView.tsx:145-157,351-352`
+- **Intent:** Three cold loads against a 26-item DB measure CLS 0.554 (0.668 with 580 items) as the live query fills an initially short page; this is the landing route.
+- **Acceptance criteria:**
+  1. CLS for Today is <0.1 on a cold load with a populated DB at 1280px and 390px.
+  2. Space for the agenda and three sidebar cards is reserved before the query resolves.
+  3. The empty-DB case stays ≈0 and no spinner is added for data that resolves within a frame.
+- **Verification method:** Playwright `PerformanceObserver('layout-shift')`, three cold loads, assert CLS <0.1. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 45
+- **Notes:** Source: `discover4-delivery.md` (IMP-P1, S2, 3/5/4).
+
+### IMP-152 — Give every route one H1 and stop skipping heading levels
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/calendar/CalendarView.tsx:131`, `src/features/list/ListView.tsx`, `src/components/ui/EmptyState.tsx:23`
+- **Intent:** Calendar has only an H2, Lists has no heading, and five views jump H1→H3, so heading navigation is inconsistent.
+- **Acceptance criteria:**
+  1. Every route renders exactly one level-1 heading naming the view.
+  2. No route jumps more than one heading level.
+  3. No new visible text is added (visually hidden is fine).
+- **Verification method:** Playwright AX tree: assert one H1 per route and level continuity. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 40
+- **Notes:** Source: `discover4-delivery.md` (IMP-A4, S3, 2/4/5).
+
+### IMP-153 — Give the calendar view switcher a selected state and group label
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/calendar/CalendarView.tsx:135-147`
+- **Intent:** Day/Week/Month/Year expose no pressed/selected state or group name; the active view is colour-only and labelled with raw lowercase tokens.
+- **Acceptance criteria:**
+  1. The active view exposes `aria-pressed="true"` (or radio checked), the others false.
+  2. The group has an accessible name ("Calendar view"); labels read "Day", "Week", "Month", "Year".
+  3. No visual change.
+- **Verification method:** Playwright assert state after each click and the group name; screenshot diff. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 40
+- **Notes:** Source: `discover4-ux.md` (U5, S3, 2/4/5).
+
+### IMP-154 — Do not push an undo entry or "Saved" toast for an unchanged save
+- **Status:** TODO
+- **Category:** correctness / undo integrity
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts:82-104`, `src/features/item/ItemEditorSheet.tsx:214+`
+- **Intent:** Opening an item and pressing Save with no edits pushes an undo entry and a "Saved" toast; `⌘Z` then reports "Undone" with no visible change and real history is buried.
+- **Acceptance criteria:**
+  1. A no-change save pushes no undo entry and shows no toast (the editor still closes).
+  2. A changed save keeps the current single-entry undo/toast behaviour.
+  3. Repeated open→Save→close does not grow the stack.
+- **Verification method:** Unit test undo depth for identical vs edited items; Playwright open→Save. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 40
+- **Notes:** Source: `discover4-ux.md` (U9, S3, 2/4/5).
+
+### IMP-155 — Validate `lists` in `parseBackup`
+- **Status:** TODO
+- **Category:** correctness / import validation
+- **Type:** bug-fix
+- **Area / files:** `src/lib/backup.ts:67,80`; `src/features/settings/SettingsView.tsx` (`importJSON`)
+- **Intent:** Items are validated but `lists` is a bare cast written to Dexie, so `[null, 42, "nope"]` persists junk rows the UI assumes are well-formed.
+- **Acceptance criteria:**
+  1. Non-object/id-less `lists` entries are dropped and counted as invalid.
+  2. A valid `lists` array imports unchanged.
+  3. Existing backup round-trip tests pass.
+- **Verification method:** Extend `src/lib/backup.test.ts` with a junk+valid list payload. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 36
+- **Notes:** Source: `discover4-followups.md` (F5, S2, 3/2/4).
+
+### IMP-156 — Show the first real occurrence, not the series anchor, in the quick-add preview
+- **Status:** TODO
+- **Category:** correctness / UX
+- **Type:** bug-fix
+- **Area / files:** `src/features/quickadd/QuickAdd.tsx:53-56,178`; `src/domain/quickadd.ts` (`quickAddToItem`)
+- **Intent:** `pay rent every month on the 5th` previews today and stores an anchor on a date the series never occurs, so nothing appears on the promised day.
+- **Acceptance criteria:**
+  1. For a monthly rule whose anchor day is before today, the preview Date equals the next occurrence date.
+  2. The created item's first occurrence is the previewed date (Today/Calendar agree).
+  3. Non-recurring and already-matching rules are unchanged.
+- **Verification method:** Playwright compare preview Date with the Calendar month grid; unit-assert the derived first occurrence. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-138
+- **Priority score:** 33.75
+- **Notes:** Source: `discover4-ux.md` (U2, S2, 3/3/5).
+
+### IMP-157 — Stop dialog/sheet headings rendering as boxed, input-like fields
+- **Status:** TODO
+- **Category:** visual / accessibility
+- **Type:** improvement
+- **Area / files:** `src/components/ui/Dialog.tsx:89-96`, `src/styles/index.css:64-66`, `HelpDialog.tsx:28`, `ShortcutSheet.tsx:19`
+- **Intent:** The focused `tabIndex={-1}` heading inherits the global accent focus ring, so Help/shortcuts open with their title framed like an input.
+- **Acceptance criteria:**
+  1. The focused heading renders with no visible ring/box.
+  2. Focus still moves into the overlay and the Tab loop is unchanged.
+  3. No other overlay that focuses a heading shows a focus box.
+- **Verification method:** Playwright open both overlays, assert computed `box-shadow` has no ring; screenshots. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-057
+- **Priority score:** 30
+- **Notes:** Source: `discover4-visual.md` (V3, S3, 2/3/5).
+
+### IMP-158 — Raise muted-on-accent-soft text to AA in light mode
+- **Status:** TODO
+- **Category:** accessibility / visual
+- **Type:** bug-fix
+- **Area / files:** `src/features/command/CommandPalette.tsx:147`, selected-row count badge in `src/features/list/ListView.tsx`, tokens `src/styles/index.css:11,15`
+- **Intent:** `text-muted` on `bg-accent-soft` measures 4.26:1 in light mode, below AA for normal text, on the palette keyboard hint and Lists count badge.
+- **Acceptance criteria:**
+  1. The pairing measures ≥4.5:1 in light mode (or a darker token is used).
+  2. Both affected surfaces pass in light and dark.
+  3. No other `bg-accent-soft` surface regresses.
+- **Verification method:** Playwright compute contrast on every `text-muted`-on-`accent-soft` element. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 30
+- **Notes:** Source: `discover4-visual.md` (V10, S3, 2/3/5).
+
+### IMP-159 — Make Settings reachable by number key, or fix the "1 – 9" claim
+- **Status:** TODO
+- **Category:** accessibility / UX
+- **Type:** improvement
+- **Area / files:** `src/features/shell/nav.ts:32`, `src/features/shell/helpContent.ts:11`, `src/features/command/CommandPalette.tsx:45`
+- **Intent:** There are 10 nav destinations but only `1`–`9` map to views; Settings has no key, `0` no-ops, and the help still says "Jump to a view: 1 – 9".
+- **Acceptance criteria:**
+  1. Either Settings gets a documented key (e.g. `0`), or the sheet states the exact range and the palette shows a consistent hint.
+  2. The chosen key navigates to `#/settings`; existing `1`–`9` mappings are unchanged.
+- **Verification method:** Playwright press the key and assert the route; assert help/palette text. Extend keyboard/nav tests. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 30
+- **Notes:** Source: `discover4-ux.md` (U6, S3, 2/3/5).
+
+### IMP-160 — Show an honest empty state in the archived Lists view
+- **Status:** TODO
+- **Category:** UX / correctness
+- **Type:** bug-fix
+- **Area / files:** `src/features/list/ListView.tsx:47,135-140,423-460`
+- **Intent:** With Archived on and no archived items, `hasActiveFilter` is false and the view shows the first-run "No items yet / Add item" state, whose CTA creates a live item that immediately disappears.
+- **Acceptance criteria:**
+  1. Archived-on with zero archived items shows an archive-specific empty state and a reset/show-live action, not "Add item".
+  2. The unfiltered first-run state is unchanged.
+  3. Other active filters keep "No items match".
+- **Verification method:** Playwright toggle Archived with no archived rows; extend ListView tests. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-101
+- **Priority score:** 30
+- **Notes:** Sources: `discover4-ux.md` (U7) + `discover4-followups.md` (F12).
+
+### IMP-161 — Make a recurring series' done state consistent with its occurrences
+- **Status:** TODO
+- **Category:** correctness / data integrity
+- **Type:** bug-fix
+- **Area / files:** `src/domain/recurrence.ts:217-226` (`resolveOccurrenceStatus`), `src/domain/itemActions.ts:268-279` (`setStatus`), `ListView` bulk-complete, `MatrixView` card
+- **Intent:** Completing a recurring series without a key stores `status: done`, but the occurrence resolver returns `todo`, so Lists/Matrix show done while Today/Calendar show open and completion stats count zero.
+- **Acceptance criteria:**
+  1. `setStatus(recurringItem, 'done')` either resolves its occurrences as done or refuses/redirects the write with a clear path.
+  2. `resolveOccurrenceStatus` never contradicts a series-level done without an explicit per-occurrence override.
+  3. Lists and Today render the same completion state; non-recurring behavior unchanged.
+- **Verification method:** Unit test `setStatus` + resolver for a recurring item; render check if cheap. Run the four gates.
+- **Effort:** M    **Risk:** med (product decision recorded in report)
+- **Depends on:** none
+- **Priority score:** 30
+- **Notes:** Source: `discover4-quality.md` (C3, S3, 3/4/5). Choose the least surprising behavior: series done resolves occurrences done unless overridden; document in commit.
+
+### IMP-162 — De-duplicate recurrence grid entries so occurrences are not repeated
+- **Status:** TODO
+- **Category:** correctness / import validation
+- **Type:** bug-fix
+- **Area / files:** `src/lib/itemValidation.ts:46-50,88-93` (`asNumberArray`), `src/domain/recurrence.ts:33,42,59-114`
+- **Intent:** Imported rules with `byWeekday: [1,1]` or `byMonthDay: [31,-1]` produce duplicate occurrences with the same key, inflating totals and consuming `count` twice.
+- **Acceptance criteria:**
+  1. `coerceRecurrence` de-duplicates and range-validates `byWeekday` (0–6), `byMonthDay` (1–31, -1), `byMonth` (1–12).
+  2. Duplicate grids expand to one occurrence per distinct day; a count-limited rule still yields `count` distinct occurrences.
+  3. Existing recurrence tests pass.
+- **Verification method:** Add validation/expansion cases in `itemValidation.test.ts` and `recurrence.test.ts`. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 30
+- **Notes:** Source: `discover4-quality.md` (C5, S3, 3/2/5).
+
+### IMP-163 — Do not write a phantom occurrence for a habit not scheduled today
+- **Status:** TODO
+- **Category:** correctness / data hygiene
+- **Type:** bug-fix
+- **Area / files:** `src/domain/itemActions.ts:295-298` (`toggleHabitOccurrence`); callers `TodayView.tsx:256`, `HabitsView.tsx:144`
+- **Intent:** `expandOccurrences(habit, today, today)[0]` is empty for a habit that does not land today, and the `?? todayKey()` fallback persists a status for an unscheduled day.
+- **Acceptance criteria:**
+  1. Toggling a habit not scheduled today writes no occurrence row and shows no completion.
+  2. A scheduled habit toggles exactly its today occurrence.
+  3. Existing habit streak/undo tests pass.
+- **Verification method:** Unit test with a weekly habit anchored to another weekday. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 30
+- **Notes:** Source: `discover4-followups.md` (F4, S3, 2/3/5).
+
+### IMP-164 — Use the occurrence title in Bills upcoming and the drag overlay
+- **Status:** TODO
+- **Category:** correctness / consistency
+- **Type:** bug-fix
+- **Area / files:** `src/features/bills/BillsView.tsx:146`, `src/features/shell/AppShell.tsx:257`
+- **Intent:** An occurrence retitled via "This occurrence" renders on cards/calendar but Bills upcoming and the drag overlay still show the series title.
+- **Acceptance criteria:**
+  1. Bills upcoming shows the resolved occurrence title.
+  2. The drag overlay shows the resolved occurrence title when one is dragged.
+  3. Non-overridden items are unchanged.
+- **Verification method:** Playwright retitle one occurrence and check both surfaces. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-085
+- **Priority score:** 30
+- **Notes:** Source: `discover4-followups.md` (F10, S3, 2/3/5).
+
+### IMP-165 — Reap reminder failure rows when their item is deleted or archived
+- **Status:** TODO
+- **Category:** correctness / data hygiene
+- **Type:** bug-fix
+- **Area / files:** `src/db/repository.ts:107-108,126-155,252-292`; `src/pwa/ReminderRuntime.tsx:76-91`
+- **Intent:** Failure rows are cleared only on delivery or a 30-day prune, so the undelivered count reports reminders whose item no longer exists.
+- **Acceptance criteria:**
+  1. Deleting an item (single/bulk) removes its failure rows.
+  2. Archiving removes or excludes them from the count.
+  3. The pending count never includes rows for a missing item.
+- **Verification method:** Repository test record→removeWithChildren→count 0. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-086
+- **Priority score:** 24
+- **Notes:** Source: `discover4-followups.md` (F7, S3, 2/3/4).
+
+### IMP-166 — Show date-only controls for an all-day item's Due and End
+- **Status:** TODO
+- **Category:** correctness / UX
+- **Type:** improvement
+- **Area / files:** `src/features/item/ItemEditorSheet.tsx:644-676` versus Start `:611-642`
+- **Intent:** With All day checked, Due/End still render datetime controls showing "12:00 AM", implying a midnight deadline on a date-only item.
+- **Acceptance criteria:**
+  1. All-day Due/End render date-only controls with no time segment.
+  2. Timed items keep datetime behavior.
+  3. An all-day item round-trips without gaining a time.
+- **Verification method:** Playwright toggle All day and assert input types/values; screenshot both themes. Run the four gates.
+- **Effort:** S    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `discover4-visual.md` (V4, S3, 2/3/4).
+
+### IMP-167 — Give the native checkbox an honest unchecked appearance in dark mode
+- **Status:** TODO
+- **Category:** visual / accessibility
+- **Type:** improvement
+- **Area / files:** `src/components/ui/Form.tsx:70-74`
+- **Intent:** In dark mode the UA paints unchecked checkboxes as a solid grey fill, making them read as filled/disabled while only checked boxes are tinted.
+- **Acceptance criteria:**
+  1. An unchecked dark-mode checkbox is visually distinct from a filled/disabled control (empty interior with a visible border).
+  2. Checked/unchecked differ by more than fill alone (e.g. a checkmark).
+  3. Light mode and the 24×24 target are unchanged.
+- **Verification method:** Playwright dark screenshot at 4× zoom; assert custom appearance. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-100
+- **Priority score:** 24
+- **Notes:** Source: `discover4-visual.md` (V5, S3, 2/4/3).
+
+### IMP-168 — Keep the toast stack from covering modal form fields on mobile
+- **Status:** TODO
+- **Category:** visual / UX
+- **Type:** improvement
+- **Area / files:** `src/components/ui/ToastHost.tsx:21`; `Sheet.tsx:55`, `Dialog.tsx:67`
+- **Intent:** At 390px a 92vw toast stack paints over an open sheet's fields and its pointer-events intercept taps until it dismisses.
+- **Acceptance criteria:**
+  1. While a sheet/dialog is open at 390px, no toast rectangle intersects a form control.
+  2. Toasts remain dismissible and Undo reachable.
+  3. Desktop placement is unchanged.
+- **Verification method:** Playwright at 390px with ≥2 toasts and the editor open; assert rectangle non-intersection. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-094
+- **Priority score:** 24
+- **Notes:** Source: `discover4-visual.md` (V6, S3, 2/3/4).
+
+### IMP-169 — Stop the mobile Lists panel reserving a large blank void
+- **Status:** TODO
+- **Category:** visual / responsiveness
+- **Type:** improvement
+- **Area / files:** `src/features/list/ListView.tsx:206` (`min-h-[30rem]`), `:287`
+- **Intent:** At 390px with one item the card is 620px tall and the last row sits 111px above its bottom, reading as an unfinished panel.
+- **Acceptance criteria:**
+  1. At 390px the panel shrinks to its content when fewer than a screenful of rows is present.
+  2. Spacing is consistent with the 1280px layout for the same data.
+  3. With many rows the panel still scrolls.
+- **Verification method:** Playwright with 1 and 15 items measure last-row→card-bottom gap; screenshots. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `discover4-visual.md` (V7, S3, 2/3/4).
+
+### IMP-170 — Give the Calendar month view a first-run empty affordance
+- **Status:** TODO
+- **Category:** visual / onboarding
+- **Type:** improvement
+- **Area / files:** `src/features/calendar/CalendarView.tsx:179-250`, contrast `:267-273`
+- **Intent:** On a fresh DB the default Month view is a bare 6×7 grid with no message or create CTA, unlike eight sibling views.
+- **Acceptance criteria:**
+  1. With zero occurrences in range, Month shows a compact empty-state message + create action without obscuring the day `+` controls.
+  2. Day/Week/Year get consistent treatment.
+  3. With ≥1 occurrence the month view is unchanged.
+- **Verification method:** Playwright cleared DB at 1280/390 assert the empty node; screenshots both themes. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `discover4-visual.md` (V8, S3, 2/3/4).
+
+### IMP-171 — Make the Shopping add box match its placeholder
+- **Status:** TODO
+- **Category:** UX / correctness
+- **Type:** improvement
+- **Area / files:** `src/features/shopping/ShoppingView.tsx:64-71,141-143,172-176`
+- **Intent:** The placeholder teaches "milk 2L" but `addItem` stores the raw string as the title, leaving quantity 1 and the unit in the title; quick add parses the same text.
+- **Acceptance criteria:**
+  1. Either `addItem` parses the shared quantity/unit/price tokens, or the placeholder/copy stops advertising them.
+  2. If parsed, `bananas 2kg` yields title "Bananas", quantity 2, unit kg, and the estimated total reflects it.
+  3. Plain titles are stored verbatim.
+- **Verification method:** Playwright compare both entry points; unit-test the shared parser path. Run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `discover4-ux.md` (U8, S3, 2/3/4).
+
+### IMP-172 — Give the icon-only header controls real names and expose theme state
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/shell/AppShell.tsx:203,210,218,229`
+- **Intent:** Four of five header controls are icon-only and named only through `title` (invisible on touch); the theme cycler exposes no state.
+- **Acceptance criteria:**
+  1. Each icon-only header control has an explicit `aria-label` matching its `title`.
+  2. The theme control exposes state (switch/menu with checked/expanded, or an action+result label).
+  3. Names/states are present at 390px and 1280px with no visual change.
+- **Verification method:** Playwright AX tree at both widths. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 24
+- **Notes:** Source: `discover4-delivery.md` (IMP-A5, S3, 2/3/4).
+
+### IMP-173 — Give the month calendar programmatic grid structure and keyboard movement
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/features/calendar/CalendarView.tsx:169-250`
+- **Intent:** The month view has zero grid/table semantics, raw ISO date names and 35+ `Add item` tab stops; AT users cannot learn weekday/row or move cell-to-cell.
+- **Acceptance criteria:**
+  1. The grid exposes grid/table semantics with weekday column headers and full-date accessible names.
+  2. Only one cell is tabbable; Arrow keys move between cells, Tab leaves the grid; Home/End/PageUp/PageDown work.
+  3. Week start, rendering and mouse interactions are unchanged.
+- **Verification method:** Playwright AX tree + keyboard traversal; count tab stops before/after. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-049, IMP-100
+- **Priority score:** 22.5
+- **Notes:** Sources: `discover4-ux.md` (U10) + `discover4-delivery.md` (IMP-A3). Merged.
+
+### IMP-174 — Catch the Settings backup-count read rejection
+- **Status:** TODO
+- **Category:** error handling
+- **Type:** bug-fix
+- **Area / files:** `src/features/settings/SettingsView.tsx:84-87`
+- **Intent:** `void backupRepo.all().then(...)` has no catch, so a blocked/failed IndexedDB produces an unhandled rejection on Settings.
+- **Acceptance criteria:**
+  1. The read rejection settles without escaping and the count stays unchanged.
+  2. No duplicate boot error toast appears.
+  3. The view still renders.
+- **Verification method:** `SettingsView.test.tsx` with a rejecting mock; assert no unhandled rejection. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 20
+- **Notes:** Source: `discover4-followups.md` (F9, S3, 2/2/5).
+
+### IMP-175 — Stop a notification snooze from pushing an undo entry
+- **Status:** TODO
+- **Category:** correctness / undo integrity
+- **Type:** bug-fix
+- **Area / files:** `src/pwa/ReminderRuntime.tsx:196-200`, `src/domain/itemActions.ts:123-127`
+- **Intent:** The snooze write calls `patchItem` without `trackUndo: false`, so each snooze pushes "Change <title>" and a run of snoozes evicts the user's edits from the 25-entry stack.
+- **Acceptance criteria:**
+  1. Snoozing pushes no undo entry.
+  2. `⌘Z` after snoozes still reverts the user's last edit.
+  3. The snooze reminder is still persisted.
+- **Verification method:** Unit test the snooze path / patchItem options; assert stack depth unchanged. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 20
+- **Notes:** Source: `discover4-followups.md` (F14, S3, 2/2/5).
+
+### IMP-176 — Add a rejection handler to `sendSkipWaiting`
+- **Status:** TODO
+- **Category:** error handling / PWA
+- **Type:** bug-fix
+- **Area / files:** `src/pwa/notifications.ts:60-65`
+- **Intent:** `void navigator.serviceWorker.getRegistration().then(...)` has no catch, so a rejected lookup leaks an unhandled rejection on the SW-update path.
+- **Acceptance criteria:**
+  1. A rejected `getRegistration` settles without an unhandled rejection.
+  2. `SKIP_WAITING` is still posted when a waiting worker exists.
+  3. Any failure goes through the existing failure helper or a trace.
+- **Verification method:** Unit test with a rejecting stub. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 20
+- **Notes:** Source: `discover4-followups.md` (F15, S3, 2/2/5).
+
+### IMP-177 — Give archived items an in-app restore path
+- **Status:** TODO
+- **Category:** UX / completeness
+- **Type:** improvement
+- **Area / files:** `src/domain/itemActions.ts:182-185` (`restoreItem`), `src/features/list/ListView.tsx:47,246-249`
+- **Intent:** Archive is one-way in-app: ListView can show archived items but no control un-archives them.
+- **Acceptance criteria:**
+  1. An archived row in ListView offers Restore.
+  2. Restoring clears `archivedAt` and removes it from the archived view.
+  3. `restoreItem` keeps its history/undo behavior.
+- **Verification method:** Playwright archive→show archived→Restore. Run the four gates.
+- **Effort:** M    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 18
+- **Notes:** Source: `discover4-followups.md` (F6, S2, 3/2/4).
+
+### IMP-178 — Add a Pages 404 fallback and decide the robots/sitemap question
+- **Status:** TODO
+- **Category:** delivery
+- **Type:** improvement
+- **Area / files:** `public/`, `vite.config.ts:7`
+- **Intent:** A trimmed/typed non-hash URL lands on GitHub's 404 instead of the app; robots/sitemap policy is undocumented.
+- **Acceptance criteria:**
+  1. `npm run build` emits `dist/404.html` that boots the SPA shell with the same asset graph.
+  2. `robots.txt` is shipped with an explicit policy or intentionally absent and documented.
+  3. `index.html`, manifest and SW precache behavior are unchanged.
+- **Verification method:** Build; request a non-hash path and assert the app boots; `ls dist/404.html`. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 16
+- **Notes:** Source: `discover4-delivery.md` (IMP-D2, S3, 2/2/4).
+
+### IMP-179 — Reconcile the default recurrence when the quick-add kind changes
+- **Status:** TODO
+- **Category:** correctness / input parsing
+- **Type:** bug-fix
+- **Area / files:** `src/features/quickadd/QuickAdd.tsx:44-51`
+- **Intent:** Changing kind replaces data but keeps the parsed recurrence, so habit→task keeps a daily rule and task→habit gets none.
+- **Acceptance criteria:**
+  1. Switching away from habit removes the habit-defaulted daily rule unless it was explicitly parsed.
+  2. Switching to habit yields the daily default.
+  3. An explicitly parsed rule is preserved for any kind.
+- **Verification method:** Unit test the commit/derivation helper. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-138
+- **Priority score:** 12
+- **Notes:** Source: `discover4-followups.md` (F11, S3, 2/3/4).
+
+### IMP-180 — Bound the DOM node count of the item views with windowing
+- **Status:** TODO
+- **Category:** performance
+- **Type:** improvement
+- **Area / files:** `src/features/list/ListView.tsx:287-416`, `src/features/matrix/MatrixView.tsx:79`, `src/features/habits/HabitsView.tsx:136`
+- **Intent:** With 580 items Lists renders 9,011 DOM nodes (Habits 7,269, Matrix 5,650); every row mounts, so a large personal DB scales re-render cost linearly.
+- **Acceptance criteria:**
+  1. For a 500+ item DB the Lists/Matrix/Habits views stay under a fixed node budget with no visual change to visible rows.
+  2. Scrolling still reaches every item; keyboard/DnD on visible rows is unchanged.
+  3. A node-count assertion is added for a 500-item fixture.
+- **Verification method:** Playwright 580-item fixture node counts and scroll-to-last. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-060
+- **Priority score:** 9
+- **Notes:** Source: `discover4-delivery.md` (IMP-P2, S3, 2/3/3).
+
+### IMP-181 — Report a Dexie `blocked` upgrade as a storage failure
+- **Status:** TODO
+- **Category:** correctness / storage
+- **Type:** bug-fix
+- **Area / files:** `src/db/repository.ts:8-10`, `src/db/schema.ts:45-79`, `src/App.tsx:103`
+- **Intent:** When another tab blocks a version upgrade, `open()` stays pending, so the boot catch never fires and the app silently renders fallback data.
+- **Acceptance criteria:**
+  1. A `blocked` event surfaces the same storage-unavailable report/toast as a rejected open.
+  2. It fires once, not per event.
+  3. `src/db/` stays UI-free (callback/return value).
+- **Verification method:** Unit test a stubbed Dexie emitting `blocked`; assert one report. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** IMP-039
+- **Priority score:** 8
+- **Notes:** Source: `discover4-followups.md` (F8, S3, 2/2/4).
+
+### IMP-182 — Make multi-count habits completable or stop promising a count
+- **Status:** TODO
+- **Category:** correctness / habits
+- **Type:** bug-fix
+- **Area / files:** `src/features/today/TodayView.tsx:247-250`, `src/features/habits/HabitsView.tsx:137`
+- **Intent:** `doneToday` requires `doneCount >= target.count`, but a habit expands at most one occurrence per day, so a 3×/day habit can never complete.
+- **Acceptance criteria:**
+  1. Either per-day progress is representable so the gate can be met, or the UI reflects single-occurrence completion.
+  2. A `target.count: 3` habit can be marked complete for the day.
+  3. Streak behavior is unchanged.
+- **Verification method:** Unit/Playwright with a 3× habit; assert completion reachable. Run the four gates.
+- **Effort:** M    **Risk:** med
+- **Depends on:** none
+- **Priority score:** 8
+- **Notes:** Source: `discover4-followups.md` (F13, S3, 2/2/4). Needs a product decision between per-day counters and honest copy; choose the least invasive.
+
+### IMP-183 — Stop the command palette clipping its last row at the list boundary
+- **Status:** TODO
+- **Category:** visual
+- **Type:** improvement
+- **Area / files:** `src/features/command/CommandPalette.tsx:130-151`
+- **Intent:** The `max-h-[50vh]` scroll container ends mid-row, slicing the final visible option with no fade or scroll cue.
+- **Acceptance criteria:**
+  1. The container snaps to whole rows or fades/insets the clipped edge.
+  2. No option is partially visible at the boundary when the list overflows.
+  3. Keyboard navigation still scrolls the active row into view.
+- **Verification method:** Playwright at 1280×800 assert no partial row or a fade exists; screenshot. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** none
+- **Priority score:** 6
+- **Notes:** Source: `discover4-visual.md` (V9, S3, 1/2/3).
