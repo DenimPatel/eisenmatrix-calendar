@@ -2324,7 +2324,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 60
-- **Notes:** Source: `discover4-visual.md` (V2, S3, 3/4/5). DONE 2026-10-18: rings under 40px show a compact number-only label (`text-[10px]`); measured widths for 0/5/40/100 are 6.6–18.6px inside the 22px inner diameter at size 28, no stroke overlap; >=40px rings and the progressbar accessible value are unchanged. Mutation disabling compactness fails 2 tests. Verified PASS (typecheck/lint/77 files·793 tests/format:check/build; browser 1280/390 light+dark, 0 console errors). Commit pending.
+- **Notes:** Source: `discover4-visual.md` (V2, S3, 3/4/5). DONE 2026-10-18: rings under 40px show a compact number-only label (`text-[10px]`); measured widths for 0/5/40/100 are 6.6–18.6px inside the 22px inner diameter at size 28, no stroke overlap; >=40px rings and the progressbar accessible value are unchanged. Mutation disabling compactness fails 2 tests. Verified PASS (typecheck/lint/77 files·793 tests/format:check/build; browser 1280/390 light+dark, 0 console errors). Commit ae2052c. Latent footgun: a caller passing an explicit `label` at size<40 bypasses compactness (no in-repo caller).
 
 ### IMP-146 — Remove background content from the accessibility tree while a modal is open
 - **Status:** TODO
@@ -2947,4 +2947,68 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** IMP-143, IMP-038
 - **Priority score:** 24
-- **Notes:** Source: residual found by `reports/verify-IMP-143.md`; not reachable through the UI.
+- **Notes:** Source: residual found by `reports/verify-IMP-143.md`; not reachable through the UI. Also normalize triggerless reminders (no timing field) and checklist entries in the same validation pass (see IMP-187).
+
+### IMP-185 — Validate the per-occurrence state map on import
+- **Status:** TODO
+- **Category:** correctness / import validation
+- **Type:** bug-fix
+- **Area / files:** `src/lib/itemValidation.ts` (`asOccurrences`), `src/domain/recurrence.ts` (`occurrenceState`)
+- **Intent:** `asOccurrences` casts any plain object to `Item['occurrences']` without checking entries, so `occurrences: {"K": {"status": 5}}` imports cleanly and a non-string status flows into status labels/rendering.
+- **Acceptance criteria:**
+  1. Each occurrence-state entry is rebuilt from typed known fields: `status` must be a valid occurrence status, `completedAt` a number|null, `notes` a string; unknown fields dropped.
+  2. A malformed entry is dropped (or the item is rejected and counted) without affecting sibling entries.
+  3. Imported payloads yield only valid `OccurrenceState` values; existing valid round-trips unchanged.
+- **Verification method:** Add malformed state-map fixtures to `src/lib/itemValidation.test.ts`/`backup.test.ts`; assert normalization/rejection and no invalid status reaches the UI. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-144
+- **Priority score:** 45
+- **Notes:** Source: `reports/discovered-IMP-144.md` §1; same class as IMP-144 but a distinct map and no `localeCompare` crash.
+
+### IMP-186 — Partition `recurrence.overrides` across a series split
+- **Status:** TODO
+- **Category:** correctness / data hygiene
+- **Type:** bug-fix
+- **Area / files:** `src/domain/recurrence.ts` (`splitSeries`), `src/domain/itemActions.ts` (`updateRecurring` future branch)
+- **Intent:** `splitSeries` copies the whole rule (including `overrides`) onto both rows, so the head keeps post-split override keys it can never expand and the tail keeps pre-split keys. It is the same map-partition gap IMP-139 fixed for `occurrences`, but no data is currently lost.
+- **Acceptance criteria:**
+  1. After a split, head `overrides` contains only keys `< K` and tail `overrides` only keys `>= K`.
+  2. Overrides for still-expandable occurrences are preserved with identical values.
+  3. Existing split/count/until/exception behavior is unchanged.
+- **Verification method:** Extend `recurrence.test.ts` with retitled/retimed overrides before and after the split; assert the partition and re-expanded titles. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-139
+- **Priority score:** 20
+- **Notes:** Source: `reports/discovered-IMP-139.md`; distinct from IMP-023's exception copying.
+
+### IMP-187 — Validate checklist entries on import
+- **Status:** TODO
+- **Category:** correctness / import validation
+- **Type:** bug-fix
+- **Area / files:** `src/lib/itemValidation.ts` (`asObjectArray`), `src/features/item/KindFields.tsx` (checklist reads)
+- **Intent:** `checklist` is coerced only to "array of plain objects"; inner fields (`id`/`text`/`done`) are never checked, so a malformed entry can reach the editor's checklist rendering.
+- **Acceptance criteria:**
+  1. Checklist entries are rebuilt from typed fields (`id`/`text` strings, `done` boolean) with unknown fields dropped; invalid entries are dropped or the item counted invalid.
+  2. No malformed checklist entry reaches `KindFields`.
+  3. Valid checklist round-trips are unchanged.
+- **Verification method:** Add malformed checklist fixtures to `itemValidation`/`backup` tests; assert normalization and editor render safety. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-038
+- **Priority score:** 24
+- **Notes:** Source: `reports/discovered-IMP-144.md` §2; reminders are covered by IMP-184.
+
+### IMP-188 — Avoid double route announcements from the loading fallback
+- **Status:** TODO
+- **Category:** accessibility
+- **Type:** improvement
+- **Area / files:** `src/App.tsx` (`RouteFallback`), `src/features/shell/RouteAnnouncer.tsx`
+- **Intent:** Both the lazy-route fallback and the new route announcer use `role="status"`, so a lazy navigation can announce "Loading…" and then the view name, producing two announcements for one navigation.
+- **Acceptance criteria:**
+  1. One navigation produces exactly one view announcement; a pending state is not announced as a second status message (or the two regions are coordinated with `aria-busy`).
+  2. Initial load remains silent and deep links announce once.
+  3. Focus behavior and the visible loading fallback are unchanged.
+- **Verification method:** Playwright + AX live-region observation across lazy routes and deep links; assert one message per navigation. Run the four gates.
+- **Effort:** S    **Risk:** low
+- **Depends on:** IMP-136
+- **Priority score:** 24
+- **Notes:** Source: `reports/discovered-IMP-136.md`.

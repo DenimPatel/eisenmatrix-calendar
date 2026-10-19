@@ -2,57 +2,51 @@
 
 | Dimension | Health (1–5) | Open | Done | Blocked/Human | Last touched (date, IMP, SHA) | Biggest known gap | Recommended next |
 |---|---|---|---|---|---|---|---|
-| Bugs/Correctness | 4 | 18 | 69 | 1 blocked | 2026-10-18 IMP-144 pending | mixed reminder import, series done | IMP-184, IMP-161 |
+| Bugs/Correctness | 4 | 21 | 70 | 1 blocked | 2026-10-18 IMP-144 1553d8b | mixed reminder import, series done | IMP-184, IMP-161, IMP-185/186 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
-| Visual | 3 | 9 | 6 | 0 | 2026-10-18 IMP-145 pending | mobile voids, empty states, contrast | IMP-106/108/109, IMP-157/158 |
-| UX/Interaction | 5 | 2 | 14 | 3 human | 2026-10-18 IMP-142 pending | first-occurrence preview, shopping add box | IMP-156, IMP-171 |
+| Visual | 3 | 9 | 6 | 0 | 2026-10-18 IMP-145 ae2052c | mobile voids, empty states, contrast | IMP-106/108/109, IMP-157/158 |
+| UX/Interaction | 5 | 3 | 13 | 3 human | 2026-10-18 IMP-142 8d975f4 | first-occurrence preview, shopping add box | IMP-156, IMP-171 |
 | Format/Structure | 4 | 0 | 0 | 0 | 2026-10-17 IMP-064 | none known | — |
-| Delivery | 5 | 2 | 4 | 2 human | 2026-10-18 IMP-136 | social metadata, non-hash 404 | IMP-149, IMP-178 |
+| Delivery | 5 | 2 | 4 | 2 human | 2026-10-18 IMP-136 b26f352 | social metadata, non-hash 404 | IMP-149, IMP-178 |
 | Performance | 4 | 2 | 5 | 0 | 2026-10-18 discovery | Today CLS 0.55, unbounded DOM on large DBs | IMP-151, IMP-180 |
-| Accessibility | 4 | 9 | 12 | 0 | 2026-10-18 IMP-136 | modal background in AX tree, calendar grid | IMP-146, IMP-150, IMP-152/153/173 |
+| Accessibility | 4 | 10 | 12 | 0 | 2026-10-18 IMP-136 b26f352 | modal background in AX tree, calendar grid | IMP-146, IMP-150, IMP-152/153/173, IMP-188 |
 | Docs/Onboarding | 4 | 0 | 3 | 0 | 2026-10-17 IMP-065 | none known | — |
 | Tests/Tooling | 5 | 0 | 17 | 2 human | 2026-10-17 IMP-083 | Dependabot major PRs fail CI (pre-existing) | human |
 
-**Bugs/Correctness (4):** Session 3 closed the crash/data-loss classes (import shape, concurrency,
-undo integrity). Discovery 4 found a new tier of S2 correctness bugs on normal paths. IMP-139 fixed
-the first: "this and future" now partitions per-occurrence state instead of dropping the tail's
-done/completedAt, IMP-140 stopped reminders for done/cancelled occurrences at the single candidate
-seam, IMP-141 scoped toast Undo to its own action, and IMP-143 made reminder rows honest across the
-All-day toggle (also closing IMP-148's absolute-row defect). IMP-144 closed the malformed override
-import crash. Mixed imported reminder shapes and the series-done inconsistency remain; health stays
-4 until those land.
+**Bugs/Correctness (4):** Session 4 closed seven S2 defects on normal paths: split occurrence state
+(IMP-139), reminders for done/cancelled occurrences (IMP-140), action-scoped toast Undo (IMP-141),
+honest reminder rows across All-day toggles plus absolute snoozes (IMP-143/148), and malformed
+occurrence overrides (IMP-144). Discovery also surfaced and itemized the adjacent maps still
+unvalidated (IMP-184/185/186). Series-level `done` remains inconsistent (IMP-161); health stays 4.
 
 **Content (4):** Not applicable beyond docs; only the license question is open for humans.
 
-**Visual (3):** Three regression sweeps found no visual regressions, but discovery 4 measured real
-defects. IMP-137 fixed the editor time control's clipped AM/PM and added a width guard; IMP-145 made
-the 28px ring label fit. Mobile Lists still reserves a 111px void, dark-mode checkboxes read as
-filled, and the muted-on-accent-soft contrast pair is below AA. Health stays 3 (lowest) until the
-empty-state/spacing/contrast items land.
+**Visual (3):** IMP-137 fixed the editor's clipped AM/PM and IMP-145 made the 28px ring label fit.
+The remaining measured defects are mobile-only or below-AA: Lists' 111px void, calendar/Lists empty
+states, dark-mode checkbox fill, and muted-on-accent-soft at 4.26:1. This is still the least-healthy
+dimension, but the two highest-score visual items are now done.
 
 **UX/Interaction (5):** Core flows (DnD, occurrence scope actions, editor tabs, overlays, mobile
-nav) verified healthy. IMP-138 made the quick-add preview follow the user's Kind/Date/Time
-overrides and stopped a Note override from committing a promised recurrence. IMP-142 closed the
-scope promise by disabling Subtasks under "This occurrence". The remaining gaps are the
-first-occurrence preview anchor and the Shopping add box's unimplemented placeholder syntax.
+nav) remain healthy. IMP-138 made the quick-add preview follow the user's overrides and IMP-142
+closed the occurrence-scope subtask leak. The first-occurrence preview anchor and the Shopping add
+box remain.
 
 **Format/Structure (4):** Prettier is enforced in CI and drift is cleared; no open items.
 
 **Delivery (5):** Deep-link refresh, offline reload, stale-SW prompt and mixed content all pass.
-IMP-136 added per-route titles and route announcements. Remaining items are S3 metadata/host polish
-(OG cards, non-hash 404); the two human items are branch protection and dependency majors.
+IMP-136 added per-route titles and announcements. Remaining items are S3 metadata/host polish (OG
+cards, non-hash 404); the two human items are branch protection and dependency majors.
 
-**Performance (4):** Route transitions and the year view remain fast (IMP-131/133 hold). Discovery
-measured a deterministic CLS 0.554 on the landing route with data and 9,011 DOM nodes in Lists at
-580 items — headroom items, not present-day stalls.
+**Performance (4):** Route transitions and the year view remain fast. Discovery measured CLS 0.554
+on Today with data and 9,011 DOM nodes in Lists at 580 items; both are future-headroom items.
 
-**Accessibility (4):** Named dialogs, ARIA state/sort semantics, topmost Escape and route
-announcements are in place. Discovery found the modal background still exposed in the AX tree, the
-month grid lacking grid semantics/keyboard movement, and two bespoke segmented controls without
-selected state.
+**Accessibility (4):** IMP-136 gave every route a title, a one-shot focus target and one view
+announcement. Remaining: modal backgrounds are still exposed in the AX tree, the month grid lacks
+grid semantics/arrow movement, two segmented controls still lack selected state, and the lazy-route
+fallback may double-announce (IMP-188).
 
 **Docs/Onboarding (4):** Help dialog, AGENTS.md rename and the preview-SW reset procedure are done;
 no open docs items.
 
-**Tests/Tooling (5):** 74 files / 722 tests, Prettier/typecheck/lint/build gates in CI, route
-splitting and a boot smoke test. Only the pre-existing Dependabot major PRs need a human.
+**Tests/Tooling (5):** 77 files / 793 tests, five gates green, two consecutive full-suite runs and a
+clean 40-capture regression sweep. Only the pre-existing Dependabot major PRs need a human.
