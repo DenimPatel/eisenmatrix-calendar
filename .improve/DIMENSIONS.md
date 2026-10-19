@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|---|
 | Bugs/Correctness | 4 | 18 | 69 | 1 blocked | 2026-10-18 IMP-144 pending | mixed reminder import, series done | IMP-184, IMP-161 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
-| Visual | 3 | 10 | 5 | 0 | 2026-10-18 IMP-137 pending | ring label, mobile voids, empty states | IMP-145, IMP-106/108/109 |
+| Visual | 3 | 9 | 6 | 0 | 2026-10-18 IMP-145 pending | mobile voids, empty states, contrast | IMP-106/108/109, IMP-157/158 |
 | UX/Interaction | 5 | 2 | 14 | 3 human | 2026-10-18 IMP-142 pending | first-occurrence preview, shopping add box | IMP-156, IMP-171 |
 | Format/Structure | 4 | 0 | 0 | 0 | 2026-10-17 IMP-064 | none known | — |
 | Delivery | 5 | 2 | 4 | 2 human | 2026-10-18 IMP-136 | social metadata, non-hash 404 | IMP-149, IMP-178 |
@@ -25,9 +25,10 @@ import crash. Mixed imported reminder shapes and the series-done inconsistency r
 **Content (4):** Not applicable beyond docs; only the license question is open for humans.
 
 **Visual (3):** Three regression sweeps found no visual regressions, but discovery 4 measured real
-defects. IMP-137 fixed the editor time control's clipped AM/PM and added a width guard; the 28px
-progress ring's label still overflows, mobile Lists reserves a 111px void, and dark-mode checkboxes
-read as filled. Health stays 3 (lowest) until IMP-145 and the empty-state/spacing items land.
+defects. IMP-137 fixed the editor time control's clipped AM/PM and added a width guard; IMP-145 made
+the 28px ring label fit. Mobile Lists still reserves a 111px void, dark-mode checkboxes read as
+filled, and the muted-on-accent-soft contrast pair is below AA. Health stays 3 (lowest) until the
+empty-state/spacing/contrast items land.
 
 **UX/Interaction (5):** Core flows (DnD, occurrence scope actions, editor tabs, overlays, mobile
 nav) verified healthy. IMP-138 made the quick-add preview follow the user's Kind/Date/Time

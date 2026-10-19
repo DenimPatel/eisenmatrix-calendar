@@ -32,6 +32,7 @@ this file is appended per dimension from the resumed session onward.
 
 ## Visual
 
+- 2026-10-18 · IMP-145 · Small progress rings now use a compact number-only label that fits inside the ring; larger rings and the announced percentage are unchanged · files: `src/components/ui/ProgressRing.tsx`, `src/components/ui/ProgressRing.test.tsx`
 - 2026-10-18 · IMP-137 · The item editor's Start-time control now shows the full AM/PM with the native clock affordance, and a guard rejects narrow time inputs · files: `src/features/item/ItemEditorSheet.tsx`, `src/features/item/ItemEditorSheet.test.tsx`, `src/features/quickadd/QuickAdd.test.tsx`
 
 ## Delivery

@@ -23,6 +23,8 @@ const toneVar: Record<NonNullable<ProgressRingProps['tone']>, string> = {
   warning: 'rgb(245 158 11)',
 };
 
+const COMPACT_MAX_SIZE = 40;
+
 export function ProgressRing({
   value,
   size = 64,
@@ -38,6 +40,7 @@ export function ProgressRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (clamped / 100) * circumference;
+  const compact = size < COMPACT_MAX_SIZE;
 
   const semantics: React.HTMLAttributes<HTMLDivElement> = decorative
     ? { 'aria-hidden': true }
@@ -77,7 +80,14 @@ export function ProgressRing({
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        {label ?? <span className="text-xs font-semibold text-fg">{percent}%</span>}
+        {label ??
+          (compact ? (
+            <span data-compact="true" className="text-[10px] font-semibold leading-none text-fg">
+              {percent}
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-fg">{percent}%</span>
+          ))}
       </div>
     </div>
   );

@@ -80,3 +80,38 @@ describe('ProgressRing progress semantics', () => {
     await mounted.unmount();
   });
 });
+
+describe('ProgressRing label fit at small sizes', () => {
+  it('abbreviates the label and drops % inside a size 28 ring', async () => {
+    const mounted = await mount(<ProgressRing value={40} size={28} strokeWidth={3} />);
+    const el = ring(mounted.host)!;
+    expect(el.getAttribute('aria-valuenow')).toBe('40');
+    expect(el.getAttribute('aria-label')).toBe('40%');
+
+    const label = mounted.host.querySelector<HTMLElement>('[data-compact="true"]')!;
+    expect(label).not.toBeNull();
+    expect(label.textContent).toBe('40');
+    expect(label.className).toContain('text-[10px]');
+    expect(mounted.host.textContent).not.toContain('%');
+    await mounted.unmount();
+  });
+
+  it('keeps the full label and value at size 100', async () => {
+    const mounted = await mount(<ProgressRing value={100} size={28} strokeWidth={3} />);
+    expect(ring(mounted.host)!.getAttribute('aria-valuenow')).toBe('100');
+    const label = mounted.host.querySelector<HTMLElement>('[data-compact="true"]')!;
+    expect(label.textContent).toBe('100');
+    await mounted.unmount();
+  });
+
+  it('keeps the current label appearance at size 40', async () => {
+    const mounted = await mount(<ProgressRing value={40} size={40} strokeWidth={6} />);
+    expect(ring(mounted.host)!.getAttribute('aria-valuenow')).toBe('40');
+    expect(mounted.host.querySelector('[data-compact="true"]')).toBeNull();
+
+    const label = mounted.host.querySelector<HTMLElement>('.absolute span')!;
+    expect(label.textContent).toBe('40%');
+    expect(label.className).toContain('text-xs');
+    await mounted.unmount();
+  });
+});

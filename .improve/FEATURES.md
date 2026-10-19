@@ -2311,7 +2311,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Notes:** Source: `discover4-quality.md` (C4, S2, 4/2/5). DONE 2026-10-18: `asOccurrenceOverride` rebuilds each override from typed known fields and drops the whole override on a wrong-typed field (no half-apply), keeping the item and siblings; unknown fields stripped; no numeric start reaches `expandOccurrences` or the `useOccurrences` sort. Chosen semantics: drop, invalid count unchanged (documented). Mutation bypass fails 13 tests. Verified PASS (typecheck/lint/77 files·790 tests/format:check/build; independent malformed-field matrix). Commit pending.
 
 ### IMP-145 — Keep the small ProgressRing label inside the ring
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual
 - **Type:** improvement
 - **Area / files:** `src/components/ui/ProgressRing.tsx:79-80`; `src/features/today/TodayView.tsx:202-207` (`size={28}`, `strokeWidth={3}`)
@@ -2324,7 +2324,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 60
-- **Notes:** Source: `discover4-visual.md` (V2, S3, 3/4/5).
+- **Notes:** Source: `discover4-visual.md` (V2, S3, 3/4/5). DONE 2026-10-18: rings under 40px show a compact number-only label (`text-[10px]`); measured widths for 0/5/40/100 are 6.6–18.6px inside the 22px inner diameter at size 28, no stroke overlap; >=40px rings and the progressbar accessible value are unchanged. Mutation disabling compactness fails 2 tests. Verified PASS (typecheck/lint/77 files·793 tests/format:check/build; browser 1280/390 light+dark, 0 console errors). Commit pending.
 
 ### IMP-146 — Remove background content from the accessibility tree while a modal is open
 - **Status:** TODO
