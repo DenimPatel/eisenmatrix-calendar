@@ -16,7 +16,7 @@ import {
   updateOccurrence,
   updateRecurring,
 } from './itemActions';
-import { expandOccurrences } from './recurrence';
+import { expandOccurrences, resolveOccurrenceStatus } from './recurrence';
 import { upcomingReminders } from './reminders';
 import { habitStreak } from './stats';
 import { formatISODate, parseLocalDate } from '@/lib/date';
@@ -864,6 +864,36 @@ describe('updateRecurring (scope: future)', () => {
     const union = [...new Set([...occurrences(head), ...occurrences(tail)])];
     expect(union).toEqual(occurrences(before));
     expect(union).toHaveLength(10);
+  });
+
+  it('partitions per-occurrence state between head and tail for "this and future"', async () => {
+    const item = countedWeeklyTask('s');
+    item.occurrences = {
+      '2026-07-13': { status: 'done', completedAt: 1 },
+      '2026-07-20': { status: 'done', completedAt: 2 },
+      '2026-07-27': { status: 'cancelled', completedAt: null },
+    };
+    await itemRepo.create(item);
+    const stored = (await itemRepo.get('s'))!;
+
+    await updateRecurring(stored, 'future', OCC, { title: 'Standup (retro)' });
+
+    const head = (await itemRepo.get('s'))!;
+    const tail = await tailOf();
+    // The head keeps only what it can still expand; the tail carries its own states.
+    expect(head.occurrences).toEqual({ '2026-07-13': { status: 'done', completedAt: 1 } });
+    expect(tail.occurrences).toEqual({
+      '2026-07-20': { status: 'done', completedAt: 2 },
+      '2026-07-27': { status: 'cancelled', completedAt: null },
+    });
+    const headKeys = occurrences(head);
+    const statusAt = (key: string) =>
+      headKeys.includes(key)
+        ? resolveOccurrenceStatus(head, key).status
+        : resolveOccurrenceStatus(tail, key).status;
+    for (const key of occurrences(stored)) {
+      expect(statusAt(key)).toBe(resolveOccurrenceStatus(stored, key).status);
+    }
   });
 
   it('persists an edited recurrence rule on the tail for "this and future"', async () => {

@@ -444,9 +444,19 @@ export function splitSeries(
     untilBound && untilBound.getTime() < previous.getTime()
       ? formatISODate(untilBound)
       : formatISODate(previous);
+  // Per-occurrence state follows the occurrence it describes: the head keeps only what it can
+  // still expand (keys before the split), the tail takes everything from the split onward. Keys
+  // are local `YYYY-MM-DD`, so a plain string compare orders them correctly.
+  const headOccurrences: Item['occurrences'] = {};
+  const tailOccurrences: Item['occurrences'] = {};
+  for (const [key, state] of Object.entries(item.occurrences ?? {})) {
+    if (key < fromKey) headOccurrences[key] = state;
+    else tailOccurrences[key] = state;
+  }
   const head: Item = {
     ...item,
     recurrence: { ...rule, until: headUntil },
+    occurrences: headOccurrences,
     updatedAt: Date.now(),
   };
   const tail: Item = {
@@ -461,7 +471,7 @@ export function splitSeries(
       until: rule.until ?? null,
       ...tailCount,
     },
-    occurrences: {},
+    occurrences: tailOccurrences,
     history: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),

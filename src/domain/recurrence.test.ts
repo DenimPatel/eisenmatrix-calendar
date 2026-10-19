@@ -524,19 +524,46 @@ describe('splitSeries', () => {
 
   it('keeps a skipped day consuming count, exactly as unsplit expansion does', () => {
     const item = makeItem('2024-01-01', { freq: 'daily', count: 4, exceptions: ['2024-01-02'] });
-    item.occurrences = { '2024-01-01': { status: 'done', completedAt: 1 } };
+    item.occurrences = {
+      '2024-01-01': { status: 'done', completedAt: 1 },
+      '2024-01-04': { status: 'done', completedAt: 2 },
+    };
     const { head, tail, headKeys, tailKeys, union } = split(item, '2024-01-04');
 
     expect(head.recurrence!.count).toBe(4);
     expect(head.recurrence!.exceptions).toEqual(['2024-01-02']);
-    expect(head.occurrences['2024-01-01']).toEqual({ status: 'done', completedAt: 1 });
+    // The map is partitioned at the split: the head keeps only keys it can still expand, the
+    // tail carries its own states unchanged.
+    expect(head.occurrences).toEqual({ '2024-01-01': { status: 'done', completedAt: 1 } });
     expect(tail.id).toBe('tail');
-    expect(tail.occurrences).toEqual({});
+    expect(tail.occurrences).toEqual({ '2024-01-04': { status: 'done', completedAt: 2 } });
     expect(tail.history).toEqual([]);
     expect(headKeys).toEqual(['2024-01-01', '2024-01-03']);
     expect(tail.recurrence!.count).toBe(1);
     expect(tailKeys).toEqual(['2024-01-04']);
     expect(union).toEqual(keys(item, WIDE.from, WIDE.to));
+  });
+
+  it('re-expands a split series to the same occurrence statuses as the original', () => {
+    const item = makeItem('2024-01-01', { freq: 'daily', count: 6 });
+    item.occurrences = {
+      '2024-01-01': { status: 'done', completedAt: 1 },
+      '2024-01-03': { status: 'cancelled', completedAt: null },
+      '2024-01-04': { status: 'done', completedAt: 2 },
+      '2024-01-06': { status: 'done', completedAt: 3 },
+    };
+    const { head, tail } = splitSeries(item, '2024-01-04', 'tail');
+    const headKeys = keys(head, WIDE.from, WIDE.to);
+    const statusAt = (key: string) =>
+      headKeys.includes(key)
+        ? resolveOccurrenceStatus(head, key).status
+        : resolveOccurrenceStatus(tail, key).status;
+
+    for (const key of keys(item, WIDE.from, WIDE.to)) {
+      expect(statusAt(key)).toBe(resolveOccurrenceStatus(item, key).status);
+    }
+    expect(statusAt('2024-01-04')).toBe('done');
+    expect(statusAt('2024-01-06')).toBe('done');
   });
 
   it('returns the item unsplit for a missing or unparseable split key', () => {

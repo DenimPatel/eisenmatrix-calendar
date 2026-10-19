@@ -2212,10 +2212,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-ux.md` (U1, S2, 3/4/5). DONE 2026-10-18: `quickAddPreviewChips` derives chips from the effective kind + Date/Time overrides; a kind-overridden Note also clears the parsed recurrence so preview and stored row agree (explicit note/task rules are untouched). Verified PASS (typecheck/lint/74 files·737 tests/format:check/build; browser 1280/390, stored Note matched preview, 0 console errors); commit guard is mutation-caught. Design note: `NON_RECURRING_KINDS=['note']` is not model-backed; fold into IMP-179 if that lands. Commit pending.
+- **Notes:** Source: `discover4-ux.md` (U1, S2, 3/4/5). DONE 2026-10-18: `quickAddPreviewChips` derives chips from the effective kind + Date/Time overrides; a kind-overridden Note also clears the parsed recurrence so preview and stored row agree (explicit note/task rules are untouched). Verified PASS (typecheck/lint/74 files·737 tests/format:check/build; browser 1280/390, stored Note matched preview, 0 console errors); commit guard is mutation-caught. Design note: `NON_RECURRING_KINDS=['note']` is not model-backed; fold into IMP-179 if that lands. Commit fc84462.
 
 ### IMP-139 — Preserve per-occurrence state when splitting a series
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** correctness / data integrity
 - **Type:** bug-fix
 - **Area / files:** `src/domain/recurrence.ts:447-468` (`tail.occurrences = {}`), `src/domain/itemActions.ts:429-451`, test `src/domain/recurrence.test.ts:534`
@@ -2228,7 +2228,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-quality.md` (C1, S2, 4/3/5).
+- **Notes:** Source: `discover4-quality.md` (C1, S2, 4/3/5). DONE 2026-10-18: `splitSeries` partitions `occurrences` by key (head `< K`, tail `>= K`), so done/cancelled/completedAt state survives "this and future"; the action path already persisted the split head/tail. Both partitions are load-bearing (mutation fails 3 / 2 tests); the vacuous tail-empty assertion is replaced. Verified PASS (typecheck/lint/74 files·739 tests/format:check/build; independent probe incl. key == K, empty and post-split-free maps). Commit pending.
 
 ### IMP-140 — Stop reminders for done or cancelled occurrences
 - **Status:** TODO
