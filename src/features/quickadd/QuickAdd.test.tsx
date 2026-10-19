@@ -160,4 +160,26 @@ describe('QuickAdd', () => {
     await mounted.unmount();
     opener.remove();
   });
+
+  it('never narrows the time override input below the AM/PM affordance', async () => {
+    useUiStore.setState({ quickAddOpen: true });
+    const mounted = await mountQuickAdd();
+
+    const input = mounted.host.querySelector('input') as HTMLInputElement;
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setValue.call(input, 'buy milk');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    const time = mounted.host.querySelector<HTMLInputElement>('input[type="time"]');
+    expect(time).not.toBeNull();
+    // Widths narrower than `w-32` clip the native `12:00 AM` value plus its clock affordance.
+    const tooNarrow = [...time!.className.matchAll(/\bw-(\d+)\b/g)].some(
+      (match) => Number(match[1]) < 32,
+    );
+    expect(tooNarrow).toBe(false);
+
+    await mounted.unmount();
+  });
 });

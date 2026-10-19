@@ -626,7 +626,7 @@ export function ItemEditorSheet() {
                   {!draft.allDay && (
                     <input
                       type="time"
-                      className="input w-28"
+                      className="input w-36"
                       aria-label="Start time"
                       value={draft.start ? formatTime(draft.start) : ''}
                       onChange={(e) => {

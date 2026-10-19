@@ -588,3 +588,48 @@ describe('ItemEditorSheet', () => {
     await mounted.unmount();
   });
 });
+
+/** Widths narrower than `w-32` clip the native `12:00 AM` value plus its clock affordance. */
+function hasTooNarrowTimeWidth(input: HTMLInputElement): boolean {
+  return [...input.className.matchAll(/\bw-(\d+)\b/g)].some((match) => Number(match[1]) < 32);
+}
+
+describe('ItemEditorSheet time inputs', () => {
+  it('sizes the Start-time input to fit the AM/PM indicator', async () => {
+    const item = dailyTimedSeries();
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item);
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    const time = mounted.host.querySelector<HTMLInputElement>('input[type="time"]');
+    expect(time).not.toBeNull();
+    expect(time!.getAttribute('aria-label')).toBe('Start time');
+    // `w-28` clipped the native AM/PM indicator; the control needs a wider box.
+    expect(time!.className).not.toContain('w-28');
+    expect(time!.className).toMatch(/\bw-3[2-9]\b/);
+    expect(hasTooNarrowTimeWidth(time!)).toBe(false);
+
+    await mounted.unmount();
+  });
+
+  it('never narrows a time input, including the all-day reminder time', async () => {
+    const item = createItem({
+      kind: 'task',
+      title: 'Standup',
+      start: '2026-07-13',
+      allDay: true,
+    });
+    item.reminders = [{ id: 'r1', timeOfDay: '09:00' }];
+    await itemRepo.create(item);
+    useUiStore.getState().openEditor(item);
+    const mounted = await mountEditor();
+
+    await clickButton(mounted.host, 'Schedule');
+    const inputs = [...mounted.host.querySelectorAll<HTMLInputElement>('input[type="time"]')];
+    expect(inputs.length).toBeGreaterThan(0);
+    for (const input of inputs) expect(hasTooNarrowTimeWidth(input)).toBe(false);
+
+    await mounted.unmount();
+  });
+});

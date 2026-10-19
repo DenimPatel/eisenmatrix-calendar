@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|---|
 | Bugs/Correctness | 4 | 23 | 63 | 1 blocked | 2026-10-18 discovery | split occurrence state, reminders for done/cancelled, toast-undo target | IMP-139, IMP-140, IMP-141 |
 | Content | 4 | 0 | 0 | 1 human | — | no content work needed for an app | IMP-034 (human) |
-| Visual | 3 | 11 | 4 | 0 | 2026-10-18 discovery | editor time clip, ring label, mobile voids | IMP-137, IMP-145 |
+| Visual | 3 | 10 | 5 | 0 | 2026-10-18 IMP-137 pending | ring label, mobile voids, empty states | IMP-145, IMP-106/108/109 |
 | UX/Interaction | 5 | 4 | 12 | 3 human | 2026-10-18 discovery | preview override drift, subtask scope | IMP-138, IMP-142 |
 | Format/Structure | 4 | 0 | 0 | 0 | 2026-10-17 IMP-064 | none known | — |
 | Delivery | 5 | 2 | 4 | 2 human | 2026-10-18 IMP-136 | social metadata, non-hash 404 | IMP-149, IMP-178 |
@@ -22,9 +22,9 @@ because the discovery round added 19 well-evidenced items; health stays 4 until 
 **Content (4):** Not applicable beyond docs; only the license question is open for humans.
 
 **Visual (3):** Three regression sweeps found no visual regressions, but discovery 4 measured real
-defects: the editor's time control clips AM/PM, the 28px progress ring's label overflows, mobile
-Lists reserves a 111px void, and dark-mode checkboxes read as filled. Health stays 3 (lowest) until
-IMP-137/145 and the empty-state/spacing items land.
+defects. IMP-137 fixed the editor time control's clipped AM/PM and added a width guard; the 28px
+progress ring's label still overflows, mobile Lists reserves a 111px void, and dark-mode checkboxes
+read as filled. Health stays 3 (lowest) until IMP-145 and the empty-state/spacing items land.
 
 **UX/Interaction (5):** Core flows (DnD, occurrence scope actions, editor tabs, overlays, mobile
 nav) verified healthy. The remaining gaps are preview truthfulness (quick-add chips ignore the

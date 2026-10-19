@@ -24,6 +24,8 @@ this file is appended per dimension from the resumed session onward.
 
 ## Visual
 
+- 2026-10-18 · IMP-137 · The item editor's Start-time control now shows the full AM/PM with the native clock affordance, and a guard rejects narrow time inputs · files: `src/features/item/ItemEditorSheet.tsx`, `src/features/item/ItemEditorSheet.test.tsx`, `src/features/quickadd/QuickAdd.test.tsx`
+
 ## Delivery
 
 ## Performance

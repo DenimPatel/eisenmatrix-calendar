@@ -2181,10 +2181,10 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 112.5
-- **Notes:** Source: `discover4-delivery.md` (IMP-A2, S2, I/R/C 3/5/5). DONE 2026-10-18: `routeMetaFor` + `RouteAnnouncer` set distinct titles, focus the new h1/main once and announce via a polite live region; initial load and deep links stay silent. Tests are mutation-caught. Verified PASS (typecheck/lint/74 files·722 tests/format:check/build; Playwright 10 routes + back/forward + overlay guard at 1280/390, 0 console errors). Commit pending.
+- **Notes:** Source: `discover4-delivery.md` (IMP-A2, S2, I/R/C 3/5/5). DONE 2026-10-18: `routeMetaFor` + `RouteAnnouncer` set distinct titles, focus the new h1/main once and announce via a polite live region; initial load and deep links stay silent. Tests are mutation-caught. Verified PASS (typecheck/lint/74 files·722 tests/format:check/build; Playwright 10 routes + back/forward + overlay guard at 1280/390, 0 console errors). Commit b26f352.
 
 ### IMP-137 — Stop the item editor's Start-time control clipping its AM/PM indicator
-- **Status:** TODO
+- **Status:** DONE
 - **Category:** visual / correctness
 - **Type:** bug-fix
 - **Area / files:** `src/features/item/ItemEditorSheet.tsx:629` (`input w-28`); precedent `src/features/settings/SettingsView.tsx:288` (`input w-36`) and `SettingsView.test.tsx:240`
@@ -2196,7 +2196,7 @@ state) → IMP-160; U10+A3 (calendar grid keyboard + semantics) → IMP-173.
 - **Effort:** S    **Risk:** low
 - **Depends on:** none
 - **Priority score:** 90
-- **Notes:** Source: `discover4-visual.md` (V1, S2, 3/4/5).
+- **Notes:** Source: `discover4-visual.md` (V1, S2, 3/4/5). DONE 2026-10-18: widened the editor Start-time control to the existing `w-36` precedent; only this input had an explicit narrow width. Added shared guards that reject any `w-<32` on a time input (mutation reintroducing `w-28` fails). Verified PASS (typecheck/lint/74 files·725 tests/format:check/build; preview 1280/390 light+dark, full `12:00 AM` with 32–35px clock slack, 0 console errors). Commit pending.
 
 ### IMP-138 — Make the quick-add preview reflect the Kind/Date/Time overrides
 - **Status:** TODO
