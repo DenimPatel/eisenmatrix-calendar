@@ -53,7 +53,7 @@ telemetry. It is 100% static and deploys to GitHub Pages.
 
 ### Prerequisites
 
-- Node.js 20+ (latest LTS recommended)
+- Node.js 22.12+ (latest LTS recommended)
 - npm
 
 ### Install & run
