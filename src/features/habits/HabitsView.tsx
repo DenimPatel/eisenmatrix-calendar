@@ -64,7 +64,7 @@ export function HabitsView() {
   const today = todayKey();
 
   const windowStart = useMemo(
-    () => startOfWeek(addDays(new Date(), -(DAYS - 1)), weekStartsOn),
+    () => addDays(startOfWeek(new Date(), weekStartsOn), -(WEEKS - 1) * 7),
     [weekStartsOn],
   );
   const windowEnd = useMemo(() => endOfDay(new Date()), []);

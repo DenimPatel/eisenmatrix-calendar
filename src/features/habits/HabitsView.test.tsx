@@ -286,9 +286,10 @@ describe('HabitsView weekStartsOn', () => {
     for (const weekStartsOn of [0, 1] as const) {
       const mounted = await mountHabits(weekStartsOn);
       const days = heatmapDayKeys(mounted.host);
-      const expectedStart = startOfWeek(addDays(new Date(), -(DAYS - 1)), weekStartsOn);
+      const expectedStart = addDays(startOfWeek(new Date(), weekStartsOn), -(DAYS / 7 - 1) * 7);
       expect(days[0]).toBe(formatISODate(expectedStart));
-      expect(days[DAYS - 1] <= todayKey()).toBe(true);
+      expect(days).toContain(todayKey());
+      expect(days[DAYS - 1] >= todayKey()).toBe(true);
       await unmount(mounted);
     }
   });
